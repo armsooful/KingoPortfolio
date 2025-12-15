@@ -27,7 +27,6 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // 토큰 만료 시 로컬스토리지 초기화
       localStorage.removeItem('access_token');
       localStorage.removeItem('user');
       window.location.href = '/login';
@@ -37,33 +36,28 @@ api.interceptors.response.use(
 );
 
 // ============================================================
-// Auth API
+// Auth API (⭐ /api 제거!)
 // ============================================================
 
 /**
  * 회원가입
- * @param {Object} data - { email, password, name }
- * @returns {Promise}
  */
 export const signUp = (data) => {
-  return api.post('/api/auth/signup', data);
+  return api.post('/auth/signup', data);
 };
 
 /**
  * 로그인
- * @param {Object} data - { email, password }
- * @returns {Promise}
  */
 export const login = (data) => {
-  return api.post('/api/auth/login', data);
+  return api.post('/auth/login', data);
 };
 
 /**
  * 현재 사용자 정보 조회
- * @returns {Promise}
  */
 export const getCurrentUser = () => {
-  return api.get('/api/auth/me');
+  return api.get('/auth/me');
 };
 
 /**
@@ -75,63 +69,53 @@ export const logout = () => {
 };
 
 // ============================================================
-// Survey API
+// Survey API (⭐ /api 제거!)
 // ============================================================
 
 /**
  * 모든 설문 문항 조회
- * @returns {Promise}
  */
 export const getSurveyQuestions = () => {
-  return api.get('/api/survey/questions');
+  return api.get('/survey/questions');
 };
 
 /**
  * 특정 설문 문항 조회
- * @param {number} questionId - 문항 ID
- * @returns {Promise}
  */
 export const getSurveyQuestion = (questionId) => {
-  return api.get(`/api/survey/questions/${questionId}`);
+  return api.get(`/survey/questions/${questionId}`);
 };
 
 // ============================================================
-// Diagnosis API
+// Diagnosis API (⭐ /api 제거!)
 // ============================================================
 
 /**
  * 설문 제출 및 진단 실행
- * @param {Object} data - { answers: [{question_id, answer_value}, ...], monthly_investment }
- * @returns {Promise}
  */
 export const submitDiagnosis = (data) => {
-  return api.post('/api/diagnosis/submit', data);
+  return api.post('/diagnosis/submit', data);
 };
 
 /**
  * 최근 진단 결과 조회
- * @returns {Promise}
  */
 export const getMyLatestDiagnosis = () => {
-  return api.get('/api/diagnosis/me');
+  return api.get('/diagnosis/me');
 };
 
 /**
  * 특정 진단 결과 조회
- * @param {string} diagnosisId - 진단 ID
- * @returns {Promise}
  */
 export const getDiagnosis = (diagnosisId) => {
-  return api.get(`/api/diagnosis/${diagnosisId}`);
+  return api.get(`/diagnosis/${diagnosisId}`);
 };
 
 /**
  * 진단 이력 조회
- * @param {number} limit - 조회 개수 (기본값: 10)
- * @returns {Promise}
  */
 export const getDiagnosisHistory = (limit = 10) => {
-  return api.get(`/api/diagnosis/history/all?limit=${limit}`);
+  return api.get(`/diagnosis/history/all?limit=${limit}`);
 };
 
 // ============================================================
@@ -140,7 +124,6 @@ export const getDiagnosisHistory = (limit = 10) => {
 
 /**
  * 백엔드 헬스 체크
- * @returns {Promise}
  */
 export const healthCheck = () => {
   return axios.get(`${API_BASE_URL}/health`);
