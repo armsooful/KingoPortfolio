@@ -14,17 +14,17 @@ router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
 
 # ⭐ CORS OPTIONS 메서드 처리 (모든 엔드포인트)
-@router.options("/{full_path:path}", include_in_schema=False)
-async def preflight_handler(full_path: str):
-    """CORS preflight 요청 처리"""
+@router.options("/signup", include_in_schema=False)
+@router.options("/login", include_in_schema=False)
+@router.options("/me", include_in_schema=False)
+async def options_handler():
     return JSONResponse(
         content={},
         status_code=200,
         headers={
             "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH",
-            "Access-Control-Allow-Headers": "Content-Type, Authorization, *",
-            "Access-Control-Max-Age": "3600",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
         },
     )
 
