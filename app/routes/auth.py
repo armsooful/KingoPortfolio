@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from datetime import timedelta
 
@@ -10,6 +11,22 @@ from app.crud import create_user, authenticate_user, get_user_by_email
 from app.config import settings
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
+
+
+# ⭐ CORS OPTIONS 메서드 처리 (모든 엔드포인트)
+@router.options("/{full_path:path}", include_in_schema=False)
+async def preflight_handler(full_path: str):
+    """CORS preflight 요청 처리"""
+    return JSONResponse(
+        content={},
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization, *",
+            "Access-Control-Max-Age": "3600",
+        },
+    )
 
 
 @router.post("/signup", response_model=Token, status_code=status.HTTP_201_CREATED)
