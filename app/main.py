@@ -1,6 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from contextlib import asynccontextmanager
 from datetime import timedelta
@@ -61,7 +60,6 @@ def init_db():
     finally:
         db.close()
 
-# 애플리케이션 생성
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
@@ -75,37 +73,30 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# ⭐ CORS 미들웨어 (모든 미들웨어 중 가장 먼저!)
+# ⭐⭐⭐ CORS 미들웨어 (가장 먼저 추가!)
+# TrustedHostMiddleware는 제거함 (CORS와 충돌)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://kingo-portfolio.vercel.app",
-        "http://localhost:3000",
-        "http://localhost:5173",
+        "https://kingo-portfolio.vercel.app",  # 프로덕션
+        "http://localhost:3000",                # 로컬 개발
+        "http://localhost:5173",                # Vite 개발
         "http://127.0.0.1:3000",
         "http://127.0.0.1:5173",
-        "*",
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
     allow_headers=["*"],
-    max_age=3600,
+    max_age=86400,
     expose_headers=["*"],
 )
 
-# Trusted Host 미들웨어
-app.add_middleware(
-    TrustedHostMiddleware,
-    allowed_hosts=["kingo-backend-production.up.railway.app", "localhost", "127.0.0.1"]
-)
-
-# 라우트 포함
+# 라우트 포함 (prefix는 라우터에서 이미 정의됨)
 app.include_router(auth.router)
 app.include_router(survey.router)
 app.include_router(diagnosis.router)
 
 # OAuth2 토큰 엔드포인트
-from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
 
 @app.post("/token")
