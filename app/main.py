@@ -233,10 +233,12 @@ app = FastAPI(
 # ⭐ CORS 미들웨어 추가 (app 생성 직후, 라우트 포함 전에!)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://kingo-portfolio.vercel.app", "http://localhost:3000", "http://localhost:5173", "*"],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"],
+    allow_headers=["Content-Type", "Authorization", "*"],
+    max_age=3600,
+    expose_headers=["*"],
 )
 
 # 라우트 포함 (prefix 제거 - 라우터에서 이미 정의됨)
