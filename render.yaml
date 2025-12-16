@@ -2,9 +2,9 @@ services:
   - type: web
     name: kingo-backend
     runtime: python
-    pythonVersion: 3.11
+    pythonVersion: "3.11.7"
     region: singapore
-    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    buildCommand: pip install --upgrade pip setuptools wheel && pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
@@ -13,3 +13,5 @@ services:
         value: your-secret-key-here
       - key: ALLOWED_ORIGINS
         value: https://kingo-portfolio-d0je2u1t8-changrims-projects.vercel.app,http://localhost:3000
+      - key: PIP_NO_BUILD_ISOLATION
+        value: "false"
