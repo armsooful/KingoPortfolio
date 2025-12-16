@@ -3,7 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from fastapi import Depends, HTTPException, status
 
 from app.database import get_db
-from app.models import User, SurveyQuestion
+from app.models import User, SurveyQuestion, Diagnosis
 from app.schemas import UserCreate
 from app.auth import hash_password, verify_password, verify_token
 
@@ -210,3 +210,77 @@ def count_users(db: Session):
 def count_survey_questions(db: Session):
     """총 설문 질문 수"""
     return db.query(SurveyQuestion).count()
+
+
+# ============ DIAGNOSIS CRUD ============
+
+def create_diagnosis(db: Session, user_id: int, personality_type: str, score: float, **kwargs):
+    """새 진단 결과 생성"""
+    diagnosis = Diagnosis(
+        user_id=user_id,
+        personality_type=personality_type,
+        score=score,
+        **kwargs
+    )
+    
+    try:
+        db.add(diagnosis)
+        db.commit()
+        db.refresh(diagnosis)
+        return diagnosis
+    except Exception as e:
+        db.rollback()
+        raise Exception(f"Failed to create diagnosis: {str(e)}")
+
+
+def get_diagnosis_by_id(db: Session, diagnosis_id: int):
+    """ID로 진단 결과 조회"""
+    return db.query(Diagnosis).filter(Diagnosis.id == diagnosis_id).first()
+
+
+def get_diagnoses_by_user(db: Session, user_id: int):
+    """사용자의 모든 진단 결과 조회"""
+    return db.query(Diagnosis).filter(Diagnosis.user_id == user_id).all()
+
+
+def get_latest_diagnosis(db: Session, user_id: int):
+    """사용자의 최신 진단 결과 조회"""
+    return db.query(Diagnosis).filter(Diagnosis.user_id == user_id).order_by(
+        Diagnosis.created_at.desc()
+    ).first()
+
+
+def update_diagnosis(db: Session, diagnosis_id: int, **kwargs):
+    """진단 결과 업데이트"""
+    diagnosis = get_diagnosis_by_id(db, diagnosis_id)
+    
+    if not diagnosis:
+        raise ValueError("Diagnosis not found")
+    
+    for key, value in kwargs.items():
+        if hasattr(diagnosis, key):
+            setattr(diagnosis, key, value)
+    
+    try:
+        db.commit()
+        db.refresh(diagnosis)
+        return diagnosis
+    except Exception as e:
+        db.rollback()
+        raise Exception(f"Failed to update diagnosis: {str(e)}")
+
+
+def delete_diagnosis(db: Session, diagnosis_id: int):
+    """진단 결과 삭제"""
+    diagnosis = get_diagnosis_by_id(db, diagnosis_id)
+    
+    if not diagnosis:
+        raise ValueError("Diagnosis not found")
+    
+    try:
+        db.delete(diagnosis)
+        db.commit()
+        return True
+    except Exception as e:
+        db.rollback()
+        raise Exception(f"Failed to delete diagnosis: {str(e)}")
