@@ -12,9 +12,9 @@ from app.routes import auth, survey, diagnosis
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
 
-print("=" * 50)
+print("=" * 60)
 print("🚀 KingoPortfolio Backend Starting...")
-print("=" * 50)
+print("=" * 60)
 
 # 초기화 함수
 def init_db():
@@ -81,25 +81,12 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# ✅ CORS 설정
-allowed_origins = [
-    "https://kingo-portfolio-d0je2u1t8-changrims-projects.vercel.app",
-    "https://kingo-portfolio.vercel.app",
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:5173",
-]
-
-env_origins = os.getenv("ALLOWED_ORIGINS", "")
-if env_origins:
-    allowed_origins.extend([o.strip() for o in env_origins.split(",")])
-
-print(f"\n🔓 CORS Allowed Origins: {allowed_origins}\n")
+# ✅ CORS 미들웨어 (settings에서 allowed_origins 사용)
+print(f"\n📍 Adding CORS middleware with origins: {settings.allowed_origins}\n")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=settings.allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
     allow_headers=["Accept", "Accept-Language", "Content-Language", "Content-Type", "Authorization", "X-Requested-With"],
@@ -117,6 +104,7 @@ async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
+    """Swagger UI 인증용 토큰 엔드포인트"""
     from app.crud import authenticate_user
     from app.auth import create_access_token
     
@@ -138,7 +126,11 @@ async def login_for_access_token(
 
 @app.get("/health", tags=["Health"])
 async def health():
-    return {"status": "healthy", "app": settings.app_name, "version": settings.app_version}
+    return {
+        "status": "healthy",
+        "app": settings.app_name,
+        "version": settings.app_version
+    }
 
 @app.get("/", tags=["Root"])
 async def root():
@@ -149,5 +141,6 @@ async def root():
         "openapi": "/openapi.json"
     }
 
+print("=" * 60)
 print("✅ FastAPI app initialized successfully!")
-print("=" * 50)
+print("=" * 60)
