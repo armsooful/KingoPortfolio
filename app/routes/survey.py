@@ -1,15 +1,20 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-
 from app.database import get_db
-from app.schemas import SurveyQuestionResponse, SurveyQuestionsListResponse, SurveyQuestionOption
+from app.models import User, SurveyQuestion
+from app.schemas import SurveyQuestionResponse, SurveyQuestionOption, SurveyQuestionsListResponse
+from app.auth import get_current_user
 from app.crud import get_survey_questions, get_survey_question_by_id
 
-router = APIRouter(prefix="/api/survey", tags=["Survey"])
+router = APIRouter(
+    prefix="/survey",
+    tags=["Survey"]
+)
 
 
-def format_question(question) -> SurveyQuestionResponse:
+def format_survey_question(question: SurveyQuestion) -> SurveyQuestionResponse:
     """설문 문항을 응답 형식으로 변환"""
+    
     options = [
         SurveyQuestionOption(
             value="A",
@@ -20,11 +25,11 @@ def format_question(question) -> SurveyQuestionResponse:
             value="B",
             text=question.option_b,
             weight=question.weight_b
-        ),
+        )
     ]
     
-    # 옵션 C 추가 (있으면)
-    if question.option_c:
+    # option_c가 있으면 추가
+    if question.option_c and question.weight_c:
         options.append(
             SurveyQuestionOption(
                 value="C",
@@ -41,48 +46,56 @@ def format_question(question) -> SurveyQuestionResponse:
     )
 
 
-@router.get("/questions", response_model=SurveyQuestionsListResponse)
-async def get_all_questions(db: Session = Depends(get_db)):
+@router.get(
+    "/questions",
+    response_model=SurveyQuestionsListResponse,
+    summary="설문 문항 조회",
+    description="투자성향 진단을 위한 모든 설문 문항을 조회합니다."
+)
+async def get_questions(db: Session = Depends(get_db)):
     """
-    모든 설문 문항 조회
+    설문 문항 조회
     
-    Returns:
-        SurveyQuestionsListResponse: 설문 문항 목록
+    모든 설문 문항과 선택지를 반환합니다.
     """
+    
     questions = get_survey_questions(db)
     
     if not questions:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="No survey questions found"
+            detail="Survey questions not found"
         )
     
-    formatted_questions = [format_question(q) for q in questions]
+    formatted_questions = [format_survey_question(q) for q in questions]
     
-    return {
-        "total": len(formatted_questions),
-        "questions": formatted_questions
-    }
+    return SurveyQuestionsListResponse(
+        total=len(formatted_questions),
+        questions=formatted_questions
+    )
 
 
-@router.get("/questions/{question_id}", response_model=SurveyQuestionResponse)
-async def get_question(question_id: int, db: Session = Depends(get_db)):
+@router.get(
+    "/questions/{question_id}",
+    response_model=SurveyQuestionResponse,
+    summary="특정 설문 문항 조회"
+)
+async def get_question(
+    question_id: int,
+    db: Session = Depends(get_db)
+):
     """
     특정 설문 문항 조회
     
-    Args:
-        question_id: 설문 문항 ID
-        db: 데이터베이스 세션
-    
-    Returns:
-        SurveyQuestionResponse: 설문 문항
+    - **question_id**: 문항 ID
     """
+    
     question = get_survey_question_by_id(db, question_id)
     
     if not question:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Question with id {question_id} not found"
+            detail=f"Question {question_id} not found"
         )
     
-    return format_question(question)
+    return format_survey_question(question)
