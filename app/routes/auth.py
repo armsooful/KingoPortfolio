@@ -71,12 +71,18 @@ async def signup(
             "user": UserResponse.from_orm(user)
         }
     
-    except ValueError as e:
+except ValueError as e:
+        print(f"\n❌ ValueError: {str(e)}\n")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
-
+    except Exception as e:
+        print(f"\n❌ Exception: {type(e).__name__}: {str(e)}\n")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
 
 @router.post("/login", response_model=Token)
 async def login(
