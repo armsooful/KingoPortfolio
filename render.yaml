@@ -2,20 +2,14 @@ services:
   - type: web
     name: kingo-backend
     runtime: python
+    pythonVersion: 3.11
     region: singapore
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11
       - key: DATABASE_URL
         value: postgresql://user:password@localhost/kingo
       - key: SECRET_KEY
         value: your-secret-key-here
       - key: ALLOWED_ORIGINS
         value: https://kingo-portfolio-d0je2u1t8-changrims-projects.vercel.app,http://localhost:3000
-databases:
-  - name: kingo_db
-    databaseName: kingo_production
-    user: postgres
-    region: singapore
