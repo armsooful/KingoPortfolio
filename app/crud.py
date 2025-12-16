@@ -255,6 +255,11 @@ def get_latest_diagnosis(db: Session, user_id: int):
     ).first()
 
 
+def get_user_latest_diagnosis(db: Session, user_id: int):
+    """사용자의 최신 진단 결과 조회 (별칭)"""
+    return get_latest_diagnosis(db, user_id)
+
+
 def update_diagnosis(db: Session, diagnosis_id: int, **kwargs):
     """진단 결과 업데이트"""
     diagnosis = get_diagnosis_by_id(db, diagnosis_id)
