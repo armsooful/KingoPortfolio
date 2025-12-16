@@ -1,7 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthCredentials
 
 from app.database import get_db
 from app.models import User, SurveyQuestion
@@ -23,15 +22,12 @@ def get_user_by_id(db: Session, user_id: int):
 
 def create_user(db: Session, user_create: UserCreate):
     """새 사용자 생성"""
-    # 이메일 중복 확인
     existing_user = get_user_by_email(db, user_create.email)
     if existing_user:
         raise ValueError("Email already registered")
     
-    # 비밀번호 해싱
     hashed_password = hash_password(user_create.password)
     
-    # 새 사용자 생성
     db_user = User(
         email=user_create.email,
         hashed_password=hashed_password,
@@ -102,15 +98,16 @@ def delete_user(db: Session, user_id: int):
 
 # ============ AUTHENTICATION ============
 
-security = HTTPBearer()
-
-
 async def get_current_user(
-    credentials: HTTPAuthCredentials = Depends(security),
+    token: str = Depends(lambda: None),
     db: Session = Depends(get_db)
 ):
     """JWT 토큰으로 현재 사용자 조회"""
-    token = credentials.credentials
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing token",
+        )
     
     try:
         email = verify_token(token)
@@ -118,7 +115,6 @@ async def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
         )
     
     user = get_user_by_email(db, email)
