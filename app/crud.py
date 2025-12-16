@@ -130,9 +130,14 @@ async def get_current_user(
 
 # ============ SURVEY QUESTION CRUD ============
 
-def get_all_survey_questions(db: Session):
+def get_survey_questions(db: Session):
     """모든 설문 질문 조회"""
     return db.query(SurveyQuestion).all()
+
+
+def get_all_survey_questions(db: Session):
+    """모든 설문 질문 조회 (별칭)"""
+    return get_survey_questions(db)
 
 
 def get_survey_question_by_id(db: Session, question_id: int):
