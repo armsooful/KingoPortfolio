@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
@@ -11,6 +12,9 @@ from app.routes import auth, survey, diagnosis
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
 
+print("=" * 50)
+print("🚀 KingoPortfolio Backend Starting...")
+print("=" * 50)
 
 # 초기화 함수
 def init_db():
@@ -67,7 +71,6 @@ async def lifespan(app: FastAPI):
         print("✅ Database initialized successfully")
     except Exception as e:
         print(f"⚠️ Database initialization warning: {e}")
-        # Continue running even if init fails
     yield
 
 
@@ -78,37 +81,42 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# ⭐⭐⭐ CORS 미들웨어 (가장 먼저 추가!)
+# ✅ CORS 설정
+allowed_origins = [
+    "https://kingo-portfolio-d0je2u1t8-changrims-projects.vercel.app",
+    "https://kingo-portfolio.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+]
+
+env_origins = os.getenv("ALLOWED_ORIGINS", "")
+if env_origins:
+    allowed_origins.extend([o.strip() for o in env_origins.split(",")])
+
+print(f"\n🔓 CORS Allowed Origins: {allowed_origins}\n")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://kingo-portfolio-d0je2u1t8-changrims-projects.vercel.app",  # 실제 Vercel URL
-        "https://kingo-portfolio.vercel.app",  # 프로덕션 (만약 있으면)
-        "http://localhost:3000",                # 로컬 개발
-        "http://localhost:5173",                # Vite 개발
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:5173",
-        "*",  # 개발 중에만 사용 (배포 전 제거)
-    ],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
-    allow_headers=["*"],
-    max_age=86400,
+    allow_headers=["Accept", "Accept-Language", "Content-Language", "Content-Type", "Authorization", "X-Requested-With"],
     expose_headers=["*"],
+    max_age=3600,
 )
 
-# 라우트 포함
+# 라우트
 app.include_router(auth.router)
 app.include_router(survey.router)
 app.include_router(diagnosis.router)
 
-# OAuth2 토큰 엔드포인트
 @app.post("/token")
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
-    """Swagger UI 인증용 토큰 엔드포인트"""
     from app.crud import authenticate_user
     from app.auth import create_access_token
     
@@ -130,11 +138,7 @@ async def login_for_access_token(
 
 @app.get("/health", tags=["Health"])
 async def health():
-    return {
-        "status": "healthy",
-        "app": settings.app_name,
-        "version": settings.app_version
-    }
+    return {"status": "healthy", "app": settings.app_name, "version": settings.app_version}
 
 @app.get("/", tags=["Root"])
 async def root():
@@ -144,3 +148,6 @@ async def root():
         "docs": "/docs",
         "openapi": "/openapi.json"
     }
+
+print("✅ FastAPI app initialized successfully!")
+print("=" * 50)
