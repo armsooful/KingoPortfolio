@@ -243,6 +243,11 @@ def get_diagnoses_by_user(db: Session, user_id: int):
     return db.query(Diagnosis).filter(Diagnosis.user_id == user_id).all()
 
 
+def get_user_diagnoses(db: Session, user_id: int):
+    """사용자의 모든 진단 결과 조회 (별칭)"""
+    return get_diagnoses_by_user(db, user_id)
+
+
 def get_latest_diagnosis(db: Session, user_id: int):
     """사용자의 최신 진단 결과 조회"""
     return db.query(Diagnosis).filter(Diagnosis.user_id == user_id).order_by(
