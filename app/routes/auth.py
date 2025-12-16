@@ -4,7 +4,7 @@ from datetime import timedelta
 from app.database import get_db
 from app.models import User
 from app.schemas import UserCreate, UserLogin, Token, UserResponse
-from app.auth import create_access_token, get_password_hash, authenticate_user
+from app.auth import create_access_token, authenticate_user
 from app.crud import create_user, get_user_by_email
 from app.config import settings
 

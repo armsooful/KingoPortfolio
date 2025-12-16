@@ -5,7 +5,7 @@ from fastapi import Depends, HTTPException, status
 from app.database import get_db
 from app.models import User, SurveyQuestion, Diagnosis
 from app.schemas import UserCreate
-from app.auth import hash_password, verify_password, verify_token
+from app.auth import hash_password, verify_password
 
 
 # ============ USER CRUD ============
