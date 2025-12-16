@@ -1,157 +1,211 @@
 from sqlalchemy.orm import Session
-from app.models import User, Diagnosis, DiagnosisAnswer, SurveyQuestion
-from app.schemas import UserCreate, DiagnosisSubmitRequest
-from app.auth import get_password_hash, verify_password
-from typing import Optional, List
+from sqlalchemy.exc import IntegrityError
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthCredentials
+
+from app.database import get_db
+from app.models import User, SurveyQuestion
+from app.schemas import UserCreate
+from app.auth import hash_password, verify_password, verify_token
 
 
-# ============================================================
-# User CRUD
-# ============================================================
+# ============ USER CRUD ============
 
-def get_user_by_email(db: Session, email: str) -> Optional[User]:
+def get_user_by_email(db: Session, email: str):
     """이메일로 사용자 조회"""
     return db.query(User).filter(User.email == email).first()
 
 
-def get_user_by_id(db: Session, user_id: str) -> Optional[User]:
+def get_user_by_id(db: Session, user_id: int):
     """ID로 사용자 조회"""
     return db.query(User).filter(User.id == user_id).first()
 
 
-def create_user(db: Session, user_create: UserCreate) -> User:
-    """사용자 생성"""
-    # 기존 사용자 확인
-    if get_user_by_email(db, user_create.email):
+def create_user(db: Session, user_create: UserCreate):
+    """새 사용자 생성"""
+    # 이메일 중복 확인
+    existing_user = get_user_by_email(db, user_create.email)
+    if existing_user:
         raise ValueError("Email already registered")
     
+    # 비밀번호 해싱
+    hashed_password = hash_password(user_create.password)
+    
     # 새 사용자 생성
-    hashed_password = get_password_hash(user_create.password)
     db_user = User(
         email=user_create.email,
-        password_hash=hashed_password,
-        name=user_create.name
+        hashed_password=hashed_password,
+        full_name=user_create.full_name if hasattr(user_create, 'full_name') else None,
     )
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
+    
+    try:
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        return db_user
+    except IntegrityError:
+        db.rollback()
+        raise ValueError("Email already registered")
+    except Exception as e:
+        db.rollback()
+        raise Exception(f"Failed to create user: {str(e)}")
 
 
-def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
-    """사용자 인증"""
+def authenticate_user(db: Session, email: str, password: str):
+    """사용자 인증 (로그인)"""
     user = get_user_by_email(db, email)
-    if not user or not verify_password(password, user.password_hash):
+    
+    if not user:
         return None
+    
+    if not verify_password(password, user.hashed_password):
+        return None
+    
     return user
 
 
-# ============================================================
-# SurveyQuestion CRUD
-# ============================================================
+def update_user(db: Session, user_id: int, **kwargs):
+    """사용자 정보 업데이트"""
+    user = get_user_by_id(db, user_id)
+    
+    if not user:
+        raise ValueError("User not found")
+    
+    for key, value in kwargs.items():
+        if hasattr(user, key) and key != "id" and key != "hashed_password":
+            setattr(user, key, value)
+    
+    try:
+        db.commit()
+        db.refresh(user)
+        return user
+    except Exception as e:
+        db.rollback()
+        raise Exception(f"Failed to update user: {str(e)}")
 
-def get_survey_questions(db: Session) -> List[SurveyQuestion]:
-    """모든 설문 문항 조회"""
-    return db.query(SurveyQuestion).order_by(SurveyQuestion.id).all()
+
+def delete_user(db: Session, user_id: int):
+    """사용자 삭제"""
+    user = get_user_by_id(db, user_id)
+    
+    if not user:
+        raise ValueError("User not found")
+    
+    try:
+        db.delete(user)
+        db.commit()
+        return True
+    except Exception as e:
+        db.rollback()
+        raise Exception(f"Failed to delete user: {str(e)}")
 
 
-def get_survey_question_by_id(db: Session, question_id: int) -> Optional[SurveyQuestion]:
-    """설문 문항 조회"""
+# ============ AUTHENTICATION ============
+
+security = HTTPBearer()
+
+
+async def get_current_user(
+    credentials: HTTPAuthCredentials = Depends(security),
+    db: Session = Depends(get_db)
+):
+    """JWT 토큰으로 현재 사용자 조회"""
+    token = credentials.credentials
+    
+    try:
+        email = verify_token(token)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    user = get_user_by_email(db, email)
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+        )
+    
+    return user
+
+
+# ============ SURVEY QUESTION CRUD ============
+
+def get_all_survey_questions(db: Session):
+    """모든 설문 질문 조회"""
+    return db.query(SurveyQuestion).all()
+
+
+def get_survey_question_by_id(db: Session, question_id: int):
+    """ID로 설문 질문 조회"""
     return db.query(SurveyQuestion).filter(SurveyQuestion.id == question_id).first()
 
 
-def create_survey_question(
-    db: Session,
-    category: str,
-    question: str,
-    option_a: str,
-    option_b: str,
-    weight_a: float,
-    weight_b: float,
-    option_c: Optional[str] = None,
-    weight_c: Optional[float] = None
-) -> SurveyQuestion:
-    """설문 문항 생성"""
-    db_question = SurveyQuestion(
-        category=category,
-        question=question,
-        option_a=option_a,
-        option_b=option_b,
-        option_c=option_c,
-        weight_a=weight_a,
-        weight_b=weight_b,
-        weight_c=weight_c
-    )
-    db.add(db_question)
-    db.commit()
-    db.refresh(db_question)
-    return db_question
+def get_survey_questions_by_category(db: Session, category: str):
+    """카테고리별 설문 질문 조회"""
+    return db.query(SurveyQuestion).filter(SurveyQuestion.category == category).all()
 
 
-# ============================================================
-# Diagnosis CRUD
-# ============================================================
-
-def create_diagnosis(
-    db: Session,
-    user_id: str,
-    investment_type: str,
-    score: float,
-    confidence: float,
-    answers: List[DiagnosisSubmitRequest],
-    monthly_investment: Optional[int] = None
-) -> Diagnosis:
-    """진단 결과 생성"""
-    # 진단 생성
-    db_diagnosis = Diagnosis(
-        user_id=user_id,
-        investment_type=investment_type,
-        score=score,
-        confidence=confidence,
-        monthly_investment=monthly_investment
-    )
-    db.add(db_diagnosis)
-    db.flush()  # ID 생성
+def create_survey_question(db: Session, **kwargs):
+    """새 설문 질문 생성"""
+    question = SurveyQuestion(**kwargs)
     
-    # 답변 저장
-    for answer in answers:
-        db_answer = DiagnosisAnswer(
-            diagnosis_id=db_diagnosis.id,
-            question_id=answer.question_id,
-            answer_value=answer.answer_value
-        )
-        db.add(db_answer)
+    try:
+        db.add(question)
+        db.commit()
+        db.refresh(question)
+        return question
+    except Exception as e:
+        db.rollback()
+        raise Exception(f"Failed to create question: {str(e)}")
+
+
+def update_survey_question(db: Session, question_id: int, **kwargs):
+    """설문 질문 업데이트"""
+    question = get_survey_question_by_id(db, question_id)
     
-    db.commit()
-    db.refresh(db_diagnosis)
-    return db_diagnosis
+    if not question:
+        raise ValueError("Question not found")
+    
+    for key, value in kwargs.items():
+        if hasattr(question, key):
+            setattr(question, key, value)
+    
+    try:
+        db.commit()
+        db.refresh(question)
+        return question
+    except Exception as e:
+        db.rollback()
+        raise Exception(f"Failed to update question: {str(e)}")
 
 
-def get_diagnosis_by_id(db: Session, diagnosis_id: str) -> Optional[Diagnosis]:
-    """진단 결과 조회"""
-    return db.query(Diagnosis).filter(Diagnosis.id == diagnosis_id).first()
+def delete_survey_question(db: Session, question_id: int):
+    """설문 질문 삭제"""
+    question = get_survey_question_by_id(db, question_id)
+    
+    if not question:
+        raise ValueError("Question not found")
+    
+    try:
+        db.delete(question)
+        db.commit()
+        return True
+    except Exception as e:
+        db.rollback()
+        raise Exception(f"Failed to delete question: {str(e)}")
 
 
-def get_user_diagnoses(db: Session, user_id: str, limit: int = 10) -> List[Diagnosis]:
-    """사용자의 진단 이력 조회"""
-    return db.query(Diagnosis).filter(
-        Diagnosis.user_id == user_id
-    ).order_by(Diagnosis.created_at.desc()).limit(limit).all()
+# ============ HELPER FUNCTIONS ============
+
+def count_users(db: Session):
+    """총 사용자 수"""
+    return db.query(User).count()
 
 
-def get_user_latest_diagnosis(db: Session, user_id: str) -> Optional[Diagnosis]:
-    """사용자의 최근 진단 결과 조회"""
-    return db.query(Diagnosis).filter(
-        Diagnosis.user_id == user_id
-    ).order_by(Diagnosis.created_at.desc()).first()
-
-
-# ============================================================
-# DiagnosisAnswer CRUD
-# ============================================================
-
-def get_diagnosis_answers(db: Session, diagnosis_id: str) -> List[DiagnosisAnswer]:
-    """진단 답변 조회"""
-    return db.query(DiagnosisAnswer).filter(
-        DiagnosisAnswer.diagnosis_id == diagnosis_id
-    ).all()
+def count_survey_questions(db: Session):
+    """총 설문 질문 수"""
+    return db.query(SurveyQuestion).count()
