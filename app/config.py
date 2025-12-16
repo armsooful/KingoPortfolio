@@ -25,6 +25,7 @@ class Settings:
     
     # CORS - 환경변수에서 쉼표 구분 문자열로 처리
     allowed_origins: List[str] = [
+        "https://kingo-portfolio-5oy16z2so-changrims-projects.vercel.app",  # ← 새 URL 추가
         "https://kingo-portfolio-d0je2u1t8-changrims-projects.vercel.app",
         "http://localhost:3000",
         "http://localhost:5173",
