@@ -28,10 +28,11 @@ def create_user(db: Session, user_create: UserCreate):
     
     hashed_password = hash_password(user_create.password)
     
+    # ✅ FIX 1: full_name → name
     db_user = User(
         email=user_create.email,
         hashed_password=hashed_password,
-        full_name=user_create.full_name if hasattr(user_create, 'full_name') else None,
+        name=user_create.name,
     )
     
     try:
@@ -94,38 +95,6 @@ def delete_user(db: Session, user_id: int):
     except Exception as e:
         db.rollback()
         raise Exception(f"Failed to delete user: {str(e)}")
-
-
-# ============ AUTHENTICATION ============
-
-async def get_current_user(
-    token: str = Depends(lambda: None),
-    db: Session = Depends(get_db)
-):
-    """JWT 토큰으로 현재 사용자 조회"""
-    if not token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing token",
-        )
-    
-    try:
-        email = verify_token(token)
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-        )
-    
-    user = get_user_by_email(db, email)
-    
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
-        )
-    
-    return user
 
 
 # ============ SURVEY QUESTION CRUD ============
@@ -214,12 +183,27 @@ def count_survey_questions(db: Session):
 
 # ============ DIAGNOSIS CRUD ============
 
-def create_diagnosis(db: Session, user_id: int, personality_type: str, score: float, **kwargs):
-    """새 진단 결과 생성"""
+def create_diagnosis(db: Session, user_id: str, investment_type: str, score: float, confidence: float, monthly_investment: int = None, answers: list = None, **kwargs):
+    """새 진단 결과 생성
+    
+    Args:
+        db: 데이터베이스 세션
+        user_id: 사용자 ID
+        investment_type: 투자성향 타입 ('conservative', 'moderate', 'aggressive')
+        score: 진단 점수 (0-10)
+        confidence: 신뢰도 (0-1)
+        monthly_investment: 월 투자액 (만원)
+        answers: 설문 답변 리스트
+        **kwargs: 추가 필드
+    """
+    # ✅ FIX 2: personality_type → investment_type (파라미터명)
+    # ✅ FIX 3: confidence 파라미터 추가
     diagnosis = Diagnosis(
         user_id=user_id,
-        personality_type=personality_type,
+        investment_type=investment_type,
         score=score,
+        confidence=confidence,
+        monthly_investment=monthly_investment,
         **kwargs
     )
     
@@ -227,40 +211,64 @@ def create_diagnosis(db: Session, user_id: int, personality_type: str, score: fl
         db.add(diagnosis)
         db.commit()
         db.refresh(diagnosis)
+        
+        # 답변 저장 (선택사항)
+        if answers:
+            from app.models import DiagnosisAnswer
+            for answer in answers:
+                diagnosis_answer = DiagnosisAnswer(
+                    diagnosis_id=diagnosis.id,
+                    question_id=answer.question_id,
+                    answer_value=answer.answer_value
+                )
+                db.add(diagnosis_answer)
+            db.commit()
+        
         return diagnosis
     except Exception as e:
         db.rollback()
         raise Exception(f"Failed to create diagnosis: {str(e)}")
 
 
-def get_diagnosis_by_id(db: Session, diagnosis_id: int):
+def get_diagnosis_by_id(db: Session, diagnosis_id: str):
     """ID로 진단 결과 조회"""
     return db.query(Diagnosis).filter(Diagnosis.id == diagnosis_id).first()
 
 
-def get_diagnoses_by_user(db: Session, user_id: int):
+def get_diagnoses_by_user(db: Session, user_id: str):
     """사용자의 모든 진단 결과 조회"""
-    return db.query(Diagnosis).filter(Diagnosis.user_id == user_id).all()
+    return db.query(Diagnosis).filter(Diagnosis.user_id == user_id).order_by(
+        Diagnosis.created_at.desc()
+    ).all()
 
 
-def get_user_diagnoses(db: Session, user_id: int):
-    """사용자의 모든 진단 결과 조회 (별칭)"""
-    return get_diagnoses_by_user(db, user_id)
+def get_user_diagnoses(db: Session, user_id: str, limit: int = 10):
+    """사용자의 진단 결과 조회 (최대 limit개)
+    
+    Args:
+        db: 데이터베이스 세션
+        user_id: 사용자 ID
+        limit: 조회할 최대 개수 (기본값: 10)
+    """
+    # ✅ FIX 4: limit 파라미터 추가
+    return db.query(Diagnosis).filter(Diagnosis.user_id == user_id).order_by(
+        Diagnosis.created_at.desc()
+    ).limit(limit).all()
 
 
-def get_latest_diagnosis(db: Session, user_id: int):
+def get_latest_diagnosis(db: Session, user_id: str):
     """사용자의 최신 진단 결과 조회"""
     return db.query(Diagnosis).filter(Diagnosis.user_id == user_id).order_by(
         Diagnosis.created_at.desc()
     ).first()
 
 
-def get_user_latest_diagnosis(db: Session, user_id: int):
+def get_user_latest_diagnosis(db: Session, user_id: str):
     """사용자의 최신 진단 결과 조회 (별칭)"""
     return get_latest_diagnosis(db, user_id)
 
 
-def update_diagnosis(db: Session, diagnosis_id: int, **kwargs):
+def update_diagnosis(db: Session, diagnosis_id: str, **kwargs):
     """진단 결과 업데이트"""
     diagnosis = get_diagnosis_by_id(db, diagnosis_id)
     
@@ -280,7 +288,7 @@ def update_diagnosis(db: Session, diagnosis_id: int, **kwargs):
         raise Exception(f"Failed to update diagnosis: {str(e)}")
 
 
-def delete_diagnosis(db: Session, diagnosis_id: int):
+def delete_diagnosis(db: Session, diagnosis_id: str):
     """진단 결과 삭제"""
     diagnosis = get_diagnosis_by_id(db, diagnosis_id)
     
