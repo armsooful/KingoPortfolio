@@ -27,6 +27,17 @@ async def signup(
     - **password**: 비밀번호 (최소 8자)
     - **name**: 사용자 이름 (선택)
     """
+
+    # 🔍 디버그 로그
+    print("\n" + "="*60)
+    print("📨 SIGNUP 요청 받음")
+    print(f"이메일: {user_create.email}")
+    print(f"이름: {user_create.name}")
+    print(f"비밀번호 (표시): {user_create.password}")
+    print(f"비밀번호 길이 (글자): {len(user_create.password)}")
+    print(f"비밀번호 길이 (바이트): {len(user_create.password.encode('utf-8'))}")
+    print(f"비밀번호 16진수: {user_create.password.encode('utf-8').hex()}")
+    print("="*60 + "\n")
     
     # 기존 이메일 확인
     existing_user = get_user_by_email(db, user_create.email)
