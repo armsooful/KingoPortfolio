@@ -2,7 +2,7 @@ import os
 from typing import List
 
 class Settings:
-    """애플리케이션 설정 (환경변수 자동 감지 제거)"""
+    """애플리케이션 설정 (환경변수 기반 CORS)"""
     
     # 앱 정보
     app_name: str = "KingoPortfolio"
@@ -23,21 +23,28 @@ class Settings:
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     
-    # CORS - 환경변수에서 쉼표 구분 문자열로 처리
-    allowed_origins: List[str] = [
-        "https://kingo-portfolio-5oy16z2so-changrims-projects.vercel.app",  # ← 새 URL 추가
-        "https://kingo-portfolio-d0je2u1t8-changrims-projects.vercel.app",
-        "http://localhost:3000",
-        "http://localhost:5173",
-    ]
+    # CORS
+    allowed_origins: List[str] = []
     
     def __init__(self):
-        """환경변수 로드"""
-        # ALLOWED_ORIGINS 환경변수 처리
+        """환경변수 기반 CORS 설정"""
+        # 환경변수에서 origin 읽기
         env_origins = os.getenv("ALLOWED_ORIGINS", "")
+        
         if env_origins:
+            # 환경변수가 설정되면 사용
             self.allowed_origins = [
                 o.strip() for o in env_origins.split(",") if o.strip()
+            ]
+        else:
+            # 기본값: 개발 + 프로덕션
+            self.allowed_origins = [
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "http://127.0.0.1:3000",
+                "http://127.0.0.1:5173",
+                # Vercel 배포 (모든 배포 URL 수용)
+                "https://kingo-portfolio-*.vercel.app",
             ]
         
         print(f"✅ CORS Allowed Origins: {self.allowed_origins}")

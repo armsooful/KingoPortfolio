@@ -81,7 +81,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# ✅ CORS 미들웨어 (settings에서 allowed_origins 사용)
+# ✅ CORS 미들웨어 (라우터 전에 등록)
 print(f"\n📍 Adding CORS middleware with origins: {settings.allowed_origins}\n")
 
 app.add_middleware(
@@ -89,7 +89,7 @@ app.add_middleware(
     allow_origins=settings.allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
-    allow_headers=["Accept", "Accept-Language", "Content-Language", "Content-Type", "Authorization", "X-Requested-With"],
+    allow_headers=["*"],
     expose_headers=["*"],
     max_age=3600,
 )
