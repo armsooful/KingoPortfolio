@@ -24,9 +24,19 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def hash_password(password: str) -> str:
     """비밀번호 해시 (bcrypt 72바이트 제한)"""
+    print(f"\n🔐 hash_password 호출됨")
+    print(f"   입력 비밀번호: {password}")
+    print(f"   글자 수: {len(password)}")
+    print(f"   바이트: {len(password.encode('utf-8'))}")
+    
     if len(password.encode('utf-8')) > 72:
+        print(f"   ❌ 72바이트 초과!")
         raise ValueError("password cannot be longer than 72 bytes, truncate manually if necessary (e.g. my_password[:72])")
-    return pwd_context.hash(password)
+    
+    print(f"   ✅ 검증 통과, 해싱 중...")
+    result = pwd_context.hash(password)
+    print(f"   ✅ 해싱 완료\n")
+    return result
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """JWT 토큰 생성"""
