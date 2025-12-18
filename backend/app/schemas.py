@@ -28,7 +28,7 @@ class UserResponse(BaseModel):
     created_at: datetime
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 
 class Token(BaseModel):
@@ -62,7 +62,7 @@ class SurveyQuestionResponse(BaseModel):
     options: List[SurveyQuestionOption]
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 
 class SurveyQuestionsListResponse(BaseModel):
@@ -110,7 +110,7 @@ class DiagnosisResponse(BaseModel):
     created_at: datetime
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 
 class DiagnosisSummaryResponse(BaseModel):
@@ -123,7 +123,7 @@ class DiagnosisSummaryResponse(BaseModel):
     created_at: datetime
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 
 class DiagnosisHistoryResponse(BaseModel):
@@ -146,7 +146,7 @@ class DiagnosisMeResponse(BaseModel):
     created_at: datetime
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 
 # ============================================================
