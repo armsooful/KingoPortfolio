@@ -11,3 +11,6 @@ pytest==7.4.3
 httpx==0.25.1
 alembic==1.13.0
 email-validator==2.0.0
+yfinance==0.2.32
+beautifulsoup4==4.12.2
+requests==2.31.0

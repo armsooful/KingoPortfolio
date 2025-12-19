@@ -217,3 +217,37 @@ async def get_diagnosis_history(
         total=len(summary_list),
         diagnoses=summary_list
     )
+
+# 기존 GET /diagnosis/me/products에 추가
+
+@router.get("/me/products")
+async def get_recommended_products(
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """DB 기반 추천 종목 조회"""
+    
+    diagnosis = db.query(Diagnosis).filter(
+        Diagnosis.user_id == current_user.id
+    ).order_by(Diagnosis.created_at.desc()).first()
+    
+    if not diagnosis:
+        raise HTTPException(
+            status_code=404,
+            detail="진단 결과가 없습니다"
+        )
+    
+    # DB 기반 추천
+    from app.db_recommendation_engine import DBRecommendationEngine
+    
+    recommendations = DBRecommendationEngine.get_all_recommendations(
+        db,
+        diagnosis.investment_type
+    )
+    
+    return {
+        "diagnosis_id": str(diagnosis.id),
+        "investment_type": diagnosis.investment_type,
+        "portfolio": diagnosis.portfolio_recommendation,
+        **recommendations
+    }
