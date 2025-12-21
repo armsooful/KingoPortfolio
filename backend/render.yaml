@@ -3,11 +3,20 @@ services:
     name: kingo-backend
     runtime: python
     buildCommand: |
+      if [ -f runtime.txt ]; then
+        PYTHON_VERSION=$(cat runtime.txt | sed 's/python-//')
+        echo "Setting Python version to $PYTHON_VERSION"
+        pyenv install -s $PYTHON_VERSION
+        pyenv global $PYTHON_VERSION
+      fi
       python --version
       pip install --upgrade pip
       pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    env: python
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.7
       - key: DATABASE_URL
         value: postgresql://user:password@localhost/kingo
       - key: SECRET_KEY
