@@ -2,15 +2,17 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# 의존성 설치
-COPY requirements.txt .
+# Copy requirements from backend directory
+COPY backend/requirements.txt .
+
+# Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# 소스 복사
-COPY . .
+# Copy backend source code
+COPY backend/ .
 
 EXPOSE 8000
 
-# 앱 실행
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run uvicorn server (PORT is set by Render)
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
