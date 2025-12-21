@@ -2,11 +2,10 @@ services:
   - type: web
     name: kingo-backend
     runtime: python
+    rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.10
       - key: DATABASE_URL
         value: postgresql://user:password@localhost/kingo
       - key: SECRET_KEY
