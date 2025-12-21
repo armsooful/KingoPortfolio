@@ -16,7 +16,7 @@ services:
     env: python
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.7
+        value: 3.11.9
       - key: DATABASE_URL
         value: postgresql://user:password@localhost/kingo
       - key: SECRET_KEY
