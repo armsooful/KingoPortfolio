@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
 from datetime import datetime
 from typing import List, Optional
 
@@ -27,8 +27,7 @@ class UserResponse(BaseModel):
     name: Optional[str] = None
     created_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class Token(BaseModel):
@@ -61,8 +60,7 @@ class SurveyQuestionResponse(BaseModel):
     question: str
     options: List[SurveyQuestionOption]
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SurveyQuestionsListResponse(BaseModel):
@@ -111,8 +109,7 @@ class DiagnosisResponse(BaseModel):
     # AI 분석 필드 (선택)
     ai_analysis: Optional[dict] = None
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DiagnosisSummaryResponse(BaseModel):
@@ -124,8 +121,7 @@ class DiagnosisSummaryResponse(BaseModel):
     monthly_investment: Optional[int] = None
     created_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DiagnosisHistoryResponse(BaseModel):
@@ -149,8 +145,7 @@ class DiagnosisMeResponse(BaseModel):
     # AI 분석 필드 (선택)
     ai_analysis: Optional[dict] = None
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ============================================================
