@@ -39,7 +39,7 @@ function DiagnosisResultPage() {
     );
   }
 
-  const { investment_type, score, confidence, description, characteristics, recommended_ratio, expected_annual_return, monthly_investment } = result;
+  const { investment_type, score, confidence, description, characteristics, recommended_ratio, expected_annual_return, monthly_investment, ai_analysis } = result;
 
   // 투자성향별 색상 및 아이콘
   const typeConfig = {
@@ -119,6 +119,36 @@ function DiagnosisResultPage() {
           <h2>투자성향 설명</h2>
           <p>{description}</p>
         </div>
+
+        {/* AI 분석 섹션 */}
+        {ai_analysis && (
+          <div className="ai-analysis-section">
+            <h2>
+              <span className="ai-badge">🤖 AI 분석</span>
+            </h2>
+
+            {ai_analysis.personalized_analysis && (
+              <div className="ai-card">
+                <h3>개인화된 투자성향 분석</h3>
+                <p className="ai-content">{ai_analysis.personalized_analysis}</p>
+              </div>
+            )}
+
+            {ai_analysis.investment_advice && (
+              <div className="ai-card">
+                <h3>투자 조언</h3>
+                <p className="ai-content">{ai_analysis.investment_advice}</p>
+              </div>
+            )}
+
+            {ai_analysis.risk_warning && (
+              <div className="ai-card risk-warning">
+                <h3>⚠️ 위험 주의사항</h3>
+                <p className="ai-content">{ai_analysis.risk_warning}</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* 특징 */}
         <div className="characteristics-section">

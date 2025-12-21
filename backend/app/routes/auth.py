@@ -14,7 +14,6 @@ router = APIRouter(
     tags=["Authentication"]
 )
 
-
 @router.post("/signup", response_model=Token, status_code=201)
 async def signup(
     user_create: UserCreate,
@@ -70,7 +69,7 @@ async def signup(
         return {
             "access_token": access_token,
             "token_type": "bearer",
-            "user": UserResponse.from_orm(user)
+            "user": {"id": user.id, "email": user.email, "name": getattr(user, "name", None), "created_at": user.created_at}
         }
     
     except ValueError as e:
@@ -87,7 +86,6 @@ async def signup(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
-
 
 @router.post("/login", response_model=Token)
 async def login(
@@ -122,9 +120,8 @@ async def login(
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "user": UserResponse.from_orm(user)
+        "user": {"id": user.id, "email": user.email, "name": getattr(user, "name", None), "created_at": user.created_at}
     }
-
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(__import__("app.auth", fromlist=["get_current_user"]).get_current_user)):
@@ -133,4 +130,4 @@ async def get_me(current_user: User = Depends(__import__("app.auth", fromlist=["
     
     **권한**: 로그인 필수
     """
-    return UserResponse.from_orm(current_user)
+    return {"id": current_user.id, "email": current_user.email, "name": getattr(current_user, "name", None), "created_at": current_user.created_at}

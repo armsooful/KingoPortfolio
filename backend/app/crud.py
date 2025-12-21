@@ -3,10 +3,10 @@ from sqlalchemy.exc import IntegrityError
 from fastapi import Depends, HTTPException, status
 
 from app.database import get_db
-from app.models import User, SurveyQuestion, Diagnosis
+from app.models import User
 from app.schemas import UserCreate
 from app.auth import hash_password, verify_password
-
+import app.models as models
 
 # ============ USER CRUD ============
 
@@ -14,11 +14,9 @@ def get_user_by_email(db: Session, email: str):
     """이메일로 사용자 조회"""
     return db.query(User).filter(User.email == email).first()
 
-
 def get_user_by_id(db: Session, user_id: int):
     """ID로 사용자 조회"""
     return db.query(User).filter(User.id == user_id).first()
-
 
 def create_user(db: Session, user_create: UserCreate):
     """새 사용자 생성"""
@@ -31,9 +29,7 @@ def create_user(db: Session, user_create: UserCreate):
     # ✅ FIX 1: full_name → name
     db_user = User(
         email=user_create.email,
-        hashed_password=hashed_password,
-        name=user_create.name,
-    )
+        hashed_password=hashed_password,    )
     
     try:
         db.add(db_user)
@@ -47,19 +43,33 @@ def create_user(db: Session, user_create: UserCreate):
         db.rollback()
         raise Exception(f"Failed to create user: {str(e)}")
 
-
 def authenticate_user(db: Session, email: str, password: str):
     """사용자 인증 (로그인)"""
-    user = get_user_by_email(db, email)
-    
-    if not user:
-        return None
-    
-    if not verify_password(password, user.hashed_password):
-        return None
-    
-    return user
+    print("\n" + "="*60)
+    print("🔐 authenticate_user 호출됨")
+    print(f"이메일: {email}")
+    print(f"입력 비밀번호: {password}")
+    print(f"비밀번호 길이: {len(password)}")
+    print(f"비밀번호 바이트: {len(password.encode('utf-8'))}")
 
+    user = get_user_by_email(db, email)
+
+    if not user:
+        print("❌ 사용자 없음")
+        print("="*60 + "\n")
+        return None
+
+    print(f"✅ 사용자 발견: {user.email}")
+    print(f"DB 해시: {user.hashed_password[:50]}...")
+
+    verification_result = verify_password(password, user.hashed_password)
+    print(f"비밀번호 검증 결과: {verification_result}")
+    print("="*60 + "\n")
+
+    if not verification_result:
+        return None
+
+    return user
 
 def update_user(db: Session, user_id: int, **kwargs):
     """사용자 정보 업데이트"""
@@ -80,7 +90,6 @@ def update_user(db: Session, user_id: int, **kwargs):
         db.rollback()
         raise Exception(f"Failed to update user: {str(e)}")
 
-
 def delete_user(db: Session, user_id: int):
     """사용자 삭제"""
     user = get_user_by_id(db, user_id)
@@ -96,32 +105,27 @@ def delete_user(db: Session, user_id: int):
         db.rollback()
         raise Exception(f"Failed to delete user: {str(e)}")
 
-
 # ============ SURVEY QUESTION CRUD ============
 
 def get_survey_questions(db: Session):
     """모든 설문 질문 조회"""
-    return db.query(SurveyQuestion).all()
-
+    return db.query(models.SurveyQuestion).all()
 
 def get_all_survey_questions(db: Session):
     """모든 설문 질문 조회 (별칭)"""
     return get_survey_questions(db)
 
-
 def get_survey_question_by_id(db: Session, question_id: int):
     """ID로 설문 질문 조회"""
-    return db.query(SurveyQuestion).filter(SurveyQuestion.id == question_id).first()
-
+    return db.query(models.SurveyQuestion).filter(models.SurveyQuestion.id == question_id).first()
 
 def get_survey_questions_by_category(db: Session, category: str):
     """카테고리별 설문 질문 조회"""
-    return db.query(SurveyQuestion).filter(SurveyQuestion.category == category).all()
-
+    return db.query(models.SurveyQuestion).filter(models.SurveyQuestion.category == category).all()
 
 def create_survey_question(db: Session, **kwargs):
     """새 설문 질문 생성"""
-    question = SurveyQuestion(**kwargs)
+    question = models.SurveyQuestion(**kwargs)
     
     try:
         db.add(question)
@@ -131,7 +135,6 @@ def create_survey_question(db: Session, **kwargs):
     except Exception as e:
         db.rollback()
         raise Exception(f"Failed to create question: {str(e)}")
-
 
 def update_survey_question(db: Session, question_id: int, **kwargs):
     """설문 질문 업데이트"""
@@ -152,7 +155,6 @@ def update_survey_question(db: Session, question_id: int, **kwargs):
         db.rollback()
         raise Exception(f"Failed to update question: {str(e)}")
 
-
 def delete_survey_question(db: Session, question_id: int):
     """설문 질문 삭제"""
     question = get_survey_question_by_id(db, question_id)
@@ -168,18 +170,15 @@ def delete_survey_question(db: Session, question_id: int):
         db.rollback()
         raise Exception(f"Failed to delete question: {str(e)}")
 
-
 # ============ HELPER FUNCTIONS ============
 
 def count_users(db: Session):
     """총 사용자 수"""
     return db.query(User).count()
 
-
 def count_survey_questions(db: Session):
     """총 설문 질문 수"""
-    return db.query(SurveyQuestion).count()
-
+    return db.query(models.SurveyQuestion).count()
 
 # ============ DIAGNOSIS CRUD ============
 
@@ -198,7 +197,7 @@ def create_diagnosis(db: Session, user_id: str, investment_type: str, score: flo
     """
     # ✅ FIX 2: personality_type → investment_type (파라미터명)
     # ✅ FIX 3: confidence 파라미터 추가
-    diagnosis = Diagnosis(
+    diagnosis = models.Diagnosis(
         user_id=user_id,
         investment_type=investment_type,
         score=score,
@@ -214,9 +213,8 @@ def create_diagnosis(db: Session, user_id: str, investment_type: str, score: flo
         
         # 답변 저장 (선택사항)
         if answers:
-            from app.models import DiagnosisAnswer
             for answer in answers:
-                diagnosis_answer = DiagnosisAnswer(
+                diagnosis_answer = models.DiagnosisAnswer(
                     diagnosis_id=diagnosis.id,
                     question_id=answer.question_id,
                     answer_value=answer.answer_value
@@ -229,18 +227,15 @@ def create_diagnosis(db: Session, user_id: str, investment_type: str, score: flo
         db.rollback()
         raise Exception(f"Failed to create diagnosis: {str(e)}")
 
-
 def get_diagnosis_by_id(db: Session, diagnosis_id: str):
     """ID로 진단 결과 조회"""
-    return db.query(Diagnosis).filter(Diagnosis.id == diagnosis_id).first()
-
+    return db.query(models.Diagnosis).filter(models.Diagnosis.id == diagnosis_id).first()
 
 def get_diagnoses_by_user(db: Session, user_id: str):
     """사용자의 모든 진단 결과 조회"""
-    return db.query(Diagnosis).filter(Diagnosis.user_id == user_id).order_by(
-        Diagnosis.created_at.desc()
+    return db.query(models.Diagnosis).filter(models.Diagnosis.user_id == user_id).order_by(
+        models.Diagnosis.created_at.desc()
     ).all()
-
 
 def get_user_diagnoses(db: Session, user_id: str, limit: int = 10):
     """사용자의 진단 결과 조회 (최대 limit개)
@@ -251,22 +246,19 @@ def get_user_diagnoses(db: Session, user_id: str, limit: int = 10):
         limit: 조회할 최대 개수 (기본값: 10)
     """
     # ✅ FIX 4: limit 파라미터 추가
-    return db.query(Diagnosis).filter(Diagnosis.user_id == user_id).order_by(
-        Diagnosis.created_at.desc()
+    return db.query(models.Diagnosis).filter(models.Diagnosis.user_id == user_id).order_by(
+        models.Diagnosis.created_at.desc()
     ).limit(limit).all()
-
 
 def get_latest_diagnosis(db: Session, user_id: str):
     """사용자의 최신 진단 결과 조회"""
-    return db.query(Diagnosis).filter(Diagnosis.user_id == user_id).order_by(
-        Diagnosis.created_at.desc()
+    return db.query(models.Diagnosis).filter(models.Diagnosis.user_id == user_id).order_by(
+        models.Diagnosis.created_at.desc()
     ).first()
-
 
 def get_user_latest_diagnosis(db: Session, user_id: str):
     """사용자의 최신 진단 결과 조회 (별칭)"""
     return get_latest_diagnosis(db, user_id)
-
 
 def update_diagnosis(db: Session, diagnosis_id: str, **kwargs):
     """진단 결과 업데이트"""
@@ -286,7 +278,6 @@ def update_diagnosis(db: Session, diagnosis_id: str, **kwargs):
     except Exception as e:
         db.rollback()
         raise Exception(f"Failed to update diagnosis: {str(e)}")
-
 
 def delete_diagnosis(db: Session, diagnosis_id: str):
     """진단 결과 삭제"""

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // API 기본 설정
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -36,7 +36,7 @@ api.interceptors.response.use(
 );
 
 // ============================================================
-// Auth API (⭐ /api 제거!)
+// Auth API
 // ============================================================
 
 /**
@@ -47,10 +47,20 @@ export const signUp = (data) => {
 };
 
 /**
- * 로그인
+ * 로그인 (OAuth2 형식)
  */
 export const login = (data) => {
-  return api.post('/auth/login', data);
+  // OAuth2 형식으로 변환 (form-urlencoded)
+  const formData = new URLSearchParams();
+  // email을 username으로 매핑 (OAuth2 표준)
+  formData.append('username', data.email || data.username);
+  formData.append('password', data.password);
+
+  return api.post('/token', formData, {
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+  });
 };
 
 /**
@@ -69,7 +79,7 @@ export const logout = () => {
 };
 
 // ============================================================
-// Survey API (⭐ /api 제거!)
+// Survey API
 // ============================================================
 
 /**
@@ -87,7 +97,7 @@ export const getSurveyQuestion = (questionId) => {
 };
 
 // ============================================================
-// Diagnosis API (⭐ /api 제거!)
+// Diagnosis API
 // ============================================================
 
 /**
@@ -130,3 +140,76 @@ export const healthCheck = () => {
 };
 
 export default api;
+// ============================================================
+// Admin API
+// ============================================================
+
+/**
+ * 모든 종목 데이터 수집
+ */
+export const loadAllData = () => {
+  return api.post('/admin/load-data');
+};
+
+/**
+ * 주식 데이터만 수집
+ */
+export const loadStocks = () => {
+  return api.post('/admin/load-stocks');
+};
+
+/**
+ * ETF 데이터만 수집
+ */
+export const loadETFs = () => {
+  return api.post('/admin/load-etfs');
+};
+
+/**
+ * DB 데이터 현황 조회
+ */
+export const getDataStatus = () => {
+  return api.get('/admin/data-status');
+};
+
+/**
+ * 진행 상황 조회 (특정 task)
+ */
+export const getProgress = (taskId) => {
+  return api.get(`/admin/progress/${taskId}`);
+};
+
+/**
+ * 모든 진행 상황 조회
+ */
+export const getAllProgress = () => {
+  return api.get('/admin/progress');
+};
+
+/**
+ * 적재된 주식 데이터 조회
+ */
+export const getStocks = (skip = 0, limit = 100) => {
+  return api.get(`/admin/stocks?skip=${skip}&limit=${limit}`);
+};
+
+/**
+ * 적재된 ETF 데이터 조회
+ */
+export const getETFs = (skip = 0, limit = 100) => {
+  return api.get(`/admin/etfs?skip=${skip}&limit=${limit}`);
+};
+
+/**
+ * 적재된 채권 데이터 조회
+ */
+export const getBonds = (skip = 0, limit = 100) => {
+  return api.get(`/admin/bonds?skip=${skip}&limit=${limit}`);
+};
+
+/**
+ * 적재된 예적금 데이터 조회
+ */
+export const getDeposits = (skip = 0, limit = 100) => {
+  return api.get(`/admin/deposits?skip=${skip}&limit=${limit}`);
+};

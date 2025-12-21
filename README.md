@@ -129,11 +129,18 @@ KingoPortfolio/
 │   │   ├── crud.py                 # 데이터베이스 CRUD 함수
 │   │   ├── auth.py                 # JWT 인증 로직
 │   │   ├── diagnosis.py            # 진단 알고리즘
-│   │   └── routes/
-│   │       ├── __init__.py
-│   │       ├── auth.py             # POST /auth/signup, login
-│   │       ├── survey.py           # GET /survey/questions
-│   │       └── diagnosis.py        # POST /diagnosis/submit
+│   │   ├── data_collector.py       # yfinance 데이터 수집
+│   │   ├── progress_tracker.py     # 진행 상황 추적
+│   │   ├── routes/
+│   │   │   ├── __init__.py
+│   │   │   ├── auth.py             # POST /auth/signup, login
+│   │   │   ├── survey.py           # GET /survey/questions
+│   │   │   ├── diagnosis.py        # POST /diagnosis/submit
+│   │   │   └── admin.py            # 관리자 기능
+│   │   ├── services/
+│   │   │   └── data_loader.py      # 데이터 로딩 서비스
+│   │   └── models/
+│   │       └── financial_products.py  # 금융상품 모델
 │   ├── requirements.txt             # Python 의존성
 │   ├── runtime.txt                  # Python 버전 (3.11)
 │   ├── render.yaml                  # Render 배포 설정
@@ -147,10 +154,12 @@ KingoPortfolio/
 │   │   │   ├── SignupPage.jsx      # 회원가입
 │   │   │   ├── SurveyPage.jsx      # 설문 조사
 │   │   │   ├── DiagnosisResultPage.jsx    # 진단 결과
-│   │   │   └── DiagnosisHistoryPage.jsx   # 진단 이력
+│   │   │   ├── DiagnosisHistoryPage.jsx   # 진단 이력
+│   │   │   └── AdminPage.jsx       # 관리자 페이지
 │   │   ├── components/
 │   │   │   ├── Header.jsx          # 헤더 (네비게이션)
-│   │   │   └── SurveyQuestion.jsx  # 설문 문항 컴포넌트
+│   │   │   ├── SurveyQuestion.jsx  # 설문 문항 컴포넌트
+│   │   │   └── ProgressBar.jsx     # 진행률 표시 컴포넌트
 │   │   ├── services/
 │   │   │   └── api.js              # API 통신 (Axios)
 │   │   ├── styles/
@@ -168,13 +177,32 @@ KingoPortfolio/
 │   └── README.md
 │
 ├── docs/                            # 문서
-│   └── 20251217/                    # 날짜별 문서
+│   ├── manuals/                     # 📚 사용 매뉴얼 모음
+│   │   ├── README.md               # 매뉴얼 인덱스
+│   │   ├── QUICK_START.md          # 빠른 시작 가이드
+│   │   ├── DATA_COLLECTION_GUIDE.md     # 데이터 수집 가이드
+│   │   ├── PROGRESS_MONITORING_GUIDE.md # 진행 상황 모니터링
+│   │   ├── DATABASE_GUIDE.md       # 데이터베이스 가이드
+│   │   ├── ADMIN_TROUBLESHOOTING.md    # 관리자 문제 해결
+│   │   ├── LOGIN_DEBUG_GUIDE.md    # 로그인 디버깅
+│   │   ├── TEST_GUIDE.md           # 테스트 가이드
+│   │   └── ... (기타 매뉴얼)
+│   └── 20251217/                    # 날짜별 프로젝트 문서
+│
+├── scripts/                         # 🛠️ 유틸리티 스크립트
+│   ├── README.md                   # 스크립트 가이드
+│   ├── start_servers.sh            # 서버 시작
+│   ├── view_db.sh                  # DB 조회
+│   ├── check_system.sh             # 시스템 점검
+│   ├── test_api.py                 # API 테스트
+│   ├── test_data_collector.py      # 데이터 수집 테스트
+│   └── test_data_classifier.py     # 분류 테스트
 │
 ├── .gitignore                       # Git 무시 파일
 ├── README.md                        # 이 파일
-├── docker-compose.yml               # Docker Compose (선택사항)
-└── .github/
-    └── workflows/                   # CI/CD (준비 중)
+├── Dockerfile                       # Docker 설정
+└── .claude/                         # Claude Code 설정
+    └── settings.local.json
 ```
 
 ---
@@ -545,10 +573,42 @@ git commit -m "docs: Update API documentation"
 
 ## 📚 추가 리소스
 
+### 📖 사용 매뉴얼
+모든 매뉴얼은 [docs/manuals/](docs/manuals/) 폴더에 정리되어 있습니다.
+
+- [빠른 시작 가이드](docs/manuals/QUICK_START.md) - 프로젝트 시작
+- [데이터 수집 가이드](docs/manuals/DATA_COLLECTION_GUIDE.md) - yfinance 데이터 수집
+- [진행 상황 모니터링](docs/manuals/PROGRESS_MONITORING_GUIDE.md) - 실시간 진행률 표시
+- [데이터베이스 가이드](docs/manuals/DATABASE_GUIDE.md) - DB 조회 및 관리
+- [관리자 문제 해결](docs/manuals/ADMIN_TROUBLESHOOTING.md) - 일반적인 문제 해결
+- [로그인 디버깅](docs/manuals/LOGIN_DEBUG_GUIDE.md) - 로그인 문제 해결
+- [테스트 가이드](docs/manuals/TEST_GUIDE.md) - 테스트 방법
+
+전체 매뉴얼 목록: [docs/manuals/README.md](docs/manuals/README.md)
+
+### 🛠️ 유틸리티 스크립트
+모든 스크립트는 [scripts/](scripts/) 폴더에 정리되어 있습니다.
+
+```bash
+# 서버 시작
+./scripts/start_servers.sh
+
+# 데이터베이스 조회
+./scripts/view_db.sh all
+
+# 시스템 점검
+./scripts/check_system.sh
+
+# API 테스트
+python scripts/test_api.py
+```
+
+전체 스크립트 가이드: [scripts/README.md](scripts/README.md)
+
+### 🔗 기타 리소스
 - [개발 일지](./docs/)
 - [API 명세서](https://kingo-backend.onrender.com/docs)
-- [배포 가이드](./docs/DEPLOYMENT.md)
-- [기여 가이드](./CONTRIBUTING.md)
+- [프로젝트 계획](./docs/FinPortfolio_ProjectPlan.md)
 
 ---
 
@@ -614,6 +674,12 @@ git commit -m "docs: Update API documentation"
 
 ## 📌 마지막 업데이트
 
-**날짜**: 2025년 12월 18일  
-**버전**: 1.0.0  
+**날짜**: 2025년 12월 21일
+**버전**: 1.0.0
 **상태**: 프로덕션 준비 완료 ✅
+
+### 최근 변경사항
+- ✅ 실시간 진행 상황 모니터링 기능 추가 ([PROGRESS_MONITORING_GUIDE.md](docs/manuals/PROGRESS_MONITORING_GUIDE.md))
+- ✅ yfinance 데이터 수집 오류 수정 (v0.2.32 → v0.2.66)
+- ✅ 로그인 email/username 매핑 문제 해결
+- ✅ 프로젝트 구조 정리 (docs/manuals, scripts 폴더 분리)

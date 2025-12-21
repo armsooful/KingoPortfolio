@@ -1094,3 +1094,94 @@ body {
   }
 }
 
+
+/* ============================================================
+   AI Analysis Section
+   ============================================================ */
+
+.ai-analysis-section {
+  margin: 30px 0;
+  padding: 25px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: var(--border-radius);
+  color: white;
+}
+
+.ai-analysis-section h2 {
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.ai-card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: var(--border-radius);
+  padding: 20px;
+  margin-bottom: 15px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  color: #333;
+}
+
+.ai-card:last-child {
+  margin-bottom: 0;
+}
+
+.ai-card h3 {
+  color: #667eea;
+  font-size: 1.2rem;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.ai-card.risk-warning {
+  border-left: 4px solid #ff6b6b;
+}
+
+.ai-card.risk-warning h3 {
+  color: #ff6b6b;
+}
+
+.ai-content {
+  line-height: 1.8;
+  font-size: 1rem;
+  color: #555;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+@media (max-width: 768px) {
+  .ai-analysis-section {
+    padding: 20px;
+  }
+
+  .ai-card {
+    padding: 15px;
+  }
+
+  .ai-badge {
+    font-size: 0.9rem;
+    padding: 6px 12px;
+  }
+
+  .ai-card h3 {
+    font-size: 1.1rem;
+  }
+
+  .ai-content {
+    font-size: 0.95rem;
+  }
+}
+

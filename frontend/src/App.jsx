@@ -7,6 +7,7 @@ import SignupPage from './pages/SignupPage';
 import SurveyPage from './pages/SurveyPage';
 import DiagnosisResultPage from './pages/DiagnosisResultPage';
 import DiagnosisHistoryPage from './pages/DiagnosisHistoryPage';
+import AdminPage from './pages/AdminPage';
 import './styles/App.css';
 
 // ============================================================
@@ -147,6 +148,14 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminPage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Default Route */}
           <Route path="/" element={<Navigate to="/survey" replace />} />
@@ -159,7 +168,12 @@ function AppContent() {
 
 function App() {
   return (
-    <Router>
+    <Router
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <AuthProvider>
         <AppContent />
       </AuthProvider>

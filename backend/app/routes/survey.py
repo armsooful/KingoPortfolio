@@ -1,101 +1,30 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from app.database import get_db
-from app.models import User, SurveyQuestion
-from app.schemas import SurveyQuestionResponse, SurveyQuestionOption, SurveyQuestionsListResponse
+from fastapi import APIRouter, Depends
 from app.auth import get_current_user
-from app.crud import get_survey_questions, get_survey_question_by_id
 
-router = APIRouter(
-    prefix="/survey",
-    tags=["Survey"]
-)
+router = APIRouter(prefix="/api/survey", tags=["Survey"])
 
+SURVEY_QUESTIONS = [
+    {"id": 1, "category": "experience", "question": "당신의 투자 경험은?", "options": [{"value": "A", "text": "처음입니다", "weight": 1.0}, {"value": "B", "text": "약간 있습니다", "weight": 2.0}, {"value": "C", "text": "충분합니다", "weight": 3.0}]},
+    {"id": 2, "category": "experience", "question": "투자로 손실을 본 경험이 있으신가요?", "options": [{"value": "A", "text": "없습니다", "weight": 1.0}, {"value": "B", "text": "작은 손실을 본 적 있습니다", "weight": 2.0}, {"value": "C", "text": "큰 손실을 본 적 있습니다", "weight": 3.0}]},
+    {"id": 3, "category": "duration", "question": "투자 계획 기간은?", "options": [{"value": "A", "text": "1년 이하", "weight": 1.0}, {"value": "B", "text": "1-3년", "weight": 2.5}, {"value": "C", "text": "3년 이상", "weight": 3.0}]},
+    {"id": 4, "category": "duration", "question": "투자 목표는?", "options": [{"value": "A", "text": "안정적 자산 보관", "weight": 1.0}, {"value": "B", "text": "적당한 자산 증식", "weight": 2.0}, {"value": "C", "text": "높은 수익 추구", "weight": 3.0}]},
+    {"id": 5, "category": "risk", "question": "포트폴리오가 10% 하락했을 때?", "options": [{"value": "A", "text": "즉시 팔고 싶습니다", "weight": 1.0}, {"value": "B", "text": "지켜보겠습니다", "weight": 2.0}, {"value": "C", "text": "오히려 더 사고 싶습니다", "weight": 3.0}]},
+    {"id": 6, "category": "risk", "question": "자산 변동성을 얼마나 견딜 수 있나요?", "options": [{"value": "A", "text": "거의 못 견딥니다", "weight": 1.0}, {"value": "B", "text": "어느 정도 견딜 수 있습니다", "weight": 2.0}, {"value": "C", "text": "충분히 견딜 수 있습니다", "weight": 3.0}]},
+    {"id": 7, "category": "risk", "question": "위험을 감수할 의향이 있으신가요?", "options": [{"value": "A", "text": "아니요, 안정성을 원합니다", "weight": 1.0}, {"value": "B", "text": "적정 수준의 위험은 괜찮습니다", "weight": 2.0}, {"value": "C", "text": "높은 수익을 위해 위험을 감수하겠습니다", "weight": 3.0}]},
+    {"id": 8, "category": "risk", "question": "투자금의 최대 손실을 어느 정도까지 허용하나요?", "options": [{"value": "A", "text": "0% (손실 불가)", "weight": 1.0}, {"value": "B", "text": "10% 이내", "weight": 2.0}, {"value": "C", "text": "20% 이상", "weight": 3.0}]},
+    {"id": 9, "category": "knowledge", "question": "금융상품에 대해 얼마나 알고 있나요?", "options": [{"value": "A", "text": "거의 모릅니다", "weight": 1.0}, {"value": "B", "text": "기본 개념 정도 압니다", "weight": 2.0}, {"value": "C", "text": "깊이 있게 알고 있습니다", "weight": 3.0}]},
+    {"id": 10, "category": "knowledge", "question": "투자 결정은 어떻게 하시나요?", "options": [{"value": "A", "text": "전문가 조언을 따릅니다", "weight": 1.5}, {"value": "B", "text": "스스로 분석하고 결정합니다", "weight": 2.0}, {"value": "C", "text": "충분한 분석 후 독립적으로 결정합니다", "weight": 2.5}]},
+    {"id": 11, "category": "amount", "question": "정기적인 투자 계획이 있으신가요?", "options": [{"value": "A", "text": "아니요, 수익이 나면 팔려고 합니다", "weight": 1.0}, {"value": "B", "text": "가끔 추가로 투자합니다", "weight": 2.0}, {"value": "C", "text": "정기적으로 계속 투자할 예정입니다", "weight": 3.0}]},
+    {"id": 12, "category": "amount", "question": "월 투자 가능액은 대략 어느 정도인가요?", "options": [{"value": "A", "text": "10-50만원", "weight": 1.0}, {"value": "B", "text": "50-300만원", "weight": 2.0}, {"value": "C", "text": "300만원 이상", "weight": 3.0}]},
+    {"id": 13, "category": "risk", "question": "투자 성과를 어자 자주 확인하나요?", "options": [{"value": "A", "text": "매일 확인합니다", "weight": 1.0}, {"value": "B", "text": "주 1-2회 확인합니다", "weight": 2.0}, {"value": "C", "text": "월 1회 이상 확인합니다", "weight": 3.0}]},
+    {"id": 14, "category": "risk", "question": "시장이 급락할 때 당신의 반응은?", "options": [{"value": "A", "text": "불안해서 매도하고 싶습니다", "weight": 1.0}, {"value": "B", "text": "중립적으로 지켜봅니다", "weight": 2.0}, {"value": "C", "text": "기회라고 생각하고 매수합니다", "weight": 3.0}]},
+    {"id": 15, "category": "duration", "question": "투자 외 금융 생활은 안정적인가요?", "options": [{"value": "A", "text": "생활비 충당이 어렵습니다", "weight": 1.0}, {"value": "B", "text": "생활비는 괜찮지만 여유가 적습니다", "weight": 2.0}, {"value": "C", "text": "여유로운 자금으로 투자합니다", "weight": 3.0}]},
+]
 
-def format_survey_question(question: SurveyQuestion) -> SurveyQuestionResponse:
-    """설문 문항을 응답 형식으로 변환"""
-    
-    options = [
-        SurveyQuestionOption(
-            value="A",
-            text=question.option_a,
-            weight=question.weight_a
-        ),
-        SurveyQuestionOption(
-            value="B",
-            text=question.option_b,
-            weight=question.weight_b
-        )
-    ]
-    
-    # option_c가 있으면 추가
-    if question.option_c and question.weight_c:
-        options.append(
-            SurveyQuestionOption(
-                value="C",
-                text=question.option_c,
-                weight=question.weight_c
-            )
-        )
-    
-    return SurveyQuestionResponse(
-        id=question.id,
-        category=question.category,
-        question=question.question,
-        options=options
-    )
+@router.get("/questions")
+async def get_survey_questions(current_user = Depends(get_current_user)):
+    return {"total": len(SURVEY_QUESTIONS), "questions": SURVEY_QUESTIONS}
 
-
-@router.get(
-    "/questions",
-    response_model=SurveyQuestionsListResponse,
-    summary="설문 문항 조회",
-    description="투자성향 진단을 위한 모든 설문 문항을 조회합니다."
-)
-async def get_questions(db: Session = Depends(get_db)):
-    """
-    설문 문항 조회
-    
-    모든 설문 문항과 선택지를 반환합니다.
-    """
-    
-    questions = get_survey_questions(db)
-    
-    if not questions:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Survey questions not found"
-        )
-    
-    formatted_questions = [format_survey_question(q) for q in questions]
-    
-    return SurveyQuestionsListResponse(
-        total=len(formatted_questions),
-        questions=formatted_questions
-    )
-
-
-@router.get(
-    "/questions/{question_id}",
-    response_model=SurveyQuestionResponse,
-    summary="특정 설문 문항 조회"
-)
-async def get_question(
-    question_id: int,
-    db: Session = Depends(get_db)
-):
-    """
-    특정 설문 문항 조회
-    
-    - **question_id**: 문항 ID
-    """
-    
-    question = get_survey_question_by_id(db, question_id)
-    
-    if not question:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Question {question_id} not found"
-        )
-    
-    return format_survey_question(question)
+@router.post("/submit")
+async def submit_survey(data: dict, current_user = Depends(get_current_user)):
+    return {"status": "success", "message": "설문이 접수되었습니다"}

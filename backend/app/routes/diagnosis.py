@@ -4,6 +4,7 @@ from app.database import get_db
 from app.models import User
 from app.schemas import DiagnosisSubmitRequest, DiagnosisResponse, DiagnosisMeResponse, DiagnosisHistoryResponse, DiagnosisSummaryResponse
 from app.auth import get_current_user
+import app.models as models
 from app.crud import (
     create_diagnosis,
     get_user_diagnoses,
@@ -11,12 +12,12 @@ from app.crud import (
     get_diagnosis_by_id
 )
 from app.diagnosis import calculate_diagnosis, build_diagnosis_response
+from app.services.claude_service import get_claude_service
 
 router = APIRouter(
     prefix="/diagnosis",
     tags=["Diagnosis"]
 )
-
 
 @router.post(
     "/submit",
@@ -66,7 +67,7 @@ async def submit_survey(
     try:
         # 진단 계산
         investment_type, score, confidence = calculate_diagnosis(request.answers)
-        
+
         # DB에 저장
         diagnosis = create_diagnosis(
             db=db,
@@ -77,7 +78,7 @@ async def submit_survey(
             answers=request.answers,
             monthly_investment=request.monthly_investment
         )
-        
+
         # 응답 빌드
         response_data = build_diagnosis_response(
             diagnosis_id=diagnosis.id,
@@ -87,15 +88,30 @@ async def submit_survey(
             monthly_investment=diagnosis.monthly_investment,
             created_at=diagnosis.created_at
         )
-        
+
+        # Claude AI 분석 추가 (선택적 - API 키가 있을 때만)
+        try:
+            claude_service = get_claude_service()
+            ai_analysis = claude_service.analyze_investment_profile(
+                answers=request.answers,
+                investment_type=investment_type,
+                score=score,
+                confidence=confidence,
+                monthly_investment=request.monthly_investment
+            )
+            response_data["ai_analysis"] = ai_analysis
+        except Exception as ai_error:
+            # AI 분석 실패 시 로그만 남기고 계속 진행
+            print(f"Claude AI 분석 실패 (무시됨): {str(ai_error)}")
+            response_data["ai_analysis"] = None
+
         return DiagnosisResponse(**response_data)
-    
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Diagnosis failed: {str(e)}"
         )
-
 
 @router.get(
     "/me",
@@ -133,7 +149,6 @@ async def get_latest_diagnosis(
     )
     
     return DiagnosisMeResponse(**response_data)
-
 
 @router.get(
     "/{diagnosis_id}",
@@ -179,7 +194,6 @@ async def get_diagnosis(
     
     return DiagnosisMeResponse(**response_data)
 
-
 @router.get(
     "/history/all",
     response_model=DiagnosisHistoryResponse,
@@ -217,3 +231,37 @@ async def get_diagnosis_history(
         total=len(summary_list),
         diagnoses=summary_list
     )
+
+# 기존 GET /diagnosis/me/products에 추가
+
+@router.get("/me/products")
+async def get_recommended_products(
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """DB 기반 추천 종목 조회"""
+    
+    diagnosis = db.query(models.Diagnosis).filter(
+        models.Diagnosis.user_id == current_user.id
+    ).order_by(models.Diagnosis.created_at.desc()).first()
+    
+    if not diagnosis:
+        raise HTTPException(
+            status_code=404,
+            detail="진단 결과가 없습니다"
+        )
+    
+    # DB 기반 추천
+    from app.db_recommendation_engine import DBRecommendationEngine
+    
+    recommendations = DBRecommendationEngine.get_all_recommendations(
+        db,
+        diagnosis.investment_type
+    )
+    
+    return {
+        "diagnosis_id": str(diagnosis.id),
+        "investment_type": diagnosis.investment_type,
+        "portfolio": diagnosis.portfolio_recommendation,
+        **recommendations
+    }

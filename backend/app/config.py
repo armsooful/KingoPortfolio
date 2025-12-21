@@ -22,6 +22,12 @@ class Settings:
     )
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
+
+    # Claude AI
+    anthropic_api_key: str = os.getenv(
+        "ANTHROPIC_API_KEY",
+        ""
+    )
     
     # CORS
     allowed_origins: List[str] = []

@@ -108,6 +108,8 @@ class DiagnosisResponse(BaseModel):
     recommended_ratio: dict
     expected_annual_return: str
     created_at: datetime
+    # AI 분석 필드 (선택)
+    ai_analysis: Optional[dict] = None
 
     class Config:
         orm_mode = True
@@ -144,6 +146,8 @@ class DiagnosisMeResponse(BaseModel):
     recommended_ratio: dict
     expected_annual_return: str
     created_at: datetime
+    # AI 분석 필드 (선택)
+    ai_analysis: Optional[dict] = None
 
     class Config:
         orm_mode = True
