@@ -4,23 +4,7 @@ from datetime import datetime
 import uuid
 from app.database import Base
 
-
-class User(Base):
-    """사용자 모델"""
-    __tablename__ = "users"
-
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    email = Column(String(100), unique=True, index=True, nullable=False)
-    hashed_password  = Column(String(255), nullable=False)
-    name = Column(String(50), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    # 관계
-    diagnoses = relationship("Diagnosis", back_populates="user", cascade="all, delete-orphan")
-
-    def __repr__(self):
-        return f"<User {self.email}>"
+# User 모델은 app.models.user에 정의되어 있음
 
 
 class Diagnosis(Base):
