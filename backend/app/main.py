@@ -14,8 +14,10 @@ from app.database import SessionLocal
 from app.models import securities  # noqa
 
 def init_db():
+    # 개발/테스트: 기존 테이블 삭제 후 재생성 (데이터 손실)
+    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
-    print("✅ Database initialized")
+    print("✅ Database initialized (tables recreated)")
 
 
 @asynccontextmanager
