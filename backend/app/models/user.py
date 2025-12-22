@@ -1,11 +1,9 @@
 # app/models/user.py
 
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
-from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
 import uuid
-
-Base = declarative_base()
+from app.database import Base
 
 class User(Base):
     """사용자 모델"""
