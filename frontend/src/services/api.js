@@ -213,3 +213,210 @@ export const getBonds = (skip = 0, limit = 100) => {
 export const getDeposits = (skip = 0, limit = 100) => {
   return api.get(`/admin/deposits?skip=${skip}&limit=${limit}`);
 };
+
+// ============================================================
+// Alpha Vantage API
+// ============================================================
+
+/**
+ * Alpha Vantage: 인기 미국 주식 전체 적재
+ */
+export const loadAllAlphaVantageStocks = () => {
+  return api.post('/admin/alpha-vantage/load-all-stocks');
+};
+
+/**
+ * Alpha Vantage: 특정 주식 적재
+ */
+export const loadAlphaVantageStock = (symbol) => {
+  return api.post(`/admin/alpha-vantage/load-stock/${symbol}`);
+};
+
+/**
+ * Alpha Vantage: 특정 주식의 재무제표 적재
+ */
+export const loadAlphaVantageFinancials = (symbol) => {
+  return api.post(`/admin/alpha-vantage/load-financials/${symbol}`);
+};
+
+/**
+ * Alpha Vantage: 인기 미국 ETF 전체 적재
+ */
+export const loadAllAlphaVantageETFs = () => {
+  return api.post('/admin/alpha-vantage/load-all-etfs');
+};
+
+/**
+ * Alpha Vantage: 적재된 미국 주식 데이터 조회
+ */
+export const getAlphaVantageStocks = (skip = 0, limit = 100) => {
+  return api.get(`/admin/alpha-vantage/stocks?skip=${skip}&limit=${limit}`);
+};
+
+/**
+ * Alpha Vantage: 특정 주식의 재무제표 조회
+ */
+export const getAlphaVantageFinancials = (symbol) => {
+  return api.get(`/admin/alpha-vantage/financials/${symbol}`);
+};
+
+/**
+ * Alpha Vantage: DB 통계
+ */
+export const getAlphaVantageDataStatus = () => {
+  return api.get('/admin/alpha-vantage/data-status');
+};
+
+// ============================================================
+// pykrx (한국 주식) API
+// ============================================================
+
+/**
+ * pykrx: 인기 한국 주식 전체 적재
+ */
+export const loadAllPykrxStocks = () => {
+  return api.post('/admin/pykrx/load-all-stocks');
+};
+
+/**
+ * pykrx: 특정 한국 주식 적재
+ */
+export const loadPykrxStock = (ticker) => {
+  return api.post(`/admin/pykrx/load-stock/${ticker}`);
+};
+
+/**
+ * pykrx: 인기 한국 ETF 전체 적재
+ */
+export const loadAllPykrxETFs = () => {
+  return api.post('/admin/pykrx/load-all-etfs');
+};
+
+/**
+ * pykrx: 특정 한국 ETF 적재
+ */
+export const loadPykrxETF = (ticker) => {
+  return api.post(`/admin/pykrx/load-etf/${ticker}`);
+};
+
+// ============================================================
+// Financial Analysis API
+// ============================================================
+
+/**
+ * 재무 분석 조회
+ */
+export const getFinancialAnalysis = (symbol) => {
+  return api.get(`/admin/financial-analysis/${symbol}`);
+};
+
+/**
+ * 재무 건전성 점수 조회 (V1 - 보수적)
+ */
+export const getFinancialScore = (symbol) => {
+  return api.get(`/admin/financial-score/${symbol}`);
+};
+
+/**
+ * 재무 건전성 점수 조회 (V2 - 성장주 친화적)
+ */
+export const getFinancialScoreV2 = (symbol) => {
+  return api.get(`/admin/financial-score-v2/${symbol}`);
+};
+
+/**
+ * 종목 비교 분석
+ */
+export const compareFinancials = (symbols) => {
+  return api.post('/admin/financial-analysis/compare', symbols);
+};
+
+// ============================================================
+// Valuation API
+// ============================================================
+
+/**
+ * 멀티플 비교 분석
+ */
+export const getValuationMultiples = (symbol) => {
+  return api.get(`/admin/valuation/multiples/${symbol}`);
+};
+
+/**
+ * DCF 밸류에이션
+ */
+export const getDCFValuation = (symbol) => {
+  return api.get(`/admin/valuation/dcf/${symbol}`);
+};
+
+/**
+ * 배당할인모형 (DDM)
+ */
+export const getDDMValuation = (symbol) => {
+  return api.get(`/admin/valuation/ddm/${symbol}`);
+};
+
+/**
+ * 종합 밸류에이션 분석
+ */
+export const getComprehensiveValuation = (symbol) => {
+  return api.get(`/admin/valuation/comprehensive/${symbol}`);
+};
+
+// ============================================================
+// Quant Analysis API
+// ============================================================
+
+/**
+ * 종합 퀀트 분석
+ */
+export const getComprehensiveQuant = (symbol, marketSymbol = 'SPY', days = 252) => {
+  return api.get(`/admin/quant/comprehensive/${symbol}`, {
+    params: { market_symbol: marketSymbol, days }
+  });
+};
+
+/**
+ * 기술적 지표 분석
+ */
+export const getTechnicalIndicators = (symbol, days = 252) => {
+  return api.get(`/admin/quant/technical/${symbol}`, { params: { days } });
+};
+
+/**
+ * 리스크 지표 분석
+ */
+export const getRiskMetrics = (symbol, marketSymbol = 'SPY', days = 252) => {
+  return api.get(`/admin/quant/risk/${symbol}`, {
+    params: { market_symbol: marketSymbol, days }
+  });
+};
+
+// ============================================================
+// Report Generation API
+// ============================================================
+
+/**
+ * 종합 투자 리포트 생성
+ */
+export const getComprehensiveReport = (symbol, marketSymbol = 'SPY', days = 252) => {
+  return api.get(`/admin/report/comprehensive/${symbol}`, {
+    params: { market_symbol: marketSymbol, days }
+  });
+};
+
+/**
+ * 여러 종목 비교 리포트
+ */
+export const getComparisonReport = (symbols) => {
+  return api.post('/admin/report/comparison', symbols);
+};
+
+/**
+ * ============================================================
+ * 정성적 분석 (Qualitative Analysis - AI)
+ * ============================================================
+ */
+export const getNewsSentiment = (symbol) => {
+  return api.get(`/admin/qualitative/news-sentiment/${symbol}`);
+};

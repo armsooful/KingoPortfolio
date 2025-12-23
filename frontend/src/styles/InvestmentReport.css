@@ -1,0 +1,654 @@
+.investment-report {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.report-header {
+  margin-bottom: 30px;
+}
+
+.report-header h2 {
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #1a1a1a;
+}
+
+.report-subtitle {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.disclaimer {
+  padding: 16px;
+  background: #fff8e1;
+  border-left: 4px solid #FFC107;
+  border-radius: 4px;
+  margin-bottom: 24px;
+  font-size: 14px;
+  color: #666;
+}
+
+.disclaimer.bottom {
+  margin-top: 32px;
+  background: #ffebee;
+  border-left-color: #f44336;
+}
+
+.disclaimer.bottom p {
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #1a1a1a;
+}
+
+.disclaimer.bottom ul {
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.8;
+}
+
+.report-content {
+  animation: fadeIn 0.5s;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.report-info {
+  padding: 24px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+}
+
+.report-info h3 {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 12px;
+}
+
+.meta-info {
+  display: flex;
+  gap: 24px;
+  font-size: 14px;
+  color: #666;
+  flex-wrap: wrap;
+}
+
+.report-section {
+  margin-bottom: 32px;
+}
+
+.report-section h4 {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #1a1a1a;
+}
+
+/* 재무 건전성 카드 */
+.health-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.health-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.health-score {
+  text-align: center;
+}
+
+.score-label {
+  display: block;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.score-value {
+  display: block;
+  font-size: 48px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+}
+
+.score-grade {
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+  color: #4a90e2;
+}
+
+.health-category {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.category-label {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.category-tier {
+  font-size: 16px;
+  color: #666;
+}
+
+.investment-style {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.style-badge {
+  display: inline-block;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+  color: white;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.investment-style p {
+  margin: 8px 0 0 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.score-breakdown {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+}
+
+.breakdown-item {
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.breakdown-item span {
+  display: block;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.breakdown-item strong {
+  display: block;
+  font-size: 24px;
+  color: #1a1a1a;
+}
+
+/* 밸류에이션 카드 */
+.valuation-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.valuation-header {
+  margin-bottom: 24px;
+}
+
+.valuation-category {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.valuation-description {
+  font-size: 16px;
+  color: #666;
+}
+
+.dcf-summary {
+  margin-bottom: 24px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.dcf-summary h5 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #1a1a1a;
+}
+
+.dcf-values {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+}
+
+.dcf-item {
+  text-align: center;
+}
+
+.dcf-item span {
+  display: block;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.dcf-item strong {
+  display: block;
+  font-size: 24px;
+  color: #1a1a1a;
+}
+
+.multiples-summary h5 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #1a1a1a;
+}
+
+.multiples-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.multiple-item {
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.multiple-item span {
+  display: block;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.multiple-item strong {
+  display: block;
+  font-size: 28px;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+}
+
+.multiple-item small {
+  display: block;
+  font-size: 12px;
+  color: #999;
+}
+
+/* 리스크 카드 */
+.risk-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.risk-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.risk-category {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.risk-level {
+  font-size: 16px;
+  font-weight: 600;
+  color: #666;
+  padding: 8px 16px;
+  background: #f8f9fa;
+  border-radius: 20px;
+}
+
+.risk-description {
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 24px;
+}
+
+.risk-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.risk-metric {
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.risk-metric span {
+  display: block;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.risk-metric strong {
+  display: block;
+  font-size: 24px;
+  color: #1a1a1a;
+}
+
+/* 시장 성과 카드 */
+.performance-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.performance-category {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 24px;
+}
+
+.performance-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 24px;
+}
+
+.performance-item {
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.performance-item span {
+  display: block;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.performance-item strong {
+  display: block;
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.performance-item small {
+  display: block;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.6;
+}
+
+/* 기술적 신호 */
+.signals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.signal-item {
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.signal-indicator {
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.signal-status {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+}
+
+.signal-value {
+  font-size: 12px;
+  color: #999;
+}
+
+/* 종합 평가 */
+.assessment-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.assessment-summary {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.assessment-group {
+  margin-bottom: 24px;
+}
+
+.assessment-group:last-child {
+  margin-bottom: 0;
+}
+
+.assessment-group h5 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #1a1a1a;
+}
+
+.assessment-group ul {
+  margin: 0;
+  padding-left: 20px;
+  line-height: 2;
+}
+
+.assessment-group li {
+  font-size: 15px;
+  color: #666;
+}
+
+/* 뉴스 감성 분석 카드 */
+.news-sentiment-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.sentiment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.sentiment-category {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.sentiment-score {
+  font-size: 18px;
+  font-weight: 600;
+  color: #666;
+  padding: 8px 16px;
+  background: #f8f9fa;
+  border-radius: 20px;
+}
+
+.sentiment-description {
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.sentiment-summary {
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.sentiment-summary p {
+  margin: 0;
+  font-size: 15px;
+  color: #666;
+  line-height: 1.6;
+}
+
+.sentiment-factors {
+  margin-bottom: 20px;
+}
+
+.sentiment-factors h5 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #1a1a1a;
+}
+
+.sentiment-factors ul {
+  margin: 0;
+  padding-left: 20px;
+  line-height: 2;
+}
+
+.sentiment-factors li {
+  font-size: 14px;
+  color: #666;
+}
+
+.recent-news {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.recent-news h5 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #1a1a1a;
+}
+
+.recent-news ul {
+  margin: 0;
+  padding-left: 20px;
+  line-height: 2;
+}
+
+.recent-news li {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.recent-news a {
+  color: #4a90e2;
+  text-decoration: none;
+}
+
+.recent-news a:hover {
+  text-decoration: underline;
+}
+
+.recent-news small {
+  color: #999;
+  font-size: 12px;
+}
+
+.ai-disclaimer {
+  margin-top: 20px;
+  padding: 12px;
+  background: #fff8e1;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.ai-disclaimer small {
+  color: #666;
+  font-size: 13px;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .investment-report {
+    padding: 16px;
+  }
+
+  .report-header h2 {
+    font-size: 24px;
+  }
+
+  .health-header {
+    grid-template-columns: 1fr;
+  }
+
+  .score-breakdown,
+  .dcf-values,
+  .multiples-grid,
+  .risk-metrics,
+  .performance-details,
+  .signals-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .meta-info {
+    flex-direction: column;
+    gap: 8px;
+  }
+}

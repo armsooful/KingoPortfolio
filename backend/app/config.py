@@ -28,7 +28,19 @@ class Settings:
         "ANTHROPIC_API_KEY",
         ""
     )
-    
+
+    # Alpha Vantage API
+    alpha_vantage_api_key: str = os.getenv(
+        "ALPHA_VANTAGE_API_KEY",
+        ""
+    )
+
+    # 데이터베이스 초기화 옵션
+    reset_db_on_startup: bool = os.getenv(
+        "RESET_DB_ON_STARTUP",
+        "false"
+    ).lower() in ("true", "1", "yes")
+
     # CORS
     allowed_origins: List[str] = []
     

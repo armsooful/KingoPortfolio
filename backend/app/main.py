@@ -3,6 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from contextlib import asynccontextmanager
 from datetime import timedelta
+from dotenv import load_dotenv
+
+# Load .env file
+load_dotenv()
 
 from app.config import settings
 from app.database import engine, Base, get_db
@@ -15,10 +19,14 @@ from app.models import securities  # noqa
 from app.models.user import User  # noqa
 
 def init_db():
-    # 개발/테스트: 기존 테이블 삭제 후 재생성 (데이터 손실)
-    Base.metadata.drop_all(bind=engine)
+    if settings.reset_db_on_startup:
+        # 환경변수 RESET_DB_ON_STARTUP=true 일 때만 기존 테이블 삭제 후 재생성 (데이터 손실)
+        Base.metadata.drop_all(bind=engine)
+        print("⚠️ Database tables dropped (RESET_DB_ON_STARTUP=true)")
+
+    # 테이블 생성 (이미 존재하면 무시)
     Base.metadata.create_all(bind=engine)
-    print("✅ Database initialized (tables recreated)")
+    print("✅ Database initialized (tables created if not exists)")
 
 
 @asynccontextmanager

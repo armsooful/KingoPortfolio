@@ -8,6 +8,11 @@ import SurveyPage from './pages/SurveyPage';
 import DiagnosisResultPage from './pages/DiagnosisResultPage';
 import DiagnosisHistoryPage from './pages/DiagnosisHistoryPage';
 import AdminPage from './pages/AdminPage';
+import DataManagementPage from './pages/DataManagementPage';
+import FinancialAnalysisPage from './pages/FinancialAnalysisPage';
+import ValuationPage from './pages/ValuationPage';
+import QuantAnalysisPage from './pages/QuantAnalysisPage';
+import ReportPage from './pages/ReportPage';
 import './styles/App.css';
 
 // ============================================================
@@ -153,6 +158,46 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <AdminPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/data"
+            element={
+              <ProtectedRoute>
+                <DataManagementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/financial-analysis"
+            element={
+              <ProtectedRoute>
+                <FinancialAnalysisPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/valuation"
+            element={
+              <ProtectedRoute>
+                <ValuationPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/quant"
+            element={
+              <ProtectedRoute>
+                <QuantAnalysisPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/report"
+            element={
+              <ProtectedRoute>
+                <ReportPage />
               </ProtectedRoute>
             }
           />
