@@ -315,12 +315,90 @@ const InvestmentReport = () => {
                   </div>
                   <div className="sentiment-score">
                     점수: {report.news_sentiment.sentiment_score > 0 ? '+' : ''}
-                    {report.news_sentiment.sentiment_score.toFixed(2)}
+                    {report.news_sentiment.sentiment_score.toFixed(3)}
                   </div>
                 </div>
                 <div className="sentiment-description">
                   {report.news_sentiment.category.description}
                 </div>
+
+                {/* 감성 분포 게이지 바 */}
+                {report.news_sentiment.sentiment_distribution && (
+                  <div className="sentiment-distribution">
+                    <h5>📊 감성 분포 ({report.news_sentiment.news_count}개 뉴스)</h5>
+                    <div className="gauge-container">
+                      <div className="gauge-bar">
+                        <div
+                          className="gauge-positive"
+                          style={{ width: `${report.news_sentiment.sentiment_distribution.positive_ratio}%` }}
+                          title={`긍정: ${report.news_sentiment.sentiment_distribution.positive_count}개`}
+                        >
+                          {report.news_sentiment.sentiment_distribution.positive_ratio > 10 &&
+                            `${report.news_sentiment.sentiment_distribution.positive_ratio.toFixed(0)}%`
+                          }
+                        </div>
+                        <div
+                          className="gauge-neutral"
+                          style={{ width: `${report.news_sentiment.sentiment_distribution.neutral_ratio}%` }}
+                          title={`중립: ${report.news_sentiment.sentiment_distribution.neutral_count}개`}
+                        >
+                          {report.news_sentiment.sentiment_distribution.neutral_ratio > 10 &&
+                            `${report.news_sentiment.sentiment_distribution.neutral_ratio.toFixed(0)}%`
+                          }
+                        </div>
+                        <div
+                          className="gauge-negative"
+                          style={{ width: `${report.news_sentiment.sentiment_distribution.negative_ratio}%` }}
+                          title={`부정: ${report.news_sentiment.sentiment_distribution.negative_count}개`}
+                        >
+                          {report.news_sentiment.sentiment_distribution.negative_ratio > 10 &&
+                            `${report.news_sentiment.sentiment_distribution.negative_ratio.toFixed(0)}%`
+                          }
+                        </div>
+                      </div>
+                      <div className="gauge-legend">
+                        <span className="legend-item">
+                          <span className="legend-dot positive"></span>
+                          긍정 {report.news_sentiment.sentiment_distribution.positive_count}개
+                        </span>
+                        <span className="legend-item">
+                          <span className="legend-dot neutral"></span>
+                          중립 {report.news_sentiment.sentiment_distribution.neutral_count}개
+                        </span>
+                        <span className="legend-item">
+                          <span className="legend-dot negative"></span>
+                          부정 {report.news_sentiment.sentiment_distribution.negative_count}개
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 투자 인사이트 */}
+                {report.news_sentiment.investment_insights && report.news_sentiment.investment_insights.length > 0 && (
+                  <div className="investment-insights">
+                    <h5>💡 투자 인사이트</h5>
+                    <ul>
+                      {report.news_sentiment.investment_insights.map((insight, idx) => (
+                        <li key={idx}>{insight}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* 시장 포지션 & 액션 가이드 */}
+                {report.news_sentiment.market_position && (
+                  <div className="market-action-guide">
+                    <div className="market-position">
+                      <span className="label">시장 포지션</span>
+                      <span className="value">{report.news_sentiment.market_position}</span>
+                    </div>
+                    <div className="action-guide">
+                      <span className="label">액션 가이드</span>
+                      <span className="value">{report.news_sentiment.action_guide}</span>
+                    </div>
+                  </div>
+                )}
 
                 {report.news_sentiment.summary && (
                   <div className="sentiment-summary">
