@@ -215,34 +215,36 @@
   gap: 16px;
 }
 
-.score-bar {
+.score-details .score-bar {
   display: grid;
   grid-template-columns: 120px 1fr 60px;
   align-items: center;
   gap: 16px;
+  width: auto;
+  height: auto;
 }
 
-.bar-label {
+.score-details .bar-label {
   font-size: 14px;
   font-weight: 600;
   color: #666;
 }
 
-.bar-container {
+.score-details .bar-container {
   height: 24px;
   background: #f0f0f0;
   border-radius: 12px;
   overflow: hidden;
 }
 
-.bar-fill {
+.score-details .bar-fill {
   height: 100%;
   background: linear-gradient(90deg, #4a90e2 0%, #357abd 100%);
   border-radius: 12px;
   transition: width 0.5s ease;
 }
 
-.bar-value {
+.score-details .bar-value {
   font-size: 14px;
   font-weight: 600;
   color: #1a1a1a;
@@ -341,7 +343,7 @@
     grid-template-columns: 1fr;
   }
 
-  .score-bar {
+  .score-details .score-bar {
     grid-template-columns: 100px 1fr 50px;
     gap: 12px;
   }

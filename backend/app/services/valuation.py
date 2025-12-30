@@ -14,6 +14,7 @@ import logging
 from decimal import Decimal
 
 from app.models.alpha_vantage import AlphaVantageStock, AlphaVantageFinancials
+from app.models.securities import Stock, StockFinancials
 
 logger = logging.getLogger(__name__)
 
@@ -165,22 +166,43 @@ class ValuationAnalyzer:
         """
         멀티플 비교 분석
         - PER, PBR, 배당수익률을 업종/시장 평균과 비교
+        - 한국 주식과 미국 주식 모두 지원
         """
-        stock = db.query(AlphaVantageStock).filter(
-            AlphaVantageStock.symbol == symbol.upper()
-        ).first()
+        # 한국 주식인지 확인 (숫자로만 구성된 경우)
+        is_korean_stock = symbol.isdigit()
 
-        if not stock:
-            raise ValueError(f"Stock {symbol} not found")
+        if is_korean_stock:
+            # 한국 주식 조회
+            stock = db.query(Stock).filter(Stock.ticker == symbol).first()
+            if not stock:
+                raise ValueError(f"한국 주식 {symbol}을 찾을 수 없습니다")
+
+            # 현재 종목 멀티플
+            current_pe = stock.pe_ratio
+            current_pb = stock.pb_ratio
+            current_div_yield = stock.dividend_yield if stock.dividend_yield else 0
+            company_name = stock.name
+            sector = stock.sector or "Market"
+            industry = sector
+        else:
+            # 미국 주식 조회
+            stock = db.query(AlphaVantageStock).filter(
+                AlphaVantageStock.symbol == symbol.upper()
+            ).first()
+
+            if not stock:
+                raise ValueError(f"Stock {symbol} not found")
+
+            # 현재 종목 멀티플
+            current_pe = stock.pe_ratio
+            current_pb = stock.pb_ratio
+            current_div_yield = (stock.dividend_yield * 100) if stock.dividend_yield else 0
+            company_name = stock.name
+            sector = stock.sector or "Market"
+            industry = stock.industry
 
         # 업종별 평균 멀티플 가져오기
-        industry = stock.sector or "Market"
-        industry_avg = ValuationAnalyzer.get_industry_multiples(industry)
-
-        # 현재 종목 멀티플
-        current_pe = stock.pe_ratio
-        current_pb = stock.pb_ratio
-        current_div_yield = (stock.dividend_yield * 100) if stock.dividend_yield else 0
+        industry_avg = ValuationAnalyzer.get_industry_multiples(sector)
 
         # 비교 분석
         pe_comparison = None
@@ -221,17 +243,18 @@ class ValuationAnalyzer:
             }
 
         return {
-            "symbol": symbol.upper(),
-            "company_name": stock.name,
-            "sector": stock.sector,
-            "industry": stock.industry,
+            "symbol": symbol.upper() if not is_korean_stock else symbol,
+            "company_name": company_name,
+            "sector": sector,
+            "industry": industry,
             "industry_description": industry_avg.get("description", ""),
             "pe_comparison": pe_comparison,
             "pb_comparison": pb_comparison,
             "dividend_yield_comparison": div_comparison,
             "overall_valuation": ValuationAnalyzer._determine_overall_valuation(
                 pe_comparison, pb_comparison, div_comparison
-            )
+            ),
+            "korean_stock": is_korean_stock
         }
 
     @staticmethod
@@ -280,7 +303,25 @@ class ValuationAnalyzer:
         """
         DCF (Discounted Cash Flow) 밸류에이션
         - 보수적 가정으로 3가지 시나리오 제공
+        - 한국 주식은 현금흐름 데이터 부족으로 지원하지 않음
         """
+        # 한국 주식인지 확인
+        is_korean_stock = symbol.isdigit()
+
+        if is_korean_stock:
+            stock = db.query(Stock).filter(Stock.ticker == symbol).first()
+            if not stock:
+                raise ValueError(f"한국 주식 {symbol}을 찾을 수 없습니다")
+
+            return {
+                "symbol": symbol,
+                "company_name": stock.name,
+                "korean_stock": True,
+                "error": "한국 주식은 DCF 분석을 지원하지 않습니다",
+                "message": "pykrx는 현금흐름표 데이터를 제공하지 않아 DCF 분석이 불가능합니다. 멀티플 비교를 참고하세요."
+            }
+
+        # 미국 주식 DCF 분석
         stock = db.query(AlphaVantageStock).filter(
             AlphaVantageStock.symbol == symbol.upper()
         ).first()
@@ -418,7 +459,25 @@ class ValuationAnalyzer:
         배당할인모형 (DDM - Dividend Discount Model)
         - Gordon Growth Model 사용
         - 안정적인 배당을 지급하는 기업에 적합
+        - 한국 주식은 배당 성장률 데이터 부족으로 지원하지 않음
         """
+        # 한국 주식인지 확인
+        is_korean_stock = symbol.isdigit()
+
+        if is_korean_stock:
+            stock = db.query(Stock).filter(Stock.ticker == symbol).first()
+            if not stock:
+                raise ValueError(f"한국 주식 {symbol}을 찾을 수 없습니다")
+
+            return {
+                "symbol": symbol,
+                "company_name": stock.name,
+                "korean_stock": True,
+                "error": "한국 주식은 DDM 분석을 지원하지 않습니다",
+                "message": "pykrx는 배당 성장률 데이터를 제공하지 않아 DDM 분석이 불가능합니다. 현재 배당수익률은 멀티플 비교에서 확인하세요."
+            }
+
+        # 미국 주식 DDM 분석
         stock = db.query(AlphaVantageStock).filter(
             AlphaVantageStock.symbol == symbol.upper()
         ).first()

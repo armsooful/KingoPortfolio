@@ -129,6 +129,16 @@ class AlphaVantageClient:
         if not data or not data.get('Symbol'):
             return None
 
+        # 안전한 float 변환 헬퍼 함수
+        def safe_float(value, default=0.0):
+            """문자열 'None', None, 빈 문자열 등을 안전하게 float로 변환"""
+            if value is None or value == '' or value == 'None':
+                return default
+            try:
+                return float(value)
+            except (ValueError, TypeError):
+                return default
+
         try:
             return {
                 'symbol': data.get('Symbol'),
@@ -137,17 +147,17 @@ class AlphaVantageClient:
                 'exchange': data.get('Exchange'),
                 'sector': data.get('Sector'),
                 'industry': data.get('Industry'),
-                'market_cap': float(data.get('MarketCapitalization', 0) or 0),
-                'pe_ratio': float(data.get('PERatio', 0) or 0),
-                'peg_ratio': float(data.get('PEGRatio', 0) or 0),
-                'pb_ratio': float(data.get('PriceToBookRatio', 0) or 0),
-                'dividend_yield': float(data.get('DividendYield', 0) or 0),
-                'eps': float(data.get('EPS', 0) or 0),
-                'beta': float(data.get('Beta', 0) or 0),
-                'week_52_high': float(data.get('52WeekHigh', 0) or 0),
-                'week_52_low': float(data.get('52WeekLow', 0) or 0),
-                'day_50_ma': float(data.get('50DayMovingAverage', 0) or 0),
-                'day_200_ma': float(data.get('200DayMovingAverage', 0) or 0),
+                'market_cap': safe_float(data.get('MarketCapitalization')),
+                'pe_ratio': safe_float(data.get('PERatio')),
+                'peg_ratio': safe_float(data.get('PEGRatio')),
+                'pb_ratio': safe_float(data.get('PriceToBookRatio')),
+                'dividend_yield': safe_float(data.get('DividendYield')),
+                'eps': safe_float(data.get('EPS')),
+                'beta': safe_float(data.get('Beta')),
+                'week_52_high': safe_float(data.get('52WeekHigh')),
+                'week_52_low': safe_float(data.get('52WeekLow')),
+                'day_50_ma': safe_float(data.get('50DayMovingAverage')),
+                'day_200_ma': safe_float(data.get('200DayMovingAverage')),
             }
         except (ValueError, TypeError) as e:
             logger.error(f"Overview 데이터 파싱 오류: {str(e)}")

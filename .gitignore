@@ -64,3 +64,9 @@ pnpm-debug.log*
 htmlcov/
 tmp/
 temp/
+
+# Backup files
+*.bak
+*.backup
+*.old
+*~

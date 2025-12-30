@@ -35,11 +35,12 @@ class DataLoaderService:
 
         for idx, (ticker, name) in enumerate(stocks_list, 1):
             try:
-                # 현재 처리 중인 종목 업데이트
+                # 현재 처리 중인 항목 표시 (카운트 증가 없이)
                 progress_tracker.update_progress(
                     task_id,
-                    current=idx - 1,
-                    current_item=f"{name} ({ticker})"
+                    current=idx,
+                    current_item=f"{name} ({ticker})",
+                    success=None
                 )
 
                 # API에서 데이터 수집
@@ -49,6 +50,7 @@ class DataLoaderService:
                     progress_tracker.update_progress(
                         task_id,
                         current=idx,
+                        current_item=f"{name} ({ticker})",
                         success=False,
                         error=f"{name} 데이터 수집 실패"
                     )
@@ -114,6 +116,7 @@ class DataLoaderService:
                 progress_tracker.update_progress(
                     task_id,
                     current=idx,
+                    current_item=f"{name} ({ticker})",
                     success=True
                 )
 
@@ -123,6 +126,7 @@ class DataLoaderService:
                 progress_tracker.update_progress(
                     task_id,
                     current=idx,
+                    current_item=f"{name} ({ticker})",
                     success=False,
                     error=str(e)
                 )
@@ -135,29 +139,58 @@ class DataLoaderService:
         return result
     
     @staticmethod
-    def load_etfs(db: Session) -> dict:
-        """ETF 데이터 적재"""
+    def load_etfs(db: Session, task_id: str = None) -> dict:
+        """ETF 데이터 적재
+
+        Returns:
+            적재 결과 {success: int, failed: int, updated: int}
+        """
+        # task_id가 없으면 생성
+        if not task_id:
+            task_id = f"etfs_{uuid.uuid4().hex[:8]}"
+
+        etfs_list = list(DataCollector.KOREAN_ETFS.items())
+        total_count = len(etfs_list)
+
+        # 진행 상황 추적 시작
+        progress_tracker.start_task(task_id, total_count, "ETF 데이터 수집")
+
         result = {"success": 0, "failed": 0, "updated": 0}
-        
-        for ticker, name in DataCollector.KOREAN_ETFS.items():
+
+        for idx, (ticker, name) in enumerate(etfs_list, 1):
             try:
+                # 현재 처리 중인 항목 표시 (카운트 증가 없이)
+                progress_tracker.update_progress(
+                    task_id,
+                    current=idx,
+                    current_item=f"{name} ({ticker})",
+                    success=None
+                )
+
                 # API에서 데이터 수집
                 data = DataCollector.fetch_etf_data(ticker, name)
                 if not data:
                     result["failed"] += 1
+                    progress_tracker.update_progress(
+                        task_id,
+                        current=idx,
+                        current_item=f"{name} ({ticker})",
+                        success=False,
+                        error=f"{name} 데이터 수집 실패"
+                    )
                     continue
-                
+
                 # ETF 타입 결정
                 etf_type = "equity" if "주식" in name else "bond" if "채권" in name else "balanced"
-                
+
                 # 위험도 결정
                 risk_level = "medium" if etf_type == "balanced" else "low" if etf_type == "bond" else "high"
-                
+
                 # 기존 데이터 확인
                 existing_etf = db.query(ETF).filter(
                     ETF.ticker == ticker
                 ).first()
-                
+
                 if existing_etf:
                     existing_etf.current_price = data.get("current_price")
                     existing_etf.aum = data.get("aum")
@@ -182,15 +215,34 @@ class DataLoaderService:
                     )
                     db.add(etf)
                     result["success"] += 1
-                
+
                 db.commit()
                 logger.info(f"Successfully processed ETF {ticker}: {name}")
-                
+
+                # 성공 업데이트
+                progress_tracker.update_progress(
+                    task_id,
+                    current=idx,
+                    current_item=f"{name} ({ticker})",
+                    success=True
+                )
+
             except Exception as e:
                 logger.error(f"Error processing ETF {ticker}: {str(e)}")
                 result["failed"] += 1
+                progress_tracker.update_progress(
+                    task_id,
+                    current=idx,
+                    current_item=f"{name} ({ticker})",
+                    success=False,
+                    error=str(e)
+                )
                 db.rollback()
-        
+
+        # 작업 완료
+        progress_tracker.complete_task(task_id, "completed")
+        result["task_id"] = task_id
+
         return result
     
     @staticmethod

@@ -8,7 +8,7 @@
 """
 
 from typing import List, Dict, Optional, Tuple
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, and_
 import logging
@@ -18,6 +18,13 @@ from decimal import Decimal
 from app.models.alpha_vantage import AlphaVantageTimeSeries
 
 logger = logging.getLogger(__name__)
+
+
+def to_date(dt):
+    """datetime 또는 date 객체를 date 객체로 변환"""
+    if isinstance(dt, datetime):
+        return dt.date()
+    return dt
 
 
 class QuantAnalyzer:
@@ -345,8 +352,8 @@ class QuantAnalyzer:
             return {"error": "데이터 부족"}
 
         # 날짜 매칭
-        stock_dict = {r[0].date(): r[1] for r in stock_returns}
-        market_dict = {r[0].date(): r[1] for r in market_returns}
+        stock_dict = {to_date(r[0]): r[1] for r in stock_returns}
+        market_dict = {to_date(r[0]): r[1] for r in market_returns}
 
         common_dates = sorted(set(stock_dict.keys()) & set(market_dict.keys()))
 
@@ -458,8 +465,8 @@ class QuantAnalyzer:
         beta = beta_result["beta"]
 
         # 날짜 매칭
-        stock_dict = {r[0].date(): r[1] for r in stock_returns}
-        market_dict = {r[0].date(): r[1] for r in market_returns}
+        stock_dict = {to_date(r[0]): r[1] for r in stock_returns}
+        market_dict = {to_date(r[0]): r[1] for r in market_returns}
         common_dates = sorted(set(stock_dict.keys()) & set(market_dict.keys()))
 
         stock_rets = [stock_dict[d] for d in common_dates]
@@ -508,8 +515,8 @@ class QuantAnalyzer:
         - 낮을수록 벤치마크를 잘 추종
         """
         # 날짜 매칭
-        stock_dict = {r[0].date(): r[1] for r in stock_returns}
-        market_dict = {r[0].date(): r[1] for r in market_returns}
+        stock_dict = {to_date(r[0]): r[1] for r in stock_returns}
+        market_dict = {to_date(r[0]): r[1] for r in market_returns}
         common_dates = sorted(set(stock_dict.keys()) & set(market_dict.keys()))
 
         if len(common_dates) < 2:

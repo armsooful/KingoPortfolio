@@ -3,8 +3,11 @@
 from pykrx import stock
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from app.models.securities import Stock, ETF
+from app.models.securities import Stock, ETF, StockFinancials
+from app.progress_tracker import progress_tracker
 import logging
+import uuid
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -288,31 +291,81 @@ class PyKrxDataLoader:
         else:
             return "기타"
 
-    def load_all_popular_stocks(self, db: Session) -> dict:
+    def load_all_popular_stocks(self, db: Session, task_id: str = None) -> dict:
         """인기 주식 전체 수집"""
+        # task_id가 없으면 생성
+        if not task_id:
+            task_id = f"pykrx_stocks_{uuid.uuid4().hex[:8]}"
+
+        stocks_list = list(self.POPULAR_STOCKS.items())
+        total_count = len(stocks_list)
+
+        # 진행 상황 추적 시작
+        progress_tracker.start_task(task_id, total_count, "pykrx 한국 주식 데이터 수집")
+
         results = {
             'success': 0,
             'updated': 0,
             'failed': 0,
-            'details': []
+            'details': [],
+            'task_id': task_id
         }
 
-        for ticker, name in self.POPULAR_STOCKS.items():
-            result = self.load_stock_data(db, ticker, name)
+        for idx, (ticker, name) in enumerate(stocks_list, 1):
+            try:
+                # 현재 처리 중인 항목 표시
+                progress_tracker.update_progress(
+                    task_id,
+                    current=idx,
+                    current_item=f"{name} ({ticker})",
+                    success=None
+                )
 
-            if result['success']:
-                if result['action'] == 'created':
-                    results['success'] += 1
-                elif result['action'] == 'updated':
-                    results['updated'] += 1
-            else:
+                result = self.load_stock_data(db, ticker, name)
+
+                if result['success']:
+                    if result['action'] == 'created':
+                        results['success'] += 1
+                    elif result['action'] == 'updated':
+                        results['updated'] += 1
+
+                    # 성공 업데이트
+                    progress_tracker.update_progress(
+                        task_id,
+                        current=idx,
+                        current_item=f"{name} ({ticker})",
+                        success=True
+                    )
+                else:
+                    results['failed'] += 1
+                    # 실패 업데이트
+                    progress_tracker.update_progress(
+                        task_id,
+                        current=idx,
+                        current_item=f"{name} ({ticker})",
+                        success=False,
+                        error=result.get('message', '데이터 수집 실패')
+                    )
+
+                results['details'].append({
+                    'ticker': ticker,
+                    'name': name,
+                    'result': result
+                })
+
+            except Exception as e:
+                logger.error(f"Error processing {ticker}: {str(e)}")
                 results['failed'] += 1
+                progress_tracker.update_progress(
+                    task_id,
+                    current=idx,
+                    current_item=f"{name} ({ticker})",
+                    success=False,
+                    error=str(e)
+                )
 
-            results['details'].append({
-                'ticker': ticker,
-                'name': name,
-                'result': result
-            })
+        # 작업 완료
+        progress_tracker.complete_task(task_id, "completed")
 
         return results
 
@@ -469,30 +522,310 @@ class PyKrxDataLoader:
         else:
             return "일반"
 
-    def load_all_popular_etfs(self, db: Session) -> dict:
+    def load_all_popular_etfs(self, db: Session, task_id: str = None) -> dict:
         """인기 ETF 전체 수집"""
+        # task_id가 없으면 생성
+        if not task_id:
+            task_id = f"pykrx_etfs_{uuid.uuid4().hex[:8]}"
+
+        etfs_list = list(self.POPULAR_ETFS.items())
+        total_count = len(etfs_list)
+
+        # 진행 상황 추적 시작
+        progress_tracker.start_task(task_id, total_count, "pykrx 한국 ETF 데이터 수집")
+
         results = {
             'success': 0,
             'updated': 0,
             'failed': 0,
-            'details': []
+            'details': [],
+            'task_id': task_id
         }
 
-        for ticker, name in self.POPULAR_ETFS.items():
-            result = self.load_etf_data(db, ticker, name)
+        for idx, (ticker, name) in enumerate(etfs_list, 1):
+            try:
+                # 현재 처리 중인 항목 표시
+                progress_tracker.update_progress(
+                    task_id,
+                    current=idx,
+                    current_item=f"{name} ({ticker})",
+                    success=None
+                )
 
-            if result['success']:
-                if result['action'] == 'created':
-                    results['success'] += 1
-                elif result['action'] == 'updated':
-                    results['updated'] += 1
-            else:
+                result = self.load_etf_data(db, ticker, name)
+
+                if result['success']:
+                    if result['action'] == 'created':
+                        results['success'] += 1
+                    elif result['action'] == 'updated':
+                        results['updated'] += 1
+
+                    # 성공 업데이트
+                    progress_tracker.update_progress(
+                        task_id,
+                        current=idx,
+                        current_item=f"{name} ({ticker})",
+                        success=True
+                    )
+                else:
+                    results['failed'] += 1
+                    # 실패 업데이트
+                    progress_tracker.update_progress(
+                        task_id,
+                        current=idx,
+                        current_item=f"{name} ({ticker})",
+                        success=False,
+                        error=result.get('message', 'ETF 데이터 수집 실패')
+                    )
+
+                results['details'].append({
+                    'ticker': ticker,
+                    'name': name,
+                    'result': result
+                })
+
+            except Exception as e:
+                logger.error(f"Error processing ETF {ticker}: {str(e)}")
                 results['failed'] += 1
+                progress_tracker.update_progress(
+                    task_id,
+                    current=idx,
+                    current_item=f"{name} ({ticker})",
+                    success=False,
+                    error=str(e)
+                )
 
-            results['details'].append({
-                'ticker': ticker,
-                'name': name,
-                'result': result
-            })
+        # 작업 완료
+        progress_tracker.complete_task(task_id, "completed")
+
+        return results
+
+    def load_stock_financials(self, db: Session, ticker: str, name: str = None) -> dict:
+        """특정 주식의 재무제표 데이터 수집"""
+        try:
+            logger.info(f"Loading financial data for {ticker}")
+
+            # 기본 정보
+            if not name:
+                name = stock.get_market_ticker_name(ticker)
+
+            # 최근 영업일 기준으로 데이터 수집 (연말 기준이 아닌 최근 데이터)
+            # pykrx는 실제 재무제표를 제공하지 않고 PER, PBR, EPS, BPS, DIV만 제공
+            try:
+                # 최근 3개월 데이터 조회 (연말 기준이 아닌 가용한 최근 데이터)
+                end_date = datetime.now().strftime('%Y%m%d')
+                start_date = (datetime.now() - timedelta(days=90)).strftime('%Y%m%d')
+
+                df = stock.get_market_fundamental_by_date(
+                    start_date, end_date, ticker
+                )
+
+                if df.empty:
+                    logger.warning(f"No fundamental data available for {ticker}")
+                    return {
+                        'success': False,
+                        'message': f'{name} ({ticker}) 재무 지표 데이터 없음 (pykrx는 재무제표 상세 데이터를 제공하지 않습니다)',
+                        'action': 'failed'
+                    }
+
+                # 가장 최근 데이터 사용
+                latest_data = df.iloc[-1]
+                latest_date = df.index[-1]
+
+                per = latest_data.get('PER', None)
+                pbr = latest_data.get('PBR', None)
+                eps = latest_data.get('EPS', None)
+                bps = latest_data.get('BPS', None)
+                div_yield = latest_data.get('DIV', None)
+
+                # 시가총액 데이터로 재무 지표 역산
+                cap_end = end_date
+                cap_start = start_date
+                df_cap = stock.get_market_cap_by_date(cap_start, cap_end, ticker)
+
+                if df_cap.empty:
+                    logger.warning(f"No market cap data for {ticker}")
+                    return {
+                        'success': False,
+                        'message': f'{name} ({ticker}) 시가총액 데이터 없음',
+                        'action': 'failed'
+                    }
+
+                cap_latest = df_cap.iloc[-1]
+                market_cap = cap_latest.get('시가총액', 0)
+                shares = cap_latest.get('상장주식수', 0)
+
+                # 재무 데이터 계산 (추정치)
+                # 순이익 = EPS * 상장주식수
+                net_income = eps * shares if eps and shares else None
+
+                # 자본총계 = BPS * 상장주식수
+                total_equity = bps * shares if bps and shares else None
+
+                # PBR을 이용한 자본총계 재계산 (더 정확)
+                if pbr and pbr > 0 and market_cap and market_cap > 0:
+                    calc_equity = market_cap / pbr
+                    if not total_equity or abs(total_equity - calc_equity) / calc_equity > 0.1:
+                        total_equity = calc_equity
+
+                # 간단한 추정 (부채비율을 1.0으로 가정 - 실제 데이터 없음)
+                total_assets = total_equity * 2 if total_equity else None
+                total_liabilities = total_assets - total_equity if total_assets and total_equity else None
+
+                # 재무 비율 계산
+                roe = (net_income / total_equity * 100) if net_income and total_equity and total_equity > 0 else None
+                roa = (net_income / total_assets * 100) if net_income and total_assets and total_assets > 0 else None
+                debt_to_equity = (total_liabilities / total_equity) if total_liabilities and total_equity and total_equity > 0 else None
+
+                # DB 저장 (최근 데이터 기준)
+                fiscal_date = latest_date.date() if hasattr(latest_date, 'date') else latest_date
+
+                existing = db.query(StockFinancials).filter(
+                    StockFinancials.ticker == ticker,
+                    StockFinancials.fiscal_date == fiscal_date,
+                    StockFinancials.report_type == 'recent'
+                ).first()
+
+                if existing:
+                    # 업데이트
+                    existing.net_income = net_income
+                    existing.total_assets = total_assets
+                    existing.total_liabilities = total_liabilities
+                    existing.total_equity = total_equity
+                    existing.roe = roe
+                    existing.roa = roa
+                    existing.debt_to_equity = debt_to_equity
+                    existing.last_updated = datetime.utcnow()
+
+                    db.commit()
+                    logger.info(f"Updated financial data for {ticker} - {fiscal_date}")
+
+                    return {
+                        'success': True,
+                        'message': f'{name} ({ticker}) 재무 지표 업데이트 완료 (최근 데이터: {fiscal_date})',
+                        'action': 'completed',
+                        'details': {'success': 0, 'updated': 1, 'failed': 0}
+                    }
+                else:
+                    # 신규 생성
+                    financial = StockFinancials(
+                        ticker=ticker,
+                        fiscal_date=fiscal_date,
+                        report_type='recent',
+                        net_income=net_income,
+                        total_assets=total_assets,
+                        total_liabilities=total_liabilities,
+                        total_equity=total_equity,
+                        roe=roe,
+                        roa=roa,
+                        debt_to_equity=debt_to_equity
+                    )
+                    db.add(financial)
+                    db.commit()
+                    logger.info(f"Saved new financial data for {ticker} - {fiscal_date}")
+
+                    return {
+                        'success': True,
+                        'message': f'{name} ({ticker}) 재무 지표 수집 완료 (최근 데이터: {fiscal_date})',
+                        'action': 'completed',
+                        'details': {'success': 1, 'updated': 0, 'failed': 0}
+                    }
+
+            except Exception as e:
+                logger.error(f"Failed to process financial data for {ticker}: {str(e)}", exc_info=True)
+                db.rollback()
+                return {
+                    'success': False,
+                    'message': f'{name} ({ticker}) 재무 지표 처리 실패: {str(e)}',
+                    'action': 'failed'
+                }
+
+        except Exception as e:
+            logger.error(f"Failed to load financials for {ticker}: {str(e)}", exc_info=True)
+            db.rollback()
+            return {
+                'success': False,
+                'message': f'재무 지표 수집 실패: {str(e)}',
+                'action': 'failed'
+            }
+
+    def load_all_stock_financials(self, db: Session, task_id: str = None) -> dict:
+        """인기 주식 전체 재무제표 수집"""
+        # task_id가 없으면 생성
+        if not task_id:
+            task_id = f"pykrx_financials_{uuid.uuid4().hex[:8]}"
+
+        stocks_list = list(self.POPULAR_STOCKS.items())
+        total_count = len(stocks_list)
+
+        # 진행 상황 추적 시작
+        progress_tracker.start_task(task_id, total_count, "pykrx 한국 주식 재무제표 수집")
+
+        results = {
+            'success': 0,
+            'updated': 0,
+            'failed': 0,
+            'details': [],
+            'task_id': task_id
+        }
+
+        for idx, (ticker, name) in enumerate(stocks_list, 1):
+            try:
+                # 현재 처리 중인 항목 표시
+                progress_tracker.update_progress(
+                    task_id,
+                    current=idx,
+                    current_item=f"{name} ({ticker}) 재무제표",
+                    success=None
+                )
+
+                result = self.load_stock_financials(db, ticker, name)
+
+                if result['success']:
+                    # 상세 결과에서 카운트 추출
+                    if 'details' in result:
+                        results['success'] += result['details'].get('success', 0)
+                        results['updated'] += result['details'].get('updated', 0)
+                        results['failed'] += result['details'].get('failed', 0)
+                    else:
+                        results['success'] += 1
+
+                    # 성공 업데이트
+                    progress_tracker.update_progress(
+                        task_id,
+                        current=idx,
+                        current_item=f"{name} ({ticker}) 재무제표",
+                        success=True
+                    )
+                else:
+                    results['failed'] += 1
+                    # 실패 업데이트
+                    progress_tracker.update_progress(
+                        task_id,
+                        current=idx,
+                        current_item=f"{name} ({ticker}) 재무제표",
+                        success=False,
+                        error=result.get('message', '재무제표 수집 실패')
+                    )
+
+                results['details'].append({
+                    'ticker': ticker,
+                    'name': name,
+                    'result': result
+                })
+
+            except Exception as e:
+                logger.error(f"Error processing financials for {ticker}: {str(e)}")
+                results['failed'] += 1
+                progress_tracker.update_progress(
+                    task_id,
+                    current=idx,
+                    current_item=f"{name} ({ticker}) 재무제표",
+                    success=False,
+                    error=str(e)
+                )
+
+        # 작업 완료
+        progress_tracker.complete_task(task_id, "completed")
 
         return results

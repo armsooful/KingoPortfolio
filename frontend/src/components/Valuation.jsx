@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   getValuationMultiples,
   getDCFValuation,
@@ -17,6 +17,11 @@ const Valuation = () => {
   const [ddm, setDdm] = useState(null);
   const [comprehensive, setComprehensive] = useState(null);
 
+  // 섹션 ref
+  const multiplesRef = useRef(null);
+  const dcfRef = useRef(null);
+  const ddmRef = useRef(null);
+
   const handleAnalyze = async () => {
     if (!symbol.trim()) {
       setError('종목 심볼을 입력하세요.');
@@ -27,19 +32,20 @@ const Valuation = () => {
     setError(null);
 
     try {
-      const upperSymbol = symbol.toUpperCase();
+      // 한국 주식(숫자)이면 그대로, 미국 주식이면 대문자로
+      const searchSymbol = /^\d+$/.test(symbol.trim()) ? symbol.trim() : symbol.toUpperCase();
 
       if (activeTab === 'comprehensive') {
-        const res = await getComprehensiveValuation(upperSymbol);
+        const res = await getComprehensiveValuation(searchSymbol);
         setComprehensive(res.data);
       } else if (activeTab === 'multiples') {
-        const res = await getValuationMultiples(upperSymbol);
+        const res = await getValuationMultiples(searchSymbol);
         setMultiples(res.data);
       } else if (activeTab === 'dcf') {
-        const res = await getDCFValuation(upperSymbol);
+        const res = await getDCFValuation(searchSymbol);
         setDcf(res.data);
       } else if (activeTab === 'ddm') {
-        const res = await getDDMValuation(upperSymbol);
+        const res = await getDDMValuation(searchSymbol);
         setDdm(res.data);
       }
     } catch (err) {
@@ -62,6 +68,33 @@ const Valuation = () => {
     if (status === '저평가' || status === '매수 검토') return '#4caf50';
     if (status === '고평가' || status === '매도 검토') return '#f44336';
     return '#ff9800';
+  };
+
+  const scrollToSection = (sectionRef) => {
+    if (sectionRef && sectionRef.current) {
+      const yOffset = -80; // 헤더 높이 오프셋
+      const element = sectionRef.current;
+      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+  };
+
+  const handleTabClick = (tab) => {
+    setActiveTab(tab);
+
+    // 종합 분석이 로드되어 있으면 해당 섹션으로 스크롤
+    if (comprehensive) {
+      setTimeout(() => {
+        if (tab === 'multiples') {
+          scrollToSection(multiplesRef);
+        } else if (tab === 'dcf') {
+          scrollToSection(dcfRef);
+        } else if (tab === 'ddm') {
+          scrollToSection(ddmRef);
+        }
+      }, 100);
+    }
   };
 
   const renderComprehensive = () => {
@@ -98,10 +131,11 @@ const Valuation = () => {
           </div>
         )}
 
-        {multiple_comparison && !multiple_comparison.error && (
-          <div className="section-card">
-            <h4>📈 멀티플 비교</h4>
-            <p className="sector-info">{multiple_comparison.sector} / {multiple_comparison.industry}</p>
+        <div className="section-card" ref={multiplesRef}>
+          <h4>📈 멀티플 비교</h4>
+          {multiple_comparison && !multiple_comparison.error && (
+            <>
+              <p className="sector-info">{multiple_comparison.sector} / {multiple_comparison.industry}</p>
             <div className="multiples-grid">
               {multiple_comparison.pe_comparison && (
                 <div className="multiple-card">
@@ -152,73 +186,101 @@ const Valuation = () => {
                 </div>
               )}
             </div>
-          </div>
-        )}
-
-        {dcf_valuation && !dcf_valuation.error && (
-          <div className="section-card">
-            <h4>💵 DCF 밸류에이션</h4>
-            <div className="scenarios-grid">
-              {Object.entries(dcf_valuation.scenarios).map(([name, data]) => (
-                <div key={name} className="scenario-card">
-                  <h5>{name}</h5>
-                  <p className="description">{data.assumptions.description}</p>
-                  {data.fair_value_per_share && (
-                    <>
-                      <div className="price-row">
-                        <span>적정가</span>
-                        <strong>${data.fair_value_per_share}</strong>
-                      </div>
-                      <div className="price-row">
-                        <span>현재가</span>
-                        <span>${data.current_price}</span>
-                      </div>
-                      <div className="upside-badge" style={{
-                        backgroundColor: data.upside_downside > 0 ? '#4caf50' : '#f44336'
-                      }}>
-                        {data.upside_downside > 0 ? '+' : ''}{data.upside_downside}%
-                      </div>
-                    </>
-                  )}
-                </div>
-              ))}
+            </>
+          )}
+          {multiple_comparison && multiple_comparison.error && (
+            <div className="info-message" style={{ padding: '20px', background: '#fff3cd', borderRadius: '8px', marginTop: '10px' }}>
+              <p style={{ margin: 0, color: '#856404' }}>
+                <strong>ℹ️ {multiple_comparison.error}</strong>
+              </p>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        {ddm_valuation && !ddm_valuation.error && (
-          <div className="section-card">
-            <h4>💰 배당할인모형 (DDM)</h4>
-            <p className="note">{ddm_valuation.note}</p>
-            <div className="scenarios-grid">
-              {Object.entries(ddm_valuation.scenarios).map(([name, data]) => (
-                <div key={name} className="scenario-card">
-                  <h5>{name}</h5>
-                  {data.error ? (
-                    <p className="error-text">{data.error}</p>
-                  ) : (
-                    <>
-                      <p className="description">{data.assumptions.description}</p>
-                      <div className="price-row">
-                        <span>적정가</span>
-                        <strong>${data.fair_value}</strong>
-                      </div>
-                      <div className="price-row">
-                        <span>현재가</span>
-                        <span>${data.current_price}</span>
-                      </div>
-                      <div className="upside-badge" style={{
-                        backgroundColor: data.upside_downside > 0 ? '#4caf50' : '#f44336'
-                      }}>
-                        {data.upside_downside > 0 ? '+' : ''}{data.upside_downside}%
-                      </div>
-                    </>
-                  )}
+        <div className="section-card" ref={dcfRef}>
+          <h4>💵 DCF 밸류에이션</h4>
+          {dcf_valuation && dcf_valuation.error ? (
+              <div className="info-message" style={{ padding: '20px', background: '#fff3cd', borderRadius: '8px', marginTop: '10px' }}>
+                <p style={{ margin: 0, color: '#856404' }}>
+                  <strong>ℹ️ {dcf_valuation.error}</strong>
+                </p>
+                <p style={{ margin: '10px 0 0 0', color: '#856404', fontSize: '0.9em' }}>
+                  {dcf_valuation.message}
+                </p>
+              </div>
+            ) : dcf_valuation && dcf_valuation.scenarios ? (
+              <div className="scenarios-grid">
+                {Object.entries(dcf_valuation.scenarios).map(([name, data]) => (
+                  <div key={name} className="scenario-card">
+                    <h5>{name}</h5>
+                    <p className="description">{data.assumptions.description}</p>
+                    {data.fair_value_per_share && (
+                      <>
+                        <div className="price-row">
+                          <span>적정가</span>
+                          <strong>${data.fair_value_per_share}</strong>
+                        </div>
+                        <div className="price-row">
+                          <span>현재가</span>
+                          <span>${data.current_price}</span>
+                        </div>
+                        <div className="upside-badge" style={{
+                          backgroundColor: data.upside_downside > 0 ? '#4caf50' : '#f44336'
+                        }}>
+                          {data.upside_downside > 0 ? '+' : ''}{data.upside_downside}%
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+        </div>
+
+        <div className="section-card" ref={ddmRef}>
+          <h4>💰 배당할인모형 (DDM)</h4>
+          {ddm_valuation && ddm_valuation.error ? (
+              <div className="info-message" style={{ padding: '20px', background: '#fff3cd', borderRadius: '8px', marginTop: '10px' }}>
+                <p style={{ margin: 0, color: '#856404' }}>
+                  <strong>ℹ️ {ddm_valuation.error}</strong>
+                </p>
+                <p style={{ margin: '10px 0 0 0', color: '#856404', fontSize: '0.9em' }}>
+                  {ddm_valuation.message}
+                </p>
+              </div>
+            ) : ddm_valuation && ddm_valuation.scenarios ? (
+              <>
+                {ddm_valuation.note && <p className="note">{ddm_valuation.note}</p>}
+                <div className="scenarios-grid">
+                  {Object.entries(ddm_valuation.scenarios).map(([name, data]) => (
+                    <div key={name} className="scenario-card">
+                      <h5>{name}</h5>
+                      {data.error ? (
+                        <p className="error-text">{data.error}</p>
+                      ) : (
+                        <>
+                          <p className="description">{data.assumptions.description}</p>
+                          <div className="price-row">
+                            <span>적정가</span>
+                            <strong>${data.fair_value}</strong>
+                          </div>
+                          <div className="price-row">
+                            <span>현재가</span>
+                            <span>${data.current_price}</span>
+                          </div>
+                          <div className="upside-badge" style={{
+                            backgroundColor: data.upside_downside > 0 ? '#4caf50' : '#f44336'
+                          }}>
+                            {data.upside_downside > 0 ? '+' : ''}{data.upside_downside}%
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+              </>
+            ) : null}
+        </div>
       </div>
     );
   };
@@ -230,7 +292,7 @@ const Valuation = () => {
         <div className="search-box">
           <input
             type="text"
-            placeholder="종목 심볼 입력 (예: AAPL, GOOGL)"
+            placeholder="종목 심볼 입력 (예: AAPL, 005930)"
             value={symbol}
             onChange={(e) => setSymbol(e.target.value)}
             onKeyPress={handleKeyPress}
@@ -245,25 +307,25 @@ const Valuation = () => {
       <div className="tab-buttons">
         <button
           className={activeTab === 'comprehensive' ? 'active' : ''}
-          onClick={() => setActiveTab('comprehensive')}
+          onClick={() => handleTabClick('comprehensive')}
         >
           종합 분석
         </button>
         <button
           className={activeTab === 'multiples' ? 'active' : ''}
-          onClick={() => setActiveTab('multiples')}
+          onClick={() => handleTabClick('multiples')}
         >
           멀티플 비교
         </button>
         <button
           className={activeTab === 'dcf' ? 'active' : ''}
-          onClick={() => setActiveTab('dcf')}
+          onClick={() => handleTabClick('dcf')}
         >
           DCF
         </button>
         <button
           className={activeTab === 'ddm' ? 'active' : ''}
-          onClick={() => setActiveTab('ddm')}
+          onClick={() => handleTabClick('ddm')}
         >
           DDM
         </button>
@@ -271,7 +333,7 @@ const Valuation = () => {
 
       {error && <div className="error-message">{error}</div>}
 
-      {activeTab === 'comprehensive' && comprehensive && renderComprehensive()}
+      {comprehensive && renderComprehensive()}
     </div>
   );
 };

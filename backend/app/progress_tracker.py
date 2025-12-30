@@ -26,12 +26,21 @@ class ProgressTracker:
                 "success_count": 0,
                 "failed_count": 0,
                 "current_item": None,
-                "error_message": None
+                "error_message": None,
+                "items_history": []  # 완료된 항목 히스토리
             }
 
     def update_progress(self, task_id: str, current: int, current_item: str = None,
-                       success: bool = True, error: str = None):
-        """진행 상황 업데이트"""
+                       success: bool = None, error: str = None):
+        """진행 상황 업데이트
+
+        Args:
+            task_id: 작업 ID
+            current: 현재 진행 상황 (인덱스)
+            current_item: 현재 처리 중인 항목명
+            success: True이면 success_count 증가, False이면 failed_count 증가, None이면 카운트 변경 없음
+            error: 에러 메시지
+        """
         with self._lock:
             if task_id in self._progress:
                 self._progress[task_id]["current"] = current
@@ -40,9 +49,18 @@ class ProgressTracker:
                 if current_item:
                     self._progress[task_id]["current_item"] = current_item
 
-                if success:
+                    # 성공/실패 시 히스토리에 추가
+                    if success is not None:
+                        self._progress[task_id]["items_history"].append({
+                            "item": current_item,
+                            "index": current,
+                            "success": success,
+                            "timestamp": datetime.utcnow().isoformat()
+                        })
+
+                if success is True:
                     self._progress[task_id]["success_count"] += 1
-                else:
+                elif success is False:
                     self._progress[task_id]["failed_count"] += 1
 
                 if error:

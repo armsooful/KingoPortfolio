@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import User
@@ -13,6 +14,9 @@ from app.crud import (
 )
 from app.diagnosis import calculate_diagnosis, build_diagnosis_response
 from app.services.claude_service import get_claude_service
+from app.utils.export import generate_diagnosis_csv, generate_diagnosis_excel
+from app.rate_limiter import limiter, RateLimits
+from datetime import datetime
 
 router = APIRouter(
     prefix="/diagnosis",
@@ -26,8 +30,10 @@ router = APIRouter(
     summary="설문 제출 및 진단",
     description="사용자의 설문 답변을 제출하여 투자성향 진단을 수행합니다."
 )
+@limiter.limit(RateLimits.DIAGNOSIS_SUBMIT)
 async def submit_survey(
-    request: DiagnosisSubmitRequest,
+    request: Request,
+    diagnosis_request: DiagnosisSubmitRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -43,30 +49,30 @@ async def submit_survey(
     """
     
     # 입력 유효성 검증
-    if not request.answers or len(request.answers) == 0:
+    if not diagnosis_request.answers or len(diagnosis_request.answers) == 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="At least one answer is required"
         )
-    
+
     # 답변 값 검증 (1-5 범위)
-    for answer in request.answers:
+    for answer in diagnosis_request.answers:
         if answer.answer_value < 1 or answer.answer_value > 5:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Answer value must be between 1 and 5, got {answer.answer_value}"
             )
-    
+
     # 월 투자액 검증
-    if request.monthly_investment and request.monthly_investment < 1:
+    if diagnosis_request.monthly_investment and diagnosis_request.monthly_investment < 1:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Monthly investment must be greater than 0"
         )
-    
+
     try:
         # 진단 계산
-        investment_type, score, confidence = calculate_diagnosis(request.answers)
+        investment_type, score, confidence = calculate_diagnosis(diagnosis_request.answers)
 
         # DB에 저장
         diagnosis = create_diagnosis(
@@ -75,8 +81,8 @@ async def submit_survey(
             investment_type=investment_type,
             score=score,
             confidence=confidence,
-            answers=request.answers,
-            monthly_investment=request.monthly_investment
+            answers=diagnosis_request.answers,
+            monthly_investment=diagnosis_request.monthly_investment
         )
 
         # 응답 빌드
@@ -93,11 +99,11 @@ async def submit_survey(
         try:
             claude_service = get_claude_service()
             ai_analysis = claude_service.analyze_investment_profile(
-                answers=request.answers,
+                answers=diagnosis_request.answers,
                 investment_type=investment_type,
                 score=score,
                 confidence=confidence,
-                monthly_investment=request.monthly_investment
+                monthly_investment=diagnosis_request.monthly_investment
             )
             response_data["ai_analysis"] = ai_analysis
         except Exception as ai_error:
@@ -265,3 +271,191 @@ async def get_recommended_products(
         "portfolio": diagnosis.portfolio_recommendation,
         **recommendations
     }
+
+@router.get(
+    "/{diagnosis_id}/export/csv",
+    summary="진단 결과 CSV 다운로드",
+    description="특정 진단 결과를 CSV 파일로 다운로드합니다.",
+    response_class=Response
+)
+@limiter.limit(RateLimits.DATA_EXPORT)
+async def export_diagnosis_csv(
+    request: Request,
+    diagnosis_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    진단 결과 CSV 다운로드
+
+    - **diagnosis_id**: 진단 ID
+
+    Returns: CSV 파일 다운로드
+
+    **권한**: 로그인 필수 (자신의 진단만 다운로드 가능)
+    """
+    # 진단 결과 조회
+    diagnosis = get_diagnosis_by_id(db, diagnosis_id)
+
+    if not diagnosis:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Diagnosis {diagnosis_id} not found"
+        )
+
+    # 권한 확인
+    if diagnosis.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to export this diagnosis"
+        )
+
+    # 응답 데이터 빌드
+    response_data = build_diagnosis_response(
+        diagnosis_id=diagnosis.id,
+        investment_type=diagnosis.investment_type,
+        score=diagnosis.score,
+        confidence=diagnosis.confidence,
+        monthly_investment=diagnosis.monthly_investment,
+        created_at=diagnosis.created_at
+    )
+
+    # CSV 생성
+    csv_content = generate_diagnosis_csv(response_data)
+
+    # 파일명 생성
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"diagnosis_{diagnosis_id[:8]}_{timestamp}.csv"
+
+    return Response(
+        content=csv_content,
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Type": "text/csv; charset=utf-8"
+        }
+    )
+
+@router.get(
+    "/{diagnosis_id}/export/excel",
+    summary="진단 결과 Excel 다운로드",
+    description="특정 진단 결과를 Excel 파일로 다운로드합니다.",
+    response_class=Response
+)
+@limiter.limit(RateLimits.DATA_EXPORT)
+async def export_diagnosis_excel(
+    request: Request,
+    diagnosis_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    진단 결과 Excel 다운로드
+
+    - **diagnosis_id**: 진단 ID
+
+    Returns: Excel 파일 다운로드 (여러 시트 포함)
+
+    **권한**: 로그인 필수 (자신의 진단만 다운로드 가능)
+    """
+    # 진단 결과 조회
+    diagnosis = get_diagnosis_by_id(db, diagnosis_id)
+
+    if not diagnosis:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Diagnosis {diagnosis_id} not found"
+        )
+
+    # 권한 확인
+    if diagnosis.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to export this diagnosis"
+        )
+
+    # 응답 데이터 빌드
+    response_data = build_diagnosis_response(
+        diagnosis_id=diagnosis.id,
+        investment_type=diagnosis.investment_type,
+        score=diagnosis.score,
+        confidence=diagnosis.confidence,
+        monthly_investment=diagnosis.monthly_investment,
+        created_at=diagnosis.created_at
+    )
+
+    # Excel 생성
+    excel_content = generate_diagnosis_excel(response_data)
+
+    # 파일명 생성
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"diagnosis_{diagnosis_id[:8]}_{timestamp}.xlsx"
+
+    return Response(
+        content=excel_content,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"'
+        }
+    )
+
+@router.get(
+    "/history/export/csv",
+    summary="진단 이력 CSV 다운로드",
+    description="현재 사용자의 모든 진단 이력을 CSV 파일로 다운로드합니다.",
+    response_class=Response
+)
+async def export_history_csv(
+    limit: int = 100,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    진단 이력 CSV 다운로드
+
+    - **limit**: 조회할 최대 개수 (기본값: 100)
+
+    Returns: CSV 파일 다운로드
+
+    **권한**: 로그인 필수
+    """
+    from app.utils.export import generate_csv
+
+    # 진단 이력 조회
+    diagnoses = get_user_diagnoses(db, current_user.id, limit)
+
+    # 빈 리스트도 None으로 평가되지 않으므로 길이 체크
+    if not diagnoses or len(diagnoses) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No diagnosis history found"
+        )
+
+    # 데이터 변환
+    data = [
+        {
+            "진단 ID": d.id,
+            "투자 성향": d.investment_type,
+            "점수": d.score,
+            "신뢰도": f"{d.confidence * 100:.1f}%",
+            "월 투자액": f"{d.monthly_investment:,}만원" if d.monthly_investment else "미입력",
+            "진단일시": d.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        }
+        for d in diagnoses
+    ]
+
+    # CSV 생성
+    csv_content = generate_csv(data)
+
+    # 파일명 생성
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"diagnosis_history_{timestamp}.csv"
+
+    return Response(
+        content=csv_content,
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Type": "text/csv; charset=utf-8"
+        }
+    )

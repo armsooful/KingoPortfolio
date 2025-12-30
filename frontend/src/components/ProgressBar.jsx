@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import * as api from '../services/api';
+import '../styles/ProgressBar.css';
 
 function ProgressBar({ taskId, onComplete }) {
   const [progress, setProgress] = useState(null);
@@ -86,107 +87,6 @@ function ProgressBar({ taskId, onComplete }) {
           ⚠️ {progress.error_message}
         </div>
       )}
-
-      <style jsx>{`
-        .progress-container {
-          margin: 20px 0;
-          padding: 15px;
-          background: #f8f9fa;
-          border-radius: 8px;
-          border: 1px solid #e9ecef;
-        }
-
-        .progress-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 10px;
-        }
-
-        .progress-title {
-          font-size: 14px;
-          color: #495057;
-        }
-
-        .current-item {
-          font-weight: normal;
-          color: #6c757d;
-        }
-
-        .progress-stats {
-          font-size: 14px;
-          font-weight: bold;
-          color: #007bff;
-        }
-
-        .progress-bar-wrapper {
-          width: 100%;
-          height: 30px;
-          background: #e9ecef;
-          border-radius: 15px;
-          overflow: hidden;
-          margin-bottom: 10px;
-        }
-
-        .progress-bar-fill {
-          height: 100%;
-          background: linear-gradient(90deg, #007bff, #0056b3);
-          transition: width 0.3s ease;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-weight: bold;
-          font-size: 12px;
-        }
-
-        .progress-details {
-          display: flex;
-          gap: 15px;
-          font-size: 13px;
-        }
-
-        .progress-success {
-          color: #28a745;
-        }
-
-        .progress-failed {
-          color: #dc3545;
-        }
-
-        .progress-status {
-          padding: 2px 8px;
-          border-radius: 4px;
-          font-weight: bold;
-          font-size: 12px;
-        }
-
-        .progress-status.completed {
-          background: #d4edda;
-          color: #155724;
-        }
-
-        .progress-status.running {
-          background: #cce5ff;
-          color: #004085;
-        }
-
-        .progress-error {
-          color: #dc3545;
-          font-size: 12px;
-          margin-top: 10px;
-        }
-
-        .progress-error-message {
-          color: #856404;
-          background: #fff3cd;
-          border: 1px solid #ffeeba;
-          padding: 8px;
-          border-radius: 4px;
-          font-size: 12px;
-          margin-top: 10px;
-        }
-      `}</style>
     </div>
   );
 }

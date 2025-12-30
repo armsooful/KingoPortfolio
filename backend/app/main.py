@@ -1,9 +1,12 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.responses import HTMLResponse, PlainTextResponse
+from fastapi.templating import Jinja2Templates
 from contextlib import asynccontextmanager
 from datetime import timedelta
 from dotenv import load_dotenv
+from pathlib import Path
 
 # Load .env file
 load_dotenv()
@@ -13,6 +16,10 @@ from app.database import engine, Base, get_db
 from app.routes import auth, diagnosis, admin
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
+from app.error_handlers import setup_exception_handlers
+from app.rate_limiter import limiter
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 # Import models to register them with Base.metadata
 from app.models import securities  # noqa
@@ -42,9 +49,102 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
-    description="AI Portfolio Recommendation Platform",
-    lifespan=lifespan
+    description="""
+# KingoPortfolio API
+
+AI 기반 포트폴리오 추천 플랫폼 백엔드 API
+
+## 주요 기능
+
+- **인증 및 권한 관리**: JWT 기반 사용자 인증, RBAC (Role-Based Access Control)
+- **투자 성향 진단**: AI 기반 설문 분석 및 맞춤형 투자 전략 제안
+- **재무 분석**: 실시간 주가 데이터 수집 및 재무제표 분석
+- **밸류에이션**: DCF, DDM, 멀티플 비교 등 종합 기업 가치 평가
+- **퀀트 분석**: 베타, 샤프 비율, RSI, 이동평균 등 정량적 분석
+
+## 인증 방법
+
+대부분의 엔드포인트는 JWT 토큰 인증이 필요합니다:
+
+1. `/auth/signup` 또는 `/auth/login`으로 토큰 획득
+2. `Authorization: Bearer {access_token}` 헤더로 요청
+3. Swagger UI에서 우측 상단 "Authorize" 버튼 클릭하여 토큰 입력
+
+## 권한 레벨
+
+- **user**: 일반 사용자 (기본)
+- **premium**: 프리미엄 회원 (고급 분석 기능 접근)
+- **admin**: 관리자 (모든 기능 접근)
+
+## 에러 응답 형식
+
+모든 에러는 다음 형식으로 반환됩니다:
+
+```json
+{
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "사용자 친화적인 에러 메시지",
+    "status": 400,
+    "extra": {}
+  }
+}
+```
+    """,
+    summary="KingoPortfolio - AI 포트폴리오 추천 플랫폼",
+    terms_of_service="https://github.com/your-org/kingo-portfolio/blob/main/TERMS.md",
+    contact={
+        "name": "KingoPortfolio Team",
+        "url": "https://github.com/your-org/kingo-portfolio",
+        "email": "support@kingo-portfolio.com",
+    },
+    license_info={
+        "name": "MIT License",
+        "url": "https://opensource.org/licenses/MIT",
+    },
+    servers=[
+        {
+            "url": "http://localhost:8000",
+            "description": "로컬 개발 서버"
+        },
+        {
+            "url": "https://api.kingo-portfolio.com",
+            "description": "프로덕션 서버"
+        }
+    ],
+    lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_tags=[
+        {
+            "name": "Authentication",
+            "description": "회원가입, 로그인, 토큰 관리 등 인증 관련 API"
+        },
+        {
+            "name": "Survey",
+            "description": "투자 성향 진단 설문 API"
+        },
+        {
+            "name": "Diagnosis",
+            "description": "투자 성향 분석 및 맞춤형 포트폴리오 추천 API"
+        },
+        {
+            "name": "Admin",
+            "description": "관리자 전용 API (데이터 수집, 분석, 모니터링)"
+        },
+        {
+            "name": "Health",
+            "description": "서버 상태 확인 API"
+        }
+    ]
 )
+
+# 전역 에러 핸들러 등록
+setup_exception_handlers(app)
+
+# Rate Limiter 설정
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
@@ -56,9 +156,17 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
+# Templates 설정
+templates_path = Path(__file__).parent / "templates"
+templates = Jinja2Templates(directory=str(templates_path))
+
 app.include_router(auth.router)
 app.include_router(diagnosis.router)
 app.include_router(admin.router)
+
+# Portfolio router
+from app.routes import portfolio
+app.include_router(portfolio.router)
 
 from app.auth import get_current_user
 
@@ -80,42 +188,186 @@ SURVEY_QUESTIONS = [
     {"id": 15, "category": "duration", "question": "투자 외 금융 생활은 안정적인가요?", "options": [{"value": "A", "text": "생활비 충당이 어렵습니다", "weight": 1.0}, {"value": "B", "text": "생활비는 괜찮지만 여유가 적습니다", "weight": 2.0}, {"value": "C", "text": "여유로운 자금으로 투자합니다", "weight": 3.0}]},
 ]
 
-@app.get("/survey/questions")
+@app.get(
+    "/survey/questions",
+    tags=["Survey"],
+    summary="설문지 문항 조회",
+    description="투자 성향 진단을 위한 설문지 문항 목록을 반환합니다.",
+    response_description="설문지 문항 목록 (총 15개)"
+)
 async def get_survey_questions(current_user = Depends(get_current_user)):
+    """
+    투자 성향 진단 설문지 문항 조회
+
+    총 15개의 문항으로 구성되며, 다음 카테고리로 분류됩니다:
+    - **experience**: 투자 경험
+    - **duration**: 투자 기간 및 목표
+    - **risk**: 위험 감수 성향
+    - **knowledge**: 금융 지식 수준
+    - **amount**: 투자 금액 및 계획
+
+    각 문항은 A, B, C 선택지를 가지며, 가중치(weight)가 부여됩니다.
+    """
     return {"total": len(SURVEY_QUESTIONS), "questions": SURVEY_QUESTIONS}
 
-@app.post("/survey/submit")
+@app.post(
+    "/survey/submit",
+    tags=["Survey"],
+    summary="설문지 제출",
+    description="투자 성향 진단 설문지 답변을 제출합니다.",
+    deprecated=True
+)
 async def submit_survey(data: dict, current_user = Depends(get_current_user)):
+    """
+    투자 성향 진단 설문지 제출 (Deprecated)
+
+    ⚠️ **주의**: 이 엔드포인트는 더 이상 사용되지 않습니다.
+    대신 `/diagnosis/submit`을 사용하세요.
+    """
     return {"status": "success"}
 
-@app.post("/token")
+@app.post(
+    "/token",
+    tags=["Authentication"],
+    summary="OAuth2 토큰 발급 (Swagger UI용)",
+    description="Swagger UI의 Authorize 버튼에서 사용되는 OAuth2 토큰 발급 엔드포인트입니다.",
+    response_description="JWT 액세스 토큰"
+)
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
+    """
+    OAuth2 Password Flow 토큰 발급
+
+    Swagger UI의 "Authorize" 버튼에서 사용됩니다.
+    일반적인 로그인은 `/auth/login`을 사용하세요.
+
+    **Request Body** (form-data):
+    - **username**: 이메일 주소
+    - **password**: 비밀번호
+
+    **Response**:
+    ```json
+    {
+        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "token_type": "bearer"
+    }
+    ```
+    """
     from app.crud import authenticate_user
     from app.auth import create_access_token
-    
+
     db_user = authenticate_user(db, form_data.username, form_data.password)
     if not db_user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            detail="로그인 정보가 올바르지 않습니다.\n이메일과 비밀번호를 다시 확인해 주세요.",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
     access_token = create_access_token(
         data={"sub": db_user.email},
         expires_delta=access_token_expires
     )
-    
+
     return {"access_token": access_token, "token_type": "bearer"}
 
-@app.get("/health")
+@app.get(
+    "/health",
+    tags=["Health"],
+    summary="서버 상태 확인",
+    description="서버가 정상 작동 중인지 확인합니다.",
+    response_description="서버 상태"
+)
 async def health():
+    """
+    헬스 체크 엔드포인트
+
+    서버의 기본적인 응답 가능 여부를 확인합니다.
+    로드 밸런서나 모니터링 도구에서 사용됩니다.
+
+    **Response**:
+    ```json
+    {
+        "status": "healthy"
+    }
+    ```
+    """
     return {"status": "healthy"}
 
-@app.get("/")
-async def root():
-    return {"message": "Welcome to KingoPortfolio API"}
+@app.get(
+    "/",
+    response_class=HTMLResponse,
+    include_in_schema=False
+)
+async def landing_page():
+    """
+    SEO 최적화된 랜딩 페이지
+
+    검색 엔진을 위한 공개 랜딩 페이지를 제공합니다.
+    """
+    with open(templates_path / "landing.html", "r", encoding="utf-8") as f:
+        return f.read()
+
+@app.get(
+    "/robots.txt",
+    response_class=PlainTextResponse,
+    include_in_schema=False
+)
+async def robots_txt():
+    """
+    Robots.txt 파일 (검색 엔진 크롤링 규칙)
+    """
+    return """User-agent: *
+Allow: /
+Allow: /docs
+Allow: /redoc
+Disallow: /admin/
+Disallow: /auth/
+Disallow: /diagnosis/
+
+Sitemap: https://api.kingo-portfolio.com/sitemap.xml
+"""
+
+@app.get(
+    "/sitemap.xml",
+    response_class=PlainTextResponse,
+    include_in_schema=False
+)
+async def sitemap_xml():
+    """
+    Sitemap.xml 파일 (검색 엔진 인덱싱용)
+    """
+    from datetime import datetime
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    return f"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+        <loc>https://api.kingo-portfolio.com/</loc>
+        <lastmod>{today}</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>1.0</priority>
+    </url>
+    <url>
+        <loc>https://api.kingo-portfolio.com/docs</loc>
+        <lastmod>{today}</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://api.kingo-portfolio.com/redoc</loc>
+        <lastmod>{today}</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://kingo-portfolio.vercel.app</loc>
+        <lastmod>{today}</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.9</priority>
+    </url>
+</urlset>
+"""

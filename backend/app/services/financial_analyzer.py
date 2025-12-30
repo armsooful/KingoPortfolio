@@ -14,7 +14,7 @@ import logging
 from decimal import Decimal
 
 from app.models.alpha_vantage import AlphaVantageStock, AlphaVantageFinancials, AlphaVantageTimeSeries
-from app.models.securities import Stock, ETF
+from app.models.securities import Stock, StockFinancials, ETF
 
 logger = logging.getLogger(__name__)
 
@@ -274,11 +274,97 @@ class FinancialAnalyzer:
     def analyze_stock(db: Session, symbol: str) -> Dict[str, any]:
         """
         종합 재무 분석
-        - symbol: 종목 심볼 (예: AAPL)
+        - symbol: 종목 심볼 (예: AAPL) 또는 한국 주식 ticker (예: 005930)
         """
         try:
             logger.info(f"Starting financial analysis for {symbol}")
 
+            # 한국 주식인지 확인 (숫자로만 구성된 경우)
+            is_korean_stock = symbol.isdigit()
+
+            if is_korean_stock:
+                # 한국 주식의 경우 StockFinancials 조회
+                financials = db.query(StockFinancials).filter(
+                    StockFinancials.ticker == symbol
+                ).order_by(desc(StockFinancials.fiscal_date)).all()
+
+                if not financials:
+                    return {
+                        "success": False,
+                        "message": f"재무 지표 데이터가 없습니다: {symbol} (pykrx 데이터 수집이 필요합니다)",
+                        "symbol": symbol
+                    }
+
+                # 한국 주식 기본 정보
+                stock_info = db.query(Stock).filter(Stock.ticker == symbol).first()
+
+                # 한국 주식은 제한된 재무 데이터만 제공
+                latest_financial = financials[0]
+
+                result = {
+                    "success": True,
+                    "symbol": symbol,
+                    "ticker": symbol,
+                    "company_name": stock_info.name if stock_info else None,
+                    "analysis_date": datetime.now().isoformat(),
+                    "latest_fiscal_date": latest_financial.fiscal_date.isoformat(),
+                    "data_source": "pykrx",
+                    "note": "pykrx는 상세 재무제표를 제공하지 않아 추정값이 포함되어 있습니다.",
+
+                    # 한국 주식은 성장률 계산 불가 (단일 시점 데이터)
+                    "growth_metrics": {
+                        "revenue_cagr_3y": None,
+                        "revenue_cagr_5y": None,
+                        "eps_cagr_3y": None,
+                        "eps_cagr_5y": None,
+                        "note": "pykrx는 과거 재무제표를 제공하지 않아 성장률 계산이 불가능합니다."
+                    },
+
+                    # 이익률 (추정)
+                    "profit_margins": {
+                        "gross_margin": None,
+                        "operating_margin": latest_financial.operating_margin,
+                        "net_margin": latest_financial.net_margin,
+                        "fcf_margin": None,
+                        "note": "pykrx 데이터로는 gross margin과 FCF margin 계산이 불가능합니다."
+                    },
+
+                    # 수익성
+                    "profitability": {
+                        "roe": latest_financial.roe,
+                        "roa": latest_financial.roa
+                    },
+
+                    # 재무 건전성
+                    "financial_health": {
+                        "debt_to_equity": latest_financial.debt_to_equity,
+                        "net_debt_ratio": None,
+                        "current_ratio": None,
+                        "note": "부채비율은 추정값입니다 (부채비율 1.0 가정)."
+                    },
+
+                    # 배당
+                    "dividend_metrics": {
+                        "dividend_yield": stock_info.dividend_yield if stock_info else None,
+                        "payout_ratio": None,
+                        "dividend_growth_rate": None,
+                        "years_of_dividend": None,
+                        "current_dividend_yield": stock_info.dividend_yield if stock_info else None,
+                        "note": "배당 성장률 및 연속성 데이터는 제공되지 않습니다."
+                    },
+
+                    # 밸류에이션
+                    "valuation": {
+                        "pe_ratio": stock_info.pe_ratio if stock_info else None,
+                        "pb_ratio": stock_info.pb_ratio if stock_info else None,
+                        "peg_ratio": None,
+                        "market_cap": stock_info.market_cap if stock_info else None
+                    }
+                }
+
+                return result
+
+            # 미국 주식의 경우 기존 로직 유지
             # 1. 재무제표 데이터 조회 (최신순)
             financials = db.query(AlphaVantageFinancials).filter(
                 AlphaVantageFinancials.symbol == symbol.upper()
@@ -425,92 +511,106 @@ class FinancialAnalyzer:
         - 수익성: ROE+마진 (30점)
         - 안정성: 부채비율+현금창출력 (25점)
         - 주주환원: 배당+자사주매입 (15점)
+
+        한국 주식의 경우:
+        - 성장성 제외 (데이터 부족)
+        - 수익성(40점), 안정성(35점), 배당(25점)으로 재조정
         """
         try:
             analysis = FinancialAnalyzer.analyze_stock(db, symbol)
             if not analysis["success"]:
                 return analysis
 
+            # 한국 주식인지 확인
+            is_korean_stock = symbol.isdigit()
+
             score = 0
             details = {}
 
             # 1. 성장성 (30점) - 3년/5년 가중 평균
+            # 한국 주식은 성장성 점수 제외 (데이터 부족)
             growth_score = 0
-            revenue_cagr_3y = analysis["growth_metrics"]["revenue_cagr_3y"]
-            revenue_cagr_5y = analysis["growth_metrics"]["revenue_cagr_5y"]
-            eps_cagr_3y = analysis["growth_metrics"]["eps_cagr_3y"]
-            eps_cagr_5y = analysis["growth_metrics"]["eps_cagr_5y"]
 
-            # 매출 CAGR (가중평균: 3Y 40% + 5Y 60%)
-            if revenue_cagr_3y is not None and revenue_cagr_5y is not None:
-                weighted_revenue_cagr = 0.4 * revenue_cagr_3y + 0.6 * revenue_cagr_5y
-                if weighted_revenue_cagr >= 15:
-                    growth_score += 15
-                elif weighted_revenue_cagr >= 10:
-                    growth_score += 12
-                elif weighted_revenue_cagr >= 7:
-                    growth_score += 9
-                elif weighted_revenue_cagr >= 5:
-                    growth_score += 6
-                elif weighted_revenue_cagr >= 3:  # 성숙 대기업 기준 완화
-                    growth_score += 3
-            elif revenue_cagr_3y is not None:  # 5년 데이터 없으면 3년만
-                if revenue_cagr_3y >= 10:
-                    growth_score += 15
-                elif revenue_cagr_3y >= 5:
-                    growth_score += 10
-                elif revenue_cagr_3y >= 3:
-                    growth_score += 5
+            if not is_korean_stock:
+                revenue_cagr_3y = analysis["growth_metrics"]["revenue_cagr_3y"]
+                revenue_cagr_5y = analysis["growth_metrics"]["revenue_cagr_5y"]
+                eps_cagr_3y = analysis["growth_metrics"]["eps_cagr_3y"]
+                eps_cagr_5y = analysis["growth_metrics"]["eps_cagr_5y"]
 
-            # EPS CAGR (가중평균: 3Y 40% + 5Y 60%)
-            if eps_cagr_3y is not None and eps_cagr_5y is not None:
-                weighted_eps_cagr = 0.4 * eps_cagr_3y + 0.6 * eps_cagr_5y
-                if weighted_eps_cagr >= 20:
-                    growth_score += 15
-                elif weighted_eps_cagr >= 15:
-                    growth_score += 12
-                elif weighted_eps_cagr >= 10:
-                    growth_score += 9
-                elif weighted_eps_cagr >= 7:
-                    growth_score += 6
-                elif weighted_eps_cagr >= 5:  # 성숙 대기업 기준 완화
-                    growth_score += 3
-            elif eps_cagr_3y is not None:
-                if eps_cagr_3y >= 15:
-                    growth_score += 15
-                elif eps_cagr_3y >= 10:
-                    growth_score += 10
-                elif eps_cagr_3y >= 5:
-                    growth_score += 5
+                # 매출 CAGR (가중평균: 3Y 40% + 5Y 60%)
+                if revenue_cagr_3y is not None and revenue_cagr_5y is not None:
+                    weighted_revenue_cagr = 0.4 * revenue_cagr_3y + 0.6 * revenue_cagr_5y
+                    if weighted_revenue_cagr >= 15:
+                        growth_score += 15
+                    elif weighted_revenue_cagr >= 10:
+                        growth_score += 12
+                    elif weighted_revenue_cagr >= 7:
+                        growth_score += 9
+                    elif weighted_revenue_cagr >= 5:
+                        growth_score += 6
+                    elif weighted_revenue_cagr >= 3:  # 성숙 대기업 기준 완화
+                        growth_score += 3
+                elif revenue_cagr_3y is not None:  # 5년 데이터 없으면 3년만
+                    if revenue_cagr_3y >= 10:
+                        growth_score += 15
+                    elif revenue_cagr_3y >= 5:
+                        growth_score += 10
+                    elif revenue_cagr_3y >= 3:
+                        growth_score += 5
+
+                # EPS CAGR (가중평균: 3Y 40% + 5Y 60%)
+                if eps_cagr_3y is not None and eps_cagr_5y is not None:
+                    weighted_eps_cagr = 0.4 * eps_cagr_3y + 0.6 * eps_cagr_5y
+                    if weighted_eps_cagr >= 20:
+                        growth_score += 15
+                    elif weighted_eps_cagr >= 15:
+                        growth_score += 12
+                    elif weighted_eps_cagr >= 10:
+                        growth_score += 9
+                    elif weighted_eps_cagr >= 7:
+                        growth_score += 6
+                    elif weighted_eps_cagr >= 5:  # 성숙 대기업 기준 완화
+                        growth_score += 3
+                elif eps_cagr_3y is not None:
+                    if eps_cagr_3y >= 15:
+                        growth_score += 15
+                    elif eps_cagr_3y >= 10:
+                        growth_score += 10
+                    elif eps_cagr_3y >= 5:
+                        growth_score += 5
 
             details["growth_score"] = growth_score
             score += growth_score
 
-            # 2. 수익성 (30점) - 동일
+            # 2. 수익성 (미국 주식: 30점, 한국 주식: 40점)
             profitability_score = 0
             roe = analysis["profitability"]["roe"]
             net_margin = analysis["profit_margins"]["net_margin"]
 
+            # 한국 주식은 가중치 조정 (30점 → 40점)
+            roe_multiplier = 1.33 if is_korean_stock else 1.0
+            margin_multiplier = 1.33 if is_korean_stock else 1.0
+
             if roe is not None:
                 if roe >= 20:
-                    profitability_score += 15
+                    profitability_score += 15 * roe_multiplier
                 elif roe >= 15:
-                    profitability_score += 10
+                    profitability_score += 10 * roe_multiplier
                 elif roe >= 10:
-                    profitability_score += 5
+                    profitability_score += 5 * roe_multiplier
 
             if net_margin is not None:
                 if net_margin >= 20:
-                    profitability_score += 15
+                    profitability_score += 15 * margin_multiplier
                 elif net_margin >= 10:
-                    profitability_score += 10
+                    profitability_score += 10 * margin_multiplier
                 elif net_margin >= 5:
-                    profitability_score += 5
+                    profitability_score += 5 * margin_multiplier
 
-            details["profitability_score"] = profitability_score
+            details["profitability_score"] = round(profitability_score, 1)
             score += profitability_score
 
-            # 3. 안정성 (25점) - 개선: 고ROE 기업은 부채비율 기준 완화
+            # 3. 안정성 (미국 주식: 25점, 한국 주식: 35점)
             stability_score = 0
             debt_to_equity = analysis["financial_health"]["debt_to_equity"]
             net_debt_ratio = analysis["financial_health"]["net_debt_ratio"]
@@ -518,53 +618,61 @@ class FinancialAnalyzer:
             # ROE가 높으면 레버리지 전략으로 간주하여 부채비율 기준 완화
             is_high_roe = roe and roe >= 20
 
+            # 한국 주식은 가중치 조정 (25점 → 35점)
+            stability_multiplier = 1.4 if is_korean_stock else 1.0
+
             if debt_to_equity is not None:
                 if is_high_roe:  # 고ROE 기업용 완화된 기준
                     if debt_to_equity <= 100:
-                        stability_score += 15
+                        stability_score += 15 * stability_multiplier
                     elif debt_to_equity <= 200:
-                        stability_score += 12
+                        stability_score += 12 * stability_multiplier
                     elif debt_to_equity <= 300:
-                        stability_score += 9
+                        stability_score += 9 * stability_multiplier
                     elif debt_to_equity <= 400:
-                        stability_score += 6
+                        stability_score += 6 * stability_multiplier
                 else:  # 일반 기업 기준
                     if debt_to_equity <= 50:
-                        stability_score += 15
+                        stability_score += 15 * stability_multiplier
                     elif debt_to_equity <= 100:
-                        stability_score += 10
+                        stability_score += 10 * stability_multiplier
                     elif debt_to_equity <= 150:
-                        stability_score += 5
+                        stability_score += 5 * stability_multiplier
 
-            # 순부채비율로 추가 평가 (현금 보유량 고려)
+            # 순부채비율로 추가 평가 (현금 보유량 고려) - 한국 주식은 데이터 없음
             if net_debt_ratio is not None:
                 if net_debt_ratio <= 0:  # 순현금 보유
-                    stability_score += 10
+                    stability_score += 10 * stability_multiplier
                 elif net_debt_ratio <= 50:
-                    stability_score += 7
+                    stability_score += 7 * stability_multiplier
                 elif net_debt_ratio <= 100:
-                    stability_score += 4
+                    stability_score += 4 * stability_multiplier
 
-            details["stability_score"] = min(stability_score, 25)  # 최대 25점
-            score += min(stability_score, 25)
+            max_stability = 35 if is_korean_stock else 25
+            details["stability_score"] = round(min(stability_score, max_stability), 1)
+            score += min(stability_score, max_stability)
 
-            # 4. 주주환원 (15점) - 배당 기준만 (자사주 매입 데이터 없음)
-            shareholder_return_score = 0
+            # 4. 주주환원 (미국 주식: 15점, 한국 주식: 25점)
+            dividend_score = 0
             dividend_yield = analysis["dividend_metrics"]["current_dividend_yield"]
+
+            # 한국 주식은 가중치 조정 (15점 → 25점)
+            dividend_multiplier = 1.67 if is_korean_stock else 1.0
 
             # 배당수익률
             if dividend_yield is not None and dividend_yield > 0:
                 if dividend_yield >= 3:
-                    shareholder_return_score += 15
+                    dividend_score += 15 * dividend_multiplier
                 elif dividend_yield >= 2:
-                    shareholder_return_score += 10
+                    dividend_score += 10 * dividend_multiplier
                 elif dividend_yield >= 1:
-                    shareholder_return_score += 7
+                    dividend_score += 7 * dividend_multiplier
                 elif dividend_yield >= 0.3:  # 성장주는 낮은 배당도 인정
-                    shareholder_return_score += 4
+                    dividend_score += 4 * dividend_multiplier
 
-            details["shareholder_return_score"] = shareholder_return_score
-            score += shareholder_return_score
+            max_dividend = 25 if is_korean_stock else 15
+            details["dividend_score"] = round(min(dividend_score, max_dividend), 1)
+            score += min(dividend_score, max_dividend)
 
             # 등급 부여
             if score >= 80:
@@ -586,10 +694,10 @@ class FinancialAnalyzer:
             # 투자 스타일 분류
             investment_style = FinancialAnalyzer._classify_investment_style(analysis)
 
-            return {
+            result = {
                 "success": True,
-                "symbol": symbol.upper(),
-                "total_score": score,
+                "symbol": symbol.upper() if not is_korean_stock else symbol,
+                "total_score": round(score, 1),
                 "grade": grade,
                 "rating": rating,
                 "score_details": details,
@@ -597,6 +705,14 @@ class FinancialAnalyzer:
                 "analysis_date": datetime.now().isoformat(),
                 "scoring_version": "v2"
             }
+
+            # 한국 주식인 경우 점수 체계 안내 추가
+            if is_korean_stock:
+                result["korean_stock"] = True
+                result["scoring_note"] = "한국 주식은 성장성(30점) 제외, 수익성(40점), 안정성(35점), 배당(25점)으로 평가됩니다."
+                result["data_source"] = "pykrx"
+
+            return result
 
         except Exception as e:
             logger.error(f"Financial score V2 calculation failed for {symbol}: {e}")
@@ -653,103 +769,117 @@ class FinancialAnalyzer:
     def get_financial_score(db: Session, symbol: str) -> Dict[str, any]:
         """
         재무 건전성 점수 계산 (100점 만점) - 기본 버전
-        - 성장성: 30점
-        - 수익성: 30점
-        - 안정성: 25점
-        - 배당: 15점
+        - 미국 주식: 성장성(30점), 수익성(30점), 안정성(25점), 배당(15점)
+        - 한국 주식: 수익성(40점), 안정성(35점), 배당(25점) - 성장성 제외
         """
         try:
             analysis = FinancialAnalyzer.analyze_stock(db, symbol)
             if not analysis["success"]:
                 return analysis
 
+            # 한국 주식인지 확인
+            is_korean_stock = symbol.isdigit()
+
             score = 0
             details = {}
 
-            # 1. 성장성 (30점)
+            # 1. 성장성 (30점) - 한국 주식은 제외
             growth_score = 0
-            revenue_cagr_3y = analysis["growth_metrics"]["revenue_cagr_3y"]
-            eps_cagr_3y = analysis["growth_metrics"]["eps_cagr_3y"]
 
-            if revenue_cagr_3y is not None:
-                if revenue_cagr_3y >= 20:
-                    growth_score += 15
-                elif revenue_cagr_3y >= 10:
-                    growth_score += 10
-                elif revenue_cagr_3y >= 5:
-                    growth_score += 5
+            if not is_korean_stock:
+                revenue_cagr_3y = analysis["growth_metrics"]["revenue_cagr_3y"]
+                eps_cagr_3y = analysis["growth_metrics"]["eps_cagr_3y"]
 
-            if eps_cagr_3y is not None:
-                if eps_cagr_3y >= 20:
-                    growth_score += 15
-                elif eps_cagr_3y >= 10:
-                    growth_score += 10
-                elif eps_cagr_3y >= 5:
-                    growth_score += 5
+                if revenue_cagr_3y is not None:
+                    if revenue_cagr_3y >= 20:
+                        growth_score += 15
+                    elif revenue_cagr_3y >= 10:
+                        growth_score += 10
+                    elif revenue_cagr_3y >= 5:
+                        growth_score += 5
+
+                if eps_cagr_3y is not None:
+                    if eps_cagr_3y >= 20:
+                        growth_score += 15
+                    elif eps_cagr_3y >= 10:
+                        growth_score += 10
+                    elif eps_cagr_3y >= 5:
+                        growth_score += 5
 
             details["growth_score"] = growth_score
             score += growth_score
 
-            # 2. 수익성 (30점)
+            # 2. 수익성 (미국 주식: 30점, 한국 주식: 40점)
             profitability_score = 0
             roe = analysis["profitability"]["roe"]
             net_margin = analysis["profit_margins"]["net_margin"]
 
+            # 한국 주식은 가중치 조정
+            multiplier = 1.33 if is_korean_stock else 1.0
+
             if roe is not None:
                 if roe >= 20:
-                    profitability_score += 15
+                    profitability_score += 15 * multiplier
                 elif roe >= 15:
-                    profitability_score += 10
+                    profitability_score += 10 * multiplier
                 elif roe >= 10:
-                    profitability_score += 5
+                    profitability_score += 5 * multiplier
 
             if net_margin is not None:
                 if net_margin >= 20:
-                    profitability_score += 15
+                    profitability_score += 15 * multiplier
                 elif net_margin >= 10:
-                    profitability_score += 10
+                    profitability_score += 10 * multiplier
                 elif net_margin >= 5:
-                    profitability_score += 5
+                    profitability_score += 5 * multiplier
 
-            details["profitability_score"] = profitability_score
+            details["profitability_score"] = round(profitability_score, 1)
             score += profitability_score
 
-            # 3. 안정성 (25점)
+            # 3. 안정성 (미국 주식: 25점, 한국 주식: 35점)
             stability_score = 0
             debt_to_equity = analysis["financial_health"]["debt_to_equity"]
             current_ratio = analysis["financial_health"]["current_ratio"]
 
+            # 한국 주식은 가중치 조정
+            stability_multiplier = 1.4 if is_korean_stock else 1.0
+
             if debt_to_equity is not None:
                 if debt_to_equity <= 50:
-                    stability_score += 15
+                    stability_score += 15 * stability_multiplier
                 elif debt_to_equity <= 100:
-                    stability_score += 10
+                    stability_score += 10 * stability_multiplier
                 elif debt_to_equity <= 150:
-                    stability_score += 5
+                    stability_score += 5 * stability_multiplier
 
-            if current_ratio is not None:
+            if current_ratio is not None and not is_korean_stock:  # 한국 주식은 current_ratio 데이터 없음
                 if current_ratio >= 2.0:
                     stability_score += 10
                 elif current_ratio >= 1.5:
                     stability_score += 5
 
-            details["stability_score"] = stability_score
-            score += stability_score
+            max_stability = 35 if is_korean_stock else 25
+            details["stability_score"] = round(min(stability_score, max_stability), 1)
+            score += min(stability_score, max_stability)
 
-            # 4. 배당 (15점)
+            # 4. 배당 (미국 주식: 15점, 한국 주식: 25점)
             dividend_score = 0
             dividend_yield = analysis["dividend_metrics"]["current_dividend_yield"]
 
+            # 한국 주식은 가중치 조정
+            dividend_multiplier = 1.67 if is_korean_stock else 1.0
+
             if dividend_yield is not None and dividend_yield > 0:
                 if dividend_yield >= 3:
-                    dividend_score += 15
+                    dividend_score += 15 * dividend_multiplier
                 elif dividend_yield >= 2:
-                    dividend_score += 10
+                    dividend_score += 10 * dividend_multiplier
                 elif dividend_yield >= 1:
-                    dividend_score += 5
+                    dividend_score += 5 * dividend_multiplier
 
-            details["dividend_score"] = dividend_score
-            score += dividend_score
+            max_dividend = 25 if is_korean_stock else 15
+            details["dividend_score"] = round(min(dividend_score, max_dividend), 1)
+            score += min(dividend_score, max_dividend)
 
             # 등급 부여
             if score >= 80:
@@ -768,15 +898,23 @@ class FinancialAnalyzer:
                 grade = "F"
                 rating = "위험"
 
-            return {
+            result = {
                 "success": True,
-                "symbol": symbol.upper(),
-                "total_score": score,
+                "symbol": symbol.upper() if not is_korean_stock else symbol,
+                "total_score": round(score, 1),
                 "grade": grade,
                 "rating": rating,
                 "score_details": details,
                 "analysis_date": datetime.now().isoformat()
             }
+
+            # 한국 주식인 경우 안내 추가
+            if is_korean_stock:
+                result["korean_stock"] = True
+                result["scoring_note"] = "한국 주식은 성장성(30점) 제외, 수익성(40점), 안정성(35점), 배당(25점)으로 평가됩니다."
+                result["data_source"] = "pykrx"
+
+            return result
 
         except Exception as e:
             logger.error(f"Financial score calculation failed for {symbol}: {e}")

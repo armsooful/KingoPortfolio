@@ -143,66 +143,79 @@ const FinancialAnalysis = () => {
           )}
 
           {/* 세부 점수 */}
-          {scoreV2 && (
+          {scoreV2 && scoreV2.score_details && (
             <div className="score-details">
               <h4>세부 점수 (V2)</h4>
+              {scoreV2.korean_stock && (
+                <div style={{ padding: '10px', background: '#fff3cd', borderRadius: '5px', marginBottom: '10px', fontSize: '0.9em' }}>
+                  ℹ️ 한국 주식은 성장성 제외, 수익성(40점), 안정성(35점), 배당(25점)으로 평가됩니다.
+                </div>
+              )}
               <div className="score-bars">
-                <div className="score-bar">
-                  <span className="bar-label">성장성</span>
-                  <div className="bar-container">
-                    <div
-                      className="bar-fill"
-                      style={{
-                        width: `${(scoreV2.score_details.growth_score / 30) * 100}%`,
-                      }}
-                    ></div>
+                {scoreV2.score_details.growth_score !== undefined && (
+                  <div className="score-bar">
+                    <span className="bar-label">성장성</span>
+                    <div className="bar-container">
+                      <div
+                        className="bar-fill"
+                        style={{
+                          width: `${(scoreV2.score_details.growth_score / 30) * 100}%`,
+                        }}
+                      ></div>
+                    </div>
+                    <span className="bar-value">
+                      {scoreV2.score_details.growth_score ?? 0}/30
+                    </span>
                   </div>
-                  <span className="bar-value">
-                    {scoreV2.score_details.growth_score}/30
-                  </span>
-                </div>
-                <div className="score-bar">
-                  <span className="bar-label">수익성</span>
-                  <div className="bar-container">
-                    <div
-                      className="bar-fill"
-                      style={{
-                        width: `${(scoreV2.score_details.profitability_score / 30) * 100}%`,
-                      }}
-                    ></div>
+                )}
+                {scoreV2.score_details.profitability_score !== undefined && (
+                  <div className="score-bar">
+                    <span className="bar-label">수익성</span>
+                    <div className="bar-container">
+                      <div
+                        className="bar-fill"
+                        style={{
+                          width: `${(scoreV2.score_details.profitability_score / (scoreV2.korean_stock ? 40 : 30)) * 100}%`,
+                        }}
+                      ></div>
+                    </div>
+                    <span className="bar-value">
+                      {scoreV2.score_details.profitability_score ?? 0}/{scoreV2.korean_stock ? 40 : 30}
+                    </span>
                   </div>
-                  <span className="bar-value">
-                    {scoreV2.score_details.profitability_score}/30
-                  </span>
-                </div>
-                <div className="score-bar">
-                  <span className="bar-label">안정성</span>
-                  <div className="bar-container">
-                    <div
-                      className="bar-fill"
-                      style={{
-                        width: `${(scoreV2.score_details.stability_score / 25) * 100}%`,
-                      }}
-                    ></div>
+                )}
+                {scoreV2.score_details.stability_score !== undefined && (
+                  <div className="score-bar">
+                    <span className="bar-label">안정성</span>
+                    <div className="bar-container">
+                      <div
+                        className="bar-fill"
+                        style={{
+                          width: `${(scoreV2.score_details.stability_score / (scoreV2.korean_stock ? 35 : 25)) * 100}%`,
+                        }}
+                      ></div>
+                    </div>
+                    <span className="bar-value">
+                      {scoreV2.score_details.stability_score ?? 0}/{scoreV2.korean_stock ? 35 : 25}
+                    </span>
                   </div>
-                  <span className="bar-value">
-                    {scoreV2.score_details.stability_score}/25
-                  </span>
-                </div>
-                <div className="score-bar">
-                  <span className="bar-label">배당/주주환원</span>
-                  <div className="bar-container">
-                    <div
-                      className="bar-fill"
-                      style={{
-                        width: `${(scoreV2.score_details.dividend_score / 15) * 100}%`,
-                      }}
-                    ></div>
+                )}
+                {scoreV2.score_details.dividend_score !== undefined && (
+                  <div className="score-bar">
+                    <span className="bar-label">배당/주주환원</span>
+                    <div className="bar-container">
+                      <div
+                        className="bar-fill"
+                        style={{
+                          width: `${(scoreV2.score_details.dividend_score / (scoreV2.korean_stock ? 25 : 15)) * 100}%`,
+                        }}
+                      ></div>
+                    </div>
+                    <span className="bar-value">
+                      {scoreV2.score_details.dividend_score ?? 0}/{scoreV2.korean_stock ? 25 : 15}
+                    </span>
                   </div>
-                  <span className="bar-value">
-                    {scoreV2.score_details.dividend_score}/15
-                  </span>
-                </div>
+                )}
               </div>
             </div>
           )}

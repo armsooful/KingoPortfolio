@@ -8,6 +8,7 @@ from app.models.alpha_vantage import (
     AlphaVantageTimeSeries
 )
 from app.services.alpha_vantage_client import AlphaVantageClient
+from app.progress_tracker import progress_tracker
 from datetime import datetime, timedelta
 import logging
 import uuid
@@ -320,8 +321,22 @@ class AlphaVantageDataLoader:
             db.rollback()
             return {"success": False, "message": f"{symbol} 재무제표 적재 실패: {str(e)}"}
 
-    def load_all_popular_stocks(self, db: Session) -> dict:
-        """인기 미국 주식 전체 적재"""
+    def load_all_popular_stocks(self, db: Session, task_id: str = None) -> dict:
+        """인기 미국 주식 전체 적재
+
+        Returns:
+            적재 결과 {success: int, failed: int, updated: int, created: int, errors: list}
+        """
+        # task_id가 없으면 생성
+        if not task_id:
+            task_id = f"us_stocks_{uuid.uuid4().hex[:8]}"
+
+        stocks_list = list(self.POPULAR_US_STOCKS.items())
+        total_count = len(stocks_list)
+
+        # 진행 상황 추적 시작
+        progress_tracker.start_task(task_id, total_count, "미국 주식 데이터 수집")
+
         results = {
             "success": 0,
             "failed": 0,
@@ -330,22 +345,78 @@ class AlphaVantageDataLoader:
             "errors": []
         }
 
-        for symbol, name in self.POPULAR_US_STOCKS.items():
-            result = self.load_stock_data(db, symbol, name)
-            if result['success']:
-                results['success'] += 1
-                if result.get('action') == 'updated':
-                    results['updated'] += 1
+        for idx, (symbol, name) in enumerate(stocks_list, 1):
+            try:
+                # 현재 처리 중인 항목 표시 (카운트 증가 없이)
+                progress_tracker.update_progress(
+                    task_id,
+                    current=idx,
+                    current_item=f"{name} ({symbol})",
+                    success=None
+                )
+
+                result = self.load_stock_data(db, symbol, name)
+                if result['success']:
+                    results['success'] += 1
+                    if result.get('action') == 'updated':
+                        results['updated'] += 1
+                    else:
+                        results['created'] += 1
+
+                    # 성공 업데이트
+                    progress_tracker.update_progress(
+                        task_id,
+                        current=idx,
+                        current_item=f"{name} ({symbol})",
+                        success=True
+                    )
                 else:
-                    results['created'] += 1
-            else:
+                    results['failed'] += 1
+                    results['errors'].append(f"{symbol}: {result['message']}")
+
+                    # 실패 업데이트
+                    progress_tracker.update_progress(
+                        task_id,
+                        current=idx,
+                        current_item=f"{name} ({symbol})",
+                        success=False,
+                        error=result['message']
+                    )
+
+            except Exception as e:
+                logger.error(f"Error processing {symbol}: {str(e)}")
                 results['failed'] += 1
-                results['errors'].append(f"{symbol}: {result['message']}")
+                results['errors'].append(f"{symbol}: {str(e)}")
+                progress_tracker.update_progress(
+                    task_id,
+                    current=idx,
+                    current_item=f"{name} ({symbol})",
+                    success=False,
+                    error=str(e)
+                )
+
+        # 작업 완료
+        progress_tracker.complete_task(task_id, "completed")
+        results["task_id"] = task_id
 
         return results
 
-    def load_all_popular_etfs(self, db: Session) -> dict:
-        """인기 미국 ETF 전체 적재 (간단 버전)"""
+    def load_all_popular_etfs(self, db: Session, task_id: str = None) -> dict:
+        """인기 미국 ETF 전체 적재 (간단 버전)
+
+        Returns:
+            적재 결과 {success: int, failed: int, updated: int, created: int, errors: list}
+        """
+        # task_id가 없으면 생성
+        if not task_id:
+            task_id = f"us_etfs_{uuid.uuid4().hex[:8]}"
+
+        etfs_list = list(self.POPULAR_US_ETFS.items())
+        total_count = len(etfs_list)
+
+        # 진행 상황 추적 시작
+        progress_tracker.start_task(task_id, total_count, "미국 ETF 데이터 수집")
+
         results = {
             "success": 0,
             "failed": 0,
@@ -354,11 +425,26 @@ class AlphaVantageDataLoader:
             "errors": []
         }
 
-        for symbol, name in self.POPULAR_US_ETFS.items():
+        for idx, (symbol, name) in enumerate(etfs_list, 1):
             try:
+                # 현재 처리 중인 항목 표시 (카운트 증가 없이)
+                progress_tracker.update_progress(
+                    task_id,
+                    current=idx,
+                    current_item=f"{name} ({symbol})",
+                    success=None
+                )
+
                 quote = self.client.get_quote(symbol)
                 if not quote:
                     results['failed'] += 1
+                    progress_tracker.update_progress(
+                        task_id,
+                        current=idx,
+                        current_item=f"{name} ({symbol})",
+                        success=False,
+                        error=f"{symbol} 시세 조회 실패"
+                    )
                     continue
 
                 existing = db.query(AlphaVantageETF).filter(
@@ -389,11 +475,184 @@ class AlphaVantageDataLoader:
                 db.commit()
                 results['success'] += 1
 
+                # 성공 업데이트
+                progress_tracker.update_progress(
+                    task_id,
+                    current=idx,
+                    current_item=f"{name} ({symbol})",
+                    success=True
+                )
+
             except Exception as e:
                 logger.error(f"Error loading ETF {symbol}: {str(e)}")
                 results['failed'] += 1
                 results['errors'].append(f"{symbol}: {str(e)}")
+                progress_tracker.update_progress(
+                    task_id,
+                    current=idx,
+                    current_item=f"{name} ({symbol})",
+                    success=False,
+                    error=str(e)
+                )
                 db.rollback()
+
+        # 작업 완료
+        progress_tracker.complete_task(task_id, "completed")
+        results["task_id"] = task_id
+
+        return results
+
+    def load_time_series_data(self, db: Session, symbol: str, outputsize: str = 'compact') -> dict:
+        """시계열 데이터 적재
+
+        Args:
+            db: DB 세션
+            symbol: 주식 심볼
+            outputsize: 'compact' (최근 100일) or 'full' (20년)
+
+        Returns:
+            {"success": bool, "message": str, "count": int}
+        """
+        try:
+            logger.info(f"Loading time series data for {symbol} ({outputsize})...")
+
+            # API로부터 시계열 데이터 조회
+            time_series_data = self.client.get_daily_time_series(symbol, outputsize)
+            if not time_series_data:
+                return {"success": False, "message": f"{symbol} 시계열 데이터 조회 실패"}
+
+            saved_count = 0
+            updated_count = 0
+
+            for date_str, values in time_series_data.items():
+                try:
+                    date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
+
+                    # 기존 데이터 확인
+                    existing = db.query(AlphaVantageTimeSeries).filter(
+                        AlphaVantageTimeSeries.symbol == symbol.upper(),
+                        AlphaVantageTimeSeries.date == date_obj
+                    ).first()
+
+                    if existing:
+                        # 업데이트
+                        existing.open = values['open']
+                        existing.high = values['high']
+                        existing.low = values['low']
+                        existing.close = values['close']
+                        existing.volume = values['volume']
+                        existing.last_updated = datetime.utcnow()
+                        updated_count += 1
+                    else:
+                        # 신규 생성
+                        time_series = AlphaVantageTimeSeries(
+                            symbol=symbol.upper(),
+                            date=date_obj,
+                            open=values['open'],
+                            high=values['high'],
+                            low=values['low'],
+                            close=values['close'],
+                            volume=values['volume']
+                        )
+                        db.add(time_series)
+                        saved_count += 1
+
+                except Exception as e:
+                    logger.warning(f"Error processing date {date_str}: {str(e)}")
+                    continue
+
+            db.commit()
+            total = saved_count + updated_count
+            logger.info(f"{symbol} 시계열 데이터 저장 완료 (신규: {saved_count}, 업데이트: {updated_count})")
+
+            return {
+                "success": True,
+                "message": f"{symbol} 시계열 데이터 적재 완료",
+                "count": total,
+                "saved": saved_count,
+                "updated": updated_count
+            }
+
+        except Exception as e:
+            logger.error(f"Error loading time series for {symbol}: {str(e)}")
+            db.rollback()
+            return {"success": False, "message": f"{symbol} 시계열 데이터 적재 실패: {str(e)}"}
+
+    def load_all_time_series(self, db: Session, task_id: str = None, outputsize: str = 'compact') -> dict:
+        """인기 주식 & ETF 전체 시계열 데이터 적재
+
+        Returns:
+            적재 결과 {success: int, failed: int, total_records: int, errors: list}
+        """
+        # task_id가 없으면 생성
+        if not task_id:
+            task_id = f"us_timeseries_{uuid.uuid4().hex[:8]}"
+
+        # 주식 + ETF 통합 리스트
+        all_symbols = {**self.POPULAR_US_STOCKS, **self.POPULAR_US_ETFS}
+        symbols_list = list(all_symbols.items())
+        total_count = len(symbols_list)
+
+        # 진행 상황 추적 시작
+        progress_tracker.start_task(task_id, total_count, "미국 주식/ETF 시계열 데이터 수집")
+
+        results = {
+            "success": 0,
+            "failed": 0,
+            "total_records": 0,
+            "errors": []
+        }
+
+        for idx, (symbol, name) in enumerate(symbols_list, 1):
+            try:
+                # 현재 처리 중인 항목 표시
+                progress_tracker.update_progress(
+                    task_id,
+                    current=idx,
+                    current_item=f"{name} ({symbol}) 시계열",
+                    success=None
+                )
+
+                result = self.load_time_series_data(db, symbol, outputsize)
+                if result['success']:
+                    results['success'] += 1
+                    results['total_records'] += result.get('count', 0)
+
+                    # 성공 업데이트
+                    progress_tracker.update_progress(
+                        task_id,
+                        current=idx,
+                        current_item=f"{name} ({symbol}) 시계열",
+                        success=True
+                    )
+                else:
+                    results['failed'] += 1
+                    results['errors'].append(f"{symbol}: {result['message']}")
+
+                    # 실패 업데이트
+                    progress_tracker.update_progress(
+                        task_id,
+                        current=idx,
+                        current_item=f"{name} ({symbol}) 시계열",
+                        success=False,
+                        error=result['message']
+                    )
+
+            except Exception as e:
+                logger.error(f"Error processing time series for {symbol}: {str(e)}")
+                results['failed'] += 1
+                results['errors'].append(f"{symbol}: {str(e)}")
+                progress_tracker.update_progress(
+                    task_id,
+                    current=idx,
+                    current_item=f"{name} ({symbol}) 시계열",
+                    success=False,
+                    error=str(e)
+                )
+
+        # 작업 완료
+        progress_tracker.complete_task(task_id, "completed")
+        results["task_id"] = task_id
 
         return results
 

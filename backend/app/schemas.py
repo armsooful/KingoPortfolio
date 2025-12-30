@@ -1,6 +1,6 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 
 # ============================================================
@@ -9,38 +9,374 @@ from typing import List, Optional
 
 class UserCreate(BaseModel):
     """사용자 생성 요청"""
-    email: EmailStr
-    password: str
-    name: Optional[str] = None
+    email: EmailStr = Field(
+        ...,
+        description="사용자 이메일 주소 (고유값)",
+        example="user@example.com"
+    )
+    password: str = Field(
+        ...,
+        min_length=8,
+        max_length=72,
+        description="비밀번호 (최소 8자, 최대 72바이트)",
+        example="securePassword123!"
+    )
+    name: Optional[str] = Field(
+        None,
+        max_length=50,
+        description="사용자 이름 (선택사항)",
+        example="홍길동"
+    )
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "email": "user@example.com",
+                "password": "securePassword123!",
+                "name": "홍길동"
+            }
+        }
 
 
 class UserLogin(BaseModel):
     """로그인 요청"""
-    email: EmailStr
-    password: str
+    email: EmailStr = Field(
+        ...,
+        description="등록된 이메일 주소",
+        example="user@example.com"
+    )
+    password: str = Field(
+        ...,
+        description="비밀번호",
+        example="securePassword123!"
+    )
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "email": "user@example.com",
+                "password": "securePassword123!"
+            }
+        }
 
 
 class UserResponse(BaseModel):
     """사용자 응답"""
-    id: str
-    email: str
-    name: Optional[str] = None
-    created_at: datetime
+    id: str = Field(..., description="사용자 고유 ID", example="usr_abc123xyz")
+    email: str = Field(..., description="이메일 주소", example="user@example.com")
+    name: Optional[str] = Field(None, description="사용자 이름", example="홍길동")
+    created_at: datetime = Field(..., description="계정 생성 일시", example="2025-12-29T10:00:00Z")
 
     class Config:
         orm_mode = True
+        schema_extra = {
+            "example": {
+                "id": "usr_abc123xyz",
+                "email": "user@example.com",
+                "name": "홍길동",
+                "created_at": "2025-12-29T10:00:00Z"
+            }
+        }
 
 
 class Token(BaseModel):
     """토큰 응답"""
-    access_token: str
-    token_type: str
-    user: UserResponse
+    access_token: str = Field(
+        ...,
+        description="JWT 액세스 토큰",
+        example="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyQGV4YW1wbGUuY29tIiwiZXhwIjoxNzM1NDcwMDAwfQ.example"
+    )
+    token_type: str = Field(
+        ...,
+        description="토큰 타입 (항상 'bearer')",
+        example="bearer"
+    )
+    user: UserResponse = Field(..., description="사용자 정보")
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                "token_type": "bearer",
+                "user": {
+                    "id": "usr_abc123xyz",
+                    "email": "user@example.com",
+                    "name": "홍길동",
+                    "created_at": "2025-12-29T10:00:00Z"
+                }
+            }
+        }
 
 
 class TokenData(BaseModel):
-    """토큰 데이터"""
-    email: str
+    """토큰 데이터 (내부 사용)"""
+    email: str = Field(..., description="토큰에 포함된 사용자 이메일")
+
+
+class ForgotPasswordRequest(BaseModel):
+    """비밀번호 재설정 요청"""
+    email: EmailStr = Field(
+        ...,
+        description="등록된 이메일 주소",
+        example="user@example.com"
+    )
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "email": "user@example.com"
+            }
+        }
+
+
+class ResetPasswordRequest(BaseModel):
+    """비밀번호 재설정"""
+    token: str = Field(
+        ...,
+        description="재설정 토큰 (이메일로 전송됨)",
+        example="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    )
+    new_password: str = Field(
+        ...,
+        min_length=8,
+        max_length=72,
+        description="새 비밀번호 (최소 8자, 최대 72바이트)",
+        example="newSecurePassword123!"
+    )
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                "new_password": "newSecurePassword123!"
+            }
+        }
+
+
+class MessageResponse(BaseModel):
+    """일반 메시지 응답"""
+    message: str = Field(
+        ...,
+        description="응답 메시지",
+        example="비밀번호 재설정 링크가 이메일로 전송되었습니다"
+    )
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "message": "작업이 성공적으로 완료되었습니다"
+            }
+        }
+
+
+class UpdateProfileRequest(BaseModel):
+    """프로필 수정 요청"""
+    name: Optional[str] = Field(
+        None,
+        max_length=50,
+        description="사용자 이름 (선택사항)",
+        example="홍길동"
+    )
+    email: Optional[EmailStr] = Field(
+        None,
+        description="이메일 주소 (선택사항)",
+        example="newemail@example.com"
+    )
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "name": "김철수",
+                "email": "newemail@example.com"
+            }
+        }
+
+
+class ChangePasswordRequest(BaseModel):
+    """비밀번호 변경 요청"""
+    current_password: str = Field(
+        ...,
+        description="현재 비밀번호",
+        example="currentPassword123!"
+    )
+    new_password: str = Field(
+        ...,
+        min_length=8,
+        max_length=72,
+        description="새 비밀번호 (최소 8자, 최대 72바이트)",
+        example="newPassword456!"
+    )
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "current_password": "currentPassword123!",
+                "new_password": "newPassword456!"
+            }
+        }
+
+
+class ProfileResponse(BaseModel):
+    """프로필 응답 (확장된 사용자 정보)"""
+    id: str = Field(..., description="사용자 고유 ID", example="usr_abc123xyz")
+    email: str = Field(..., description="이메일 주소", example="user@example.com")
+    name: Optional[str] = Field(None, description="사용자 이름", example="홍길동")
+    role: str = Field(..., description="사용자 역할 (user/premium/admin)", example="user")
+    created_at: datetime = Field(..., description="계정 생성 일시", example="2025-12-29T10:00:00Z")
+
+    class Config:
+        orm_mode = True
+        schema_extra = {
+            "example": {
+                "id": "usr_abc123xyz",
+                "email": "user@example.com",
+                "name": "홍길동",
+                "role": "user",
+                "created_at": "2025-12-29T10:00:00Z"
+            }
+        }
+
+
+# ============================================================
+# Portfolio Schemas
+# ============================================================
+
+class PortfolioGenerateRequest(BaseModel):
+    """포트폴리오 생성 요청"""
+    investment_amount: int = Field(..., ge=10000, description="투자 금액 (최소 1만원)")
+    risk_tolerance: Optional[str] = Field(None, description="리스크 허용도 (low, medium, high)")
+    sector_preferences: Optional[List[str]] = Field(None, description="선호 섹터")
+    dividend_preference: Optional[bool] = Field(False, description="배당 선호 여부")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "investment_amount": 10000000,
+                "risk_tolerance": "medium",
+                "sector_preferences": ["전자", "금융"],
+                "dividend_preference": True
+            }
+        }
+
+
+class PortfolioAssetItem(BaseModel):
+    """포트폴리오 자산 항목"""
+    id: int
+    name: str
+    invested_amount: int
+    weight: float
+    expected_return: Optional[float]
+    risk_level: Optional[str]
+    rationale: str
+
+
+class PortfolioStockItem(PortfolioAssetItem):
+    """포트폴리오 주식 항목"""
+    ticker: str
+    sector: Optional[str]
+    current_price: float
+    shares: int
+    dividend_yield: Optional[float]
+    pe_ratio: Optional[float]
+    pb_ratio: Optional[float]
+    score: float
+
+
+class PortfolioETFItem(PortfolioAssetItem):
+    """포트폴리오 ETF 항목"""
+    ticker: str
+    etf_type: str
+    current_price: float
+    shares: int
+    expense_ratio: Optional[float]
+    aum: Optional[float]
+    score: float
+
+
+class PortfolioBondItem(PortfolioAssetItem):
+    """포트폴리오 채권 항목"""
+    bond_type: str
+    issuer: Optional[str]
+    interest_rate: float
+    maturity_years: int
+    credit_rating: str
+
+
+class PortfolioDepositItem(PortfolioAssetItem):
+    """포트폴리오 예금 항목"""
+    bank: str
+    product_type: str
+    interest_rate: float
+    term_months: int
+
+
+class AllocationDetail(BaseModel):
+    """자산 배분 상세"""
+    ratio: float
+    amount: int
+    min_ratio: float
+    max_ratio: float
+
+
+class PortfolioAllocation(BaseModel):
+    """포트폴리오 자산 배분"""
+    stocks: AllocationDetail
+    etfs: AllocationDetail
+    bonds: AllocationDetail
+    deposits: AllocationDetail
+
+
+class PortfolioStatistics(BaseModel):
+    """포트폴리오 통계"""
+    total_investment: int
+    actual_invested: int
+    cash_reserve: int
+    expected_annual_return: float
+    portfolio_risk: str
+    diversification_score: int
+    total_items: int
+    asset_breakdown: Dict[str, int]
+
+
+class PortfolioResponse(BaseModel):
+    """포트폴리오 추천 응답"""
+    investment_type: str
+    total_investment: int
+    allocation: PortfolioAllocation
+    portfolio: Dict[str, List[Dict]]
+    statistics: PortfolioStatistics
+    recommendations: List[str]
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "investment_type": "moderate",
+                "total_investment": 10000000,
+                "allocation": {
+                    "stocks": {"ratio": 40, "amount": 4000000, "min_ratio": 30, "max_ratio": 50},
+                    "etfs": {"ratio": 20, "amount": 2000000, "min_ratio": 15, "max_ratio": 25},
+                    "bonds": {"ratio": 25, "amount": 2500000, "min_ratio": 20, "max_ratio": 30},
+                    "deposits": {"ratio": 15, "amount": 1500000, "min_ratio": 10, "max_ratio": 20}
+                },
+                "portfolio": {
+                    "stocks": [],
+                    "etfs": [],
+                    "bonds": [],
+                    "deposits": []
+                },
+                "statistics": {
+                    "total_investment": 10000000,
+                    "actual_invested": 9800000,
+                    "cash_reserve": 200000,
+                    "expected_annual_return": 7.5,
+                    "portfolio_risk": "medium",
+                    "diversification_score": 80,
+                    "total_items": 8,
+                    "asset_breakdown": {"stocks_count": 3, "etfs_count": 2, "bonds_count": 2, "deposits_count": 1}
+                },
+                "recommendations": ["잘 구성된 포트폴리오입니다."]
+            }
+        }
 
 
 # ============================================================
@@ -157,7 +493,42 @@ class DiagnosisMeResponse(BaseModel):
 # Error Response Schemas
 # ============================================================
 
+class ErrorDetail(BaseModel):
+    """에러 상세 정보"""
+    code: str = Field(..., description="에러 코드", example="INVALID_TOKEN")
+    message: str = Field(..., description="사용자 친화적인 에러 메시지", example="유효하지 않은 토큰입니다")
+    status: int = Field(..., description="HTTP 상태 코드", example=401)
+    extra: Optional[dict] = Field(None, description="추가 컨텍스트 정보", example={"symbol": "AAPL"})
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "code": "INVALID_TOKEN",
+                "message": "유효하지 않은 토큰입니다",
+                "status": 401,
+                "extra": {}
+            }
+        }
+
+
 class ErrorResponse(BaseModel):
-    """에러 응답"""
-    detail: str
-    status_code: int = 400
+    """에러 응답 (전역 에러 핸들러 형식)"""
+    error: ErrorDetail = Field(..., description="에러 정보")
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "error": {
+                    "code": "INVALID_TOKEN",
+                    "message": "유효하지 않은 토큰입니다",
+                    "status": 401,
+                    "extra": {}
+                }
+            }
+        }
+
+
+class LegacyErrorResponse(BaseModel):
+    """에러 응답 (레거시 형식, 일부 엔드포인트에서 사용)"""
+    detail: str = Field(..., description="에러 메시지", example="이메일 또는 비밀번호가 올바르지 않습니다")
+    status_code: int = Field(400, description="HTTP 상태 코드", example=400)

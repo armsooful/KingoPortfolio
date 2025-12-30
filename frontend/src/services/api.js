@@ -26,7 +26,12 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // 로그인/회원가입 요청의 401 에러는 정상적인 실패이므로 리다이렉트하지 않음
+    const isAuthEndpoint = error.config?.url === '/token' ||
+                          error.config?.url === '/auth/login' ||
+                          error.config?.url === '/auth/signup';
+
+    if (error.response?.status === 401 && !isAuthEndpoint) {
       localStorage.removeItem('access_token');
       localStorage.removeItem('user');
       window.location.href = '/login';
@@ -267,6 +272,23 @@ export const getAlphaVantageDataStatus = () => {
   return api.get('/admin/alpha-vantage/data-status');
 };
 
+/**
+ * Alpha Vantage: 모든 인기 주식/ETF 시계열 데이터 적재
+ * @param {string} outputsize - 'compact' (최근 100일) or 'full' (최대 20년)
+ */
+export const loadAllAlphaVantageTimeSeries = (outputsize = 'compact') => {
+  return api.post(`/admin/alpha-vantage/load-all-timeseries?outputsize=${outputsize}`);
+};
+
+/**
+ * Alpha Vantage: 특정 종목의 시계열 데이터 적재
+ * @param {string} symbol - 주식 심볼
+ * @param {string} outputsize - 'compact' (최근 100일) or 'full' (최대 20년)
+ */
+export const loadAlphaVantageTimeSeries = (symbol, outputsize = 'compact') => {
+  return api.post(`/admin/alpha-vantage/load-timeseries/${symbol}?outputsize=${outputsize}`);
+};
+
 // ============================================================
 // pykrx (한국 주식) API
 // ============================================================
@@ -297,6 +319,20 @@ export const loadAllPykrxETFs = () => {
  */
 export const loadPykrxETF = (ticker) => {
   return api.post(`/admin/pykrx/load-etf/${ticker}`);
+};
+
+/**
+ * pykrx: 인기 한국 주식 전체 재무제표 적재
+ */
+export const loadAllPykrxFinancials = () => {
+  return api.post('/admin/pykrx/load-all-financials');
+};
+
+/**
+ * pykrx: 특정 한국 주식 재무제표 적재
+ */
+export const loadPykrxFinancials = (ticker) => {
+  return api.post(`/admin/pykrx/load-financials/${ticker}`);
 };
 
 // ============================================================

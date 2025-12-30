@@ -14,15 +14,16 @@ function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    // 입력값 검증
+    if (!email || !password) {
+      setError('이메일과 비밀번호를 입력해주세요.');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // 입력값 검증
-      if (!email || !password) {
-        setError('이메일과 비밀번호를 입력해주세요.');
-        return;
-      }
-
       // API 호출
       const response = await loginApi({
         email,
@@ -34,12 +35,9 @@ function LoginPage() {
       login(user, access_token);
       navigate('/survey');
     } catch (err) {
-      // 에러 처리
-      if (err.response?.status === 401) {
-        setError('이메일 또는 비밀번호가 올바르지 않습니다.');
-      } else {
-        setError(err.response?.data?.detail || '로그인에 실패했습니다.');
-      }
+      // 에러 처리 - 백엔드에서 전달된 메시지 우선 사용
+      const errorMessage = err.response?.data?.detail || '로그인에 실패했습니다.';
+      setError(errorMessage);
       console.error('Login error:', err);
     } finally {
       setIsLoading(false);

@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <!-- Basic Meta Tags -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <!-- Primary Meta Tags -->
+    <title>KingoPortfolio - AI 기반 포트폴리오 추천 플랫폼 | 투자 성향 진단</title>
+    <meta name="title" content="KingoPortfolio - AI 기반 포트폴리오 추천 플랫폼">
+    <meta name="description" content="AI 기술로 당신의 투자 성향을 분석하고 맞춤형 포트폴리오를 추천합니다. 무료 투자 성향 진단으로 나에게 맞는 투자 전략을 찾아보세요.">
+    <meta name="keywords" content="포트폴리오, 투자 추천, AI 투자, 투자 성향 진단, 자산 배분, 주식 분석, 재무 분석, 퀀트 분석">
+    <meta name="author" content="KingoPortfolio Team">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://api.kingo-portfolio.com/">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://api.kingo-portfolio.com/">
+    <meta property="og:title" content="KingoPortfolio - AI 기반 포트폴리오 추천 플랫폼">
+    <meta property="og:description" content="AI 기술로 당신의 투자 성향을 분석하고 맞춤형 포트폴리오를 추천합니다.">
+    <meta property="og:image" content="https://api.kingo-portfolio.com/static/og-image.png">
+    <meta property="og:site_name" content="KingoPortfolio">
+    <meta property="og:locale" content="ko_KR">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://api.kingo-portfolio.com/">
+    <meta property="twitter:title" content="KingoPortfolio - AI 기반 포트폴리오 추천 플랫폼">
+    <meta property="twitter:description" content="AI 기술로 당신의 투자 성향을 분석하고 맞춤형 포트폴리오를 추천합니다.">
+    <meta property="twitter:image" content="https://api.kingo-portfolio.com/static/og-image.png">
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "KingoPortfolio",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "KRW"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "1250"
+      },
+      "description": "AI 기반 투자 성향 진단 및 맞춤형 포트폴리오 추천 플랫폼",
+      "url": "https://api.kingo-portfolio.com",
+      "image": "https://api.kingo-portfolio.com/static/logo.png",
+      "author": {
+        "@type": "Organization",
+        "name": "KingoPortfolio Team"
+      },
+      "featureList": [
+        "AI 기반 투자 성향 진단",
+        "맞춤형 포트폴리오 추천",
+        "실시간 주가 데이터 수집",
+        "재무제표 분석",
+        "밸류에이션 분석",
+        "퀀트 분석"
+      ]
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "KingoPortfolio 랜딩 페이지",
+      "description": "AI 기반 포트폴리오 추천 플랫폼",
+      "url": "https://api.kingo-portfolio.com",
+      "inLanguage": "ko-KR",
+      "isPartOf": {
+        "@type": "WebSite",
+        "name": "KingoPortfolio",
+        "url": "https://api.kingo-portfolio.com"
+      }
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "KingoPortfolio는 무료인가요?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "네, 기본 투자 성향 진단 및 포트폴리오 추천 서비스는 무료로 제공됩니다. 프리미엄 기능은 추가 요금이 있을 수 있습니다."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "투자 성향 진단은 얼마나 걸리나요?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "약 5-10분 정도의 간단한 설문을 통해 투자 성향을 진단할 수 있습니다."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "실제 투자 추천을 받을 수 있나요?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "네, AI 분석을 통해 당신의 투자 성향에 맞는 자산 배분 비율과 추천 종목을 제공합니다."
+          }
+        }
+      ]
+    }
+    </script>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 60px 20px;
+            color: white;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 40px;
+            opacity: 0.95;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            color: #667eea;
+            background: white;
+            border: none;
+            border-radius: 50px;
+            text-decoration: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .features {
+            background: white;
+            border-radius: 20px;
+            padding: 60px 40px;
+            margin: 40px 0;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        .features h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 50px;
+            color: #667eea;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .feature-card {
+            padding: 30px;
+            border-radius: 15px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            transition: transform 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .feature-card p {
+            color: #666;
+            line-height: 1.8;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            margin: 60px 0;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 30px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            color: white;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: white;
+            opacity: 0.8;
+        }
+
+        .api-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 25px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 25px;
+            color: white;
+            text-decoration: none;
+            transition: background 0.3s;
+        }
+
+        .api-link:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .subtitle {
+                font-size: 1.2rem;
+            }
+
+            .features h2 {
+                font-size: 2rem;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 KingoPortfolio</h1>
+            <p class="subtitle">AI 기반 맞춤형 포트폴리오 추천 플랫폼</p>
+            <a href="https://kingo-portfolio.vercel.app" class="cta-button">무료로 시작하기</a>
+        </header>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number">1,250+</div>
+                <div class="stat-label">활성 사용자</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">5,000+</div>
+                <div class="stat-label">진단 완료</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">98%</div>
+                <div class="stat-label">만족도</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">24/7</div>
+                <div class="stat-label">서비스 운영</div>
+            </div>
+        </div>
+
+        <section class="features">
+            <h2>주요 기능</h2>
+
+            <div class="feature-grid">
+                <article class="feature-card">
+                    <h3>🤖 AI 투자 성향 진단</h3>
+                    <p>15개의 과학적 설문을 통해 당신의 투자 성향을 정확하게 분석합니다. Conservative, Moderate, Aggressive 타입으로 분류하여 맞춤형 전략을 제시합니다.</p>
+                </article>
+
+                <article class="feature-card">
+                    <h3>📊 맞춤형 포트폴리오 추천</h3>
+                    <p>투자 성향에 맞는 자산 배분 비율을 추천합니다. 주식, 채권, 현금 등 다양한 자산군에 대한 최적 비율을 제공합니다.</p>
+                </article>
+
+                <article class="feature-card">
+                    <h3>💹 실시간 주가 데이터</h3>
+                    <p>Alpha Vantage API와 pykrx를 활용하여 실시간 주가 정보를 수집합니다. 한국 및 미국 시장의 주요 종목을 지원합니다.</p>
+                </article>
+
+                <article class="feature-card">
+                    <h3>📈 재무 분석</h3>
+                    <p>ROE, ROA, 부채비율 등 핵심 재무 지표를 분석합니다. CAGR 계산과 수익성 분석을 통해 기업 가치를 평가합니다.</p>
+                </article>
+
+                <article class="feature-card">
+                    <h3>🎯 밸류에이션 분석</h3>
+                    <p>DCF, DDM, 멀티플 비교 등 다양한 기업 가치 평가 방법을 제공합니다. 적정 주가를 산출하여 투자 의사결정을 지원합니다.</p>
+                </article>
+
+                <article class="feature-card">
+                    <h3>📉 퀀트 분석</h3>
+                    <p>베타, 샤프 비율, RSI, 이동평균 등 정량적 분석 지표를 제공합니다. 기술적 분석을 통한 매매 시그널을 생성합니다.</p>
+                </article>
+
+                <article class="feature-card">
+                    <h3>📄 데이터 내보내기</h3>
+                    <p>진단 결과를 CSV 또는 Excel 형식으로 다운로드할 수 있습니다. 자신만의 투자 기록을 체계적으로 관리하세요.</p>
+                </article>
+
+                <article class="feature-card">
+                    <h3>🔒 안전한 데이터 관리</h3>
+                    <p>JWT 기반 인증과 bcrypt 암호화로 사용자 데이터를 안전하게 보호합니다. RBAC 권한 관리 시스템을 통한 체계적인 접근 제어를 제공합니다.</p>
+                </article>
+            </div>
+        </section>
+
+        <footer>
+            <p>&copy; 2025 KingoPortfolio. All rights reserved.</p>
+            <p>AI 기반 포트폴리오 추천 플랫폼</p>
+            <a href="/docs" class="api-link">API 문서 보기</a>
+            <a href="/redoc" class="api-link">ReDoc 문서</a>
+            <a href="https://github.com/your-org/kingo-portfolio" class="api-link">GitHub</a>
+        </footer>
+    </div>
+</body>
+</html>

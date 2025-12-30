@@ -13,7 +13,9 @@ class User(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     email = Column(String(255), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
-    is_admin = Column(Boolean, default=False)
+    name = Column(String(50), nullable=True)  # 사용자 이름 (선택사항)
+    is_admin = Column(Boolean, default=False)  # 하위 호환성 유지
+    role = Column(String(20), default='user')  # 'user', 'premium', 'admin'
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

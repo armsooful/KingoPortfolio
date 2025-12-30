@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as api from '../services/api';
-import ProgressBar from '../components/ProgressBar';
+import ProgressModal from '../components/ProgressModal';
 import DataTable from '../components/DataTable';
 
 export default function DataManagementPage() {
@@ -41,7 +41,10 @@ export default function DataManagementPage() {
     setLoading(true);
     setError(null);
     setLoadResult(null);
-    setCurrentTaskId(null);
+
+    // 임시 task_id로 즉시 모달 표시
+    const tempTaskId = `temp_${type}_${Date.now()}`;
+    setCurrentTaskId(tempTaskId);
 
     try {
       let response;
@@ -51,6 +54,7 @@ export default function DataManagementPage() {
 
       setLoadResult(response.data);
 
+      // 실제 task_id로 업데이트
       if (response.data.task_id) {
         setCurrentTaskId(response.data.task_id);
       }
@@ -58,6 +62,7 @@ export default function DataManagementPage() {
       await fetchDataStatus();
     } catch (err) {
       setError(err.response?.data?.detail || '데이터 수집 실패');
+      setCurrentTaskId(null); // 에러 시 모달 닫기
     } finally {
       setLoading(false);
     }
@@ -65,6 +70,9 @@ export default function DataManagementPage() {
 
   const handleProgressComplete = async (progressData) => {
     await fetchDataStatus();
+  };
+
+  const handleCloseModal = () => {
     setCurrentTaskId(null);
   };
 
@@ -152,12 +160,13 @@ export default function DataManagementPage() {
             </div>
           </div>
 
-          {/* Progress Section */}
+          {/* Progress Modal */}
           {currentTaskId && (
-            <div className="description-section">
-              <h2>⏳ 데이터 수집 진행 상황</h2>
-              <ProgressBar taskId={currentTaskId} onComplete={handleProgressComplete} />
-            </div>
+            <ProgressModal
+              taskId={currentTaskId}
+              onComplete={handleProgressComplete}
+              onClose={handleCloseModal}
+            />
           )}
 
           {/* Loading */}
@@ -212,11 +221,26 @@ export default function DataManagementPage() {
               <button
                 onClick={async () => {
                   if (!window.confirm('인기 미국 주식 전체를 수집하시겠습니까? (약 5-10분 소요, API Rate Limit 주의)')) return;
+
+                  setLoading(true);
+                  setError(null);
+                  setLoadResult(null);
+
                   try {
                     const response = await api.loadAllAlphaVantageStocks();
-                    alert('✅ ' + response.data.message);
+                    setLoadResult(response.data);
+
+                    // task_id로 모달 표시
+                    if (response.data.task_id || response.data.result?.task_id) {
+                      setCurrentTaskId(response.data.task_id || response.data.result.task_id);
+                    }
+
+                    await fetchDataStatus();
                   } catch (err) {
-                    alert('❌ ' + (err.response?.data?.detail || '실패'));
+                    setError(err.response?.data?.detail || '미국 주식 데이터 수집 실패');
+                    setCurrentTaskId(null);
+                  } finally {
+                    setLoading(false);
                   }
                 }}
                 className="btn btn-primary"
@@ -228,17 +252,65 @@ export default function DataManagementPage() {
               <button
                 onClick={async () => {
                   if (!window.confirm('인기 미국 ETF 전체를 수집하시겠습니까?')) return;
+
+                  setLoading(true);
+                  setError(null);
+                  setLoadResult(null);
+
                   try {
                     const response = await api.loadAllAlphaVantageETFs();
-                    alert('✅ ' + response.data.message);
+                    setLoadResult(response.data);
+
+                    // task_id로 모달 표시
+                    if (response.data.task_id || response.data.result?.task_id) {
+                      setCurrentTaskId(response.data.task_id || response.data.result.task_id);
+                    }
+
+                    await fetchDataStatus();
                   } catch (err) {
-                    alert('❌ ' + (err.response?.data?.detail || '실패'));
+                    setError(err.response?.data?.detail || '미국 ETF 데이터 수집 실패');
+                    setCurrentTaskId(null);
+                  } finally {
+                    setLoading(false);
                   }
                 }}
                 className="btn btn-primary"
                 style={{ padding: '20px', fontSize: '1rem', fontWeight: 'bold' }}
               >
                 📊 미국 ETF 전체 수집
+              </button>
+
+              <button
+                disabled={loading}
+                onClick={async () => {
+                  if (!window.confirm('미국 주식/ETF 시계열 데이터(최근 100일)를 수집하시겠습니까?\n\nAPI 호출 제한으로 인해 시간이 걸릴 수 있습니다.')) {
+                    return;
+                  }
+
+                  setLoading(true);
+                  setError(null);
+
+                  try {
+                    const response = await api.loadAllAlphaVantageTimeSeries('compact');
+                    setLoadResult(response.data);
+
+                    // task_id로 모달 표시
+                    if (response.data.task_id || response.data.result?.task_id) {
+                      setCurrentTaskId(response.data.task_id || response.data.result.task_id);
+                    }
+
+                    await fetchDataStatus();
+                  } catch (err) {
+                    setError(err.response?.data?.detail || '시계열 데이터 수집 실패');
+                    setCurrentTaskId(null);
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                className="btn btn-primary"
+                style={{ padding: '20px', fontSize: '1rem', fontWeight: 'bold' }}
+              >
+                📈 시계열 데이터 수집 (Compact)
               </button>
             </div>
 
@@ -266,16 +338,30 @@ export default function DataManagementPage() {
                       alert('종목 심볼을 입력하세요');
                       return;
                     }
+
+                    setLoading(true);
+                    setError(null);
+
                     try {
                       const response = await api.loadAlphaVantageStock(symbol);
-                      alert('✅ ' + response.data.message);
-                      await fetchDataStatus();
+
+                      // task_id가 있으면 진행상황 모달 표시
+                      if (response.data.task_id) {
+                        setCurrentTaskId(response.data.task_id);
+                      } else {
+                        alert('✅ ' + response.data.message);
+                        await fetchDataStatus();
+                      }
                     } catch (err) {
                       alert('❌ ' + (err.response?.data?.detail || '실패'));
+                      setCurrentTaskId(null);
+                    } finally {
+                      setLoading(false);
                     }
                   }}
                   className="btn btn-primary"
                   style={{ padding: '12px 24px' }}
+                  disabled={loading}
                 >
                   📈 시세 수집
                 </button>
@@ -286,16 +372,30 @@ export default function DataManagementPage() {
                       alert('종목 심볼을 입력하세요');
                       return;
                     }
+
+                    setLoading(true);
+                    setError(null);
+
                     try {
                       const response = await api.loadAlphaVantageFinancials(symbol);
-                      alert('✅ ' + response.data.message);
-                      await fetchDataStatus();
+
+                      // task_id가 있으면 진행상황 모달 표시
+                      if (response.data.task_id) {
+                        setCurrentTaskId(response.data.task_id);
+                      } else {
+                        alert('✅ ' + response.data.message);
+                        await fetchDataStatus();
+                      }
                     } catch (err) {
                       alert('❌ ' + (err.response?.data?.detail || '실패'));
+                      setCurrentTaskId(null);
+                    } finally {
+                      setLoading(false);
                     }
                   }}
                   className="btn btn-secondary"
                   style={{ padding: '12px 24px' }}
+                  disabled={loading}
                 >
                   📊 재무제표 수집
                 </button>
@@ -320,13 +420,23 @@ export default function DataManagementPage() {
               <button
                 onClick={async () => {
                   if (!window.confirm('인기 한국 주식 전체를 수집하시겠습니까? (약 1-2분 소요)')) return;
+
+                  setLoading(true);
+                  setError(null);
+
                   try {
-                    setLoading(true);
                     const response = await api.loadAllPykrxStocks();
-                    alert('✅ ' + response.data.message);
-                    await fetchDataStatus();
+
+                    // task_id가 있으면 진행상황 모달 표시
+                    if (response.data.task_id) {
+                      setCurrentTaskId(response.data.task_id);
+                    } else {
+                      alert('✅ ' + response.data.message);
+                      await fetchDataStatus();
+                    }
                   } catch (err) {
                     alert('❌ ' + (err.response?.data?.detail || '실패'));
+                    setCurrentTaskId(null);
                   } finally {
                     setLoading(false);
                   }
@@ -341,13 +451,23 @@ export default function DataManagementPage() {
               <button
                 onClick={async () => {
                   if (!window.confirm('인기 한국 ETF 전체를 수집하시겠습니까?')) return;
+
+                  setLoading(true);
+                  setError(null);
+
                   try {
-                    setLoading(true);
                     const response = await api.loadAllPykrxETFs();
-                    alert('✅ ' + response.data.message);
-                    await fetchDataStatus();
+
+                    // task_id가 있으면 진행상황 모달 표시
+                    if (response.data.task_id) {
+                      setCurrentTaskId(response.data.task_id);
+                    } else {
+                      alert('✅ ' + response.data.message);
+                      await fetchDataStatus();
+                    }
                   } catch (err) {
                     alert('❌ ' + (err.response?.data?.detail || '실패'));
+                    setCurrentTaskId(null);
                   } finally {
                     setLoading(false);
                   }
@@ -389,13 +509,23 @@ export default function DataManagementPage() {
                       alert('6자리 종목 코드를 입력하세요');
                       return;
                     }
+
+                    setLoading(true);
+                    setError(null);
+
                     try {
-                      setLoading(true);
                       const response = await api.loadPykrxStock(ticker);
-                      alert('✅ ' + response.data.message);
-                      await fetchDataStatus();
+
+                      // task_id가 있으면 진행상황 모달 표시
+                      if (response.data.task_id) {
+                        setCurrentTaskId(response.data.task_id);
+                      } else {
+                        alert('✅ ' + response.data.message);
+                        await fetchDataStatus();
+                      }
                     } catch (err) {
                       alert('❌ ' + (err.response?.data?.detail || '실패'));
+                      setCurrentTaskId(null);
                     } finally {
                       setLoading(false);
                     }
@@ -417,13 +547,23 @@ export default function DataManagementPage() {
                       alert('6자리 종목 코드를 입력하세요');
                       return;
                     }
+
+                    setLoading(true);
+                    setError(null);
+
                     try {
-                      setLoading(true);
                       const response = await api.loadPykrxETF(ticker);
-                      alert('✅ ' + response.data.message);
-                      await fetchDataStatus();
+
+                      // task_id가 있으면 진행상황 모달 표시
+                      if (response.data.task_id) {
+                        setCurrentTaskId(response.data.task_id);
+                      } else {
+                        alert('✅ ' + response.data.message);
+                        await fetchDataStatus();
+                      }
                     } catch (err) {
                       alert('❌ ' + (err.response?.data?.detail || '실패'));
+                      setCurrentTaskId(null);
                     } finally {
                       setLoading(false);
                     }
@@ -438,6 +578,85 @@ export default function DataManagementPage() {
               <div style={{ marginTop: '10px', fontSize: '0.85rem', color: '#666' }}>
                 💡 인기 종목: 삼성전자(005930), NAVER(035420), 카카오(035720), SK하이닉스(000660) 등<br />
                 💡 인기 ETF: KODEX 200(069500), KODEX 레버리지(122630), KODEX 인버스(114800) 등
+              </div>
+            </div>
+
+            <div style={{ marginTop: '20px', padding: '20px', background: '#fff3e0', borderRadius: '8px', border: '1px solid #ffb74d' }}>
+              <h3 style={{ marginBottom: '15px', fontSize: '1.1rem' }}>📊 재무 지표 데이터 수집</h3>
+              <div style={{ marginBottom: '10px', fontSize: '0.85rem', color: '#666', background: '#fff', padding: '10px', borderRadius: '5px' }}>
+                ⚠️ pykrx는 상세 재무제표를 제공하지 않습니다. PER, PBR, EPS, BPS 지표를 기반으로 재무 정보를 추정합니다.
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '10px' }}>
+                <button
+                  onClick={async () => {
+                    if (!window.confirm('인기 한국 주식 전체 재무 지표를 수집하시겠습니까? (약 1-2분 소요)')) return;
+
+                    setLoading(true);
+                    setError(null);
+
+                    try {
+                      const response = await api.loadAllPykrxFinancials();
+
+                      if (response.data.task_id) {
+                        setCurrentTaskId(response.data.task_id);
+                      } else {
+                        alert('✅ ' + response.data.message);
+                        await fetchDataStatus();
+                      }
+                    } catch (err) {
+                      alert('❌ ' + (err.response?.data?.detail || '실패'));
+                      setCurrentTaskId(null);
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  disabled={loading}
+                  className="btn btn-success"
+                  style={{ padding: '15px', fontSize: '0.95rem', fontWeight: 'bold' }}
+                >
+                  {loading ? '🔄 수집 중...' : '📈 재무 지표 전체 수집'}
+                </button>
+
+                <button
+                  onClick={async () => {
+                    const ticker = symbolInput.trim();
+                    if (!ticker) {
+                      alert('종목 코드를 입력하세요');
+                      return;
+                    }
+                    if (ticker.length !== 6) {
+                      alert('6자리 종목 코드를 입력하세요');
+                      return;
+                    }
+
+                    setLoading(true);
+                    setError(null);
+
+                    try {
+                      const response = await api.loadPykrxFinancials(ticker);
+
+                      if (response.data.task_id) {
+                        setCurrentTaskId(response.data.task_id);
+                      } else {
+                        alert('✅ ' + response.data.message);
+                        await fetchDataStatus();
+                      }
+                    } catch (err) {
+                      alert('❌ ' + (err.response?.data?.detail || '실패'));
+                      setCurrentTaskId(null);
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  disabled={loading}
+                  className="btn btn-success"
+                  style={{ padding: '15px', fontSize: '0.95rem' }}
+                >
+                  📊 개별종목 재무 지표 수집
+                </button>
+              </div>
+              <div style={{ marginTop: '10px', fontSize: '0.85rem', color: '#666' }}>
+                💡 최근 거래일 기준 PER, PBR, EPS, BPS, 배당수익률 등을 수집하여 ROE, ROA, 부채비율 등을 추정합니다.
               </div>
             </div>
           </div>

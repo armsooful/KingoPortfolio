@@ -29,7 +29,9 @@ def create_user(db: Session, user_create: UserCreate):
     # ✅ FIX 1: full_name → name
     db_user = User(
         email=user_create.email,
-        hashed_password=hashed_password,    )
+        hashed_password=hashed_password,
+        name=user_create.name
+    )
     
     try:
         db.add(db_user)

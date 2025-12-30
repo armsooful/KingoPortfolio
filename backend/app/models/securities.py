@@ -1,6 +1,6 @@
 # backend/app/models/securities.py
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Date
 from datetime import datetime
 from app.database import Base
 
@@ -117,10 +117,43 @@ class DepositProduct(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class StockFinancials(Base):
+    """한국 주식 재무제표 데이터"""
+    __tablename__ = "stock_financials"
+
+    id = Column(Integer, primary_key=True)
+    ticker = Column(String(10), index=True, nullable=False)  # 005930
+    fiscal_date = Column(Date, nullable=False)  # 회계 연도 (2024-12-31)
+    report_type = Column(String(20), nullable=False)  # annual, quarterly
+
+    # 손익계산서 (Income Statement)
+    revenue = Column(Float)  # 매출액
+    operating_income = Column(Float)  # 영업이익
+    net_income = Column(Float)  # 순이익
+
+    # 재무상태표 (Balance Sheet)
+    total_assets = Column(Float)  # 총자산
+    total_liabilities = Column(Float)  # 총부채
+    total_equity = Column(Float)  # 총자본
+
+    # 재무 비율 (자동 계산)
+    roe = Column(Float, nullable=True)  # ROE = net_income / total_equity
+    roa = Column(Float, nullable=True)  # ROA = net_income / total_assets
+    debt_to_equity = Column(Float, nullable=True)  # 부채비율 = total_liabilities / total_equity
+    operating_margin = Column(Float, nullable=True)  # 영업이익률 = operating_income / revenue
+    net_margin = Column(Float, nullable=True)  # 순이익률 = net_income / revenue
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<StockFinancials {self.ticker} {self.fiscal_date} ({self.report_type})>"
+
+
 class ProductRecommendation(Base):
     """상품 추천 규칙"""
     __tablename__ = "product_recommendations"
-    
+
     id = Column(Integer, primary_key=True)
     product_id = Column(Integer)                          # Stock/ETF/Bond ID
     product_type = Column(String(20))                     # stock, etf, bond, deposit
@@ -129,5 +162,5 @@ class ProductRecommendation(Base):
     allocation_weight = Column(Float)                     # 배분 비중
     score = Column(Float)                                 # 점수 (0~100)
     reason = Column(String(500))                          # 추천 이유
-    
+
     created_at = Column(DateTime, default=datetime.utcnow)

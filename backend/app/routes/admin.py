@@ -1,6 +1,6 @@
 # backend/app/routes/admin.py
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List
 from app.database import get_db
@@ -9,7 +9,7 @@ from app.services.alpha_vantage_loader import AlphaVantageDataLoader
 from app.services.pykrx_loader import PyKrxDataLoader
 from app.services.financial_analyzer import FinancialAnalyzer
 from app.models import User
-from app.auth import get_current_user
+from app.auth import get_current_user, require_admin
 from app.progress_tracker import progress_tracker
 from typing import List
 import logging
@@ -19,17 +19,10 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
-def is_admin(current_user: User = Depends(get_current_user)) -> User:
-    """관리자 확인 (현재는 로그인한 사용자 모두 허용)"""
-    # TODO: 프로덕션에서는 is_admin 필드 체크 필요
-    # if not current_user.is_admin:
-    #     raise HTTPException(status_code=403, detail="관리자만 접근 가능")
-    return current_user
-
 @router.post("/load-data")
 async def load_all_data(
     db: Session = Depends(get_db),
-    current_user: User = Depends(is_admin)
+    current_user: User = Depends(require_admin)
 ):
     """모든 종목 데이터 적재 (관리자용)"""
     try:
@@ -49,7 +42,7 @@ async def load_all_data(
 @router.post("/load-stocks")
 async def load_stocks(
     db: Session = Depends(get_db),
-    current_user: User = Depends(is_admin)
+    current_user: User = Depends(require_admin)
 ):
     """주식 데이터만 적재"""
     try:
@@ -71,15 +64,21 @@ async def load_stocks(
 @router.post("/load-etfs")
 async def load_etfs(
     db: Session = Depends(get_db),
-    current_user: User = Depends(is_admin)
+    current_user: User = Depends(require_admin)
 ):
     """ETF 데이터만 적재"""
     try:
-        result = DataLoaderService.load_etfs(db)
+        # task_id 생성
+        task_id = f"etfs_{uuid.uuid4().hex[:8]}"
+
+        # 백그라운드에서 실행하지 않고 즉시 실행 (나중에 백그라운드 태스크로 변경 가능)
+        result = DataLoaderService.load_etfs(db, task_id=task_id)
+
         return {
             "status": "success",
             "message": "ETF 데이터 적재 완료",
-            "result": result
+            "result": result,
+            "task_id": task_id
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -87,7 +86,7 @@ async def load_etfs(
 @router.get("/data-status")
 async def get_data_status(
     db: Session = Depends(get_db),
-    current_user: User = Depends(is_admin)
+    current_user: User = Depends(require_admin)
 ):
     """DB 종목 통계"""
     from sqlalchemy import func
@@ -109,7 +108,7 @@ async def get_data_status(
 @router.get("/progress/{task_id}")
 async def get_progress(
     task_id: str,
-    current_user: User = Depends(is_admin)
+    current_user: User = Depends(require_admin)
 ):
     """특정 작업의 진행 상황 조회"""
     progress = progress_tracker.get_progress(task_id)
@@ -117,11 +116,14 @@ async def get_progress(
     if not progress:
         raise HTTPException(status_code=404, detail="Task not found")
 
+    # 디버그 로깅
+    logger.info(f"Progress API called - task_id: {task_id}, current: {progress.get('current')}, current_item: {progress.get('current_item')}, success_count: {progress.get('success_count')}, failed_count: {progress.get('failed_count')}")
+
     return progress
 
 @router.get("/progress")
 async def get_all_progress(
-    current_user: User = Depends(is_admin)
+    current_user: User = Depends(require_admin)
 ):
     """모든 작업의 진행 상황 조회"""
     return progress_tracker.get_all_progress()
@@ -129,7 +131,7 @@ async def get_all_progress(
 @router.delete("/progress/{task_id}")
 async def clear_progress(
     task_id: str,
-    current_user: User = Depends(is_admin)
+    current_user: User = Depends(require_admin)
 ):
     """진행 상황 제거"""
     progress_tracker.clear_task(task_id)
@@ -140,7 +142,7 @@ async def get_stocks(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(is_admin)
+    current_user: User = Depends(require_admin)
 ):
     """적재된 주식 데이터 조회"""
     from app.models.securities import Stock
@@ -169,7 +171,7 @@ async def get_etfs(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(is_admin)
+    current_user: User = Depends(require_admin)
 ):
     """적재된 ETF 데이터 조회"""
     from app.models.securities import ETF
@@ -198,7 +200,7 @@ async def get_bonds(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(is_admin)
+    current_user: User = Depends(require_admin)
 ):
     """적재된 채권 데이터 조회"""
     from app.models.securities import Bond
@@ -227,7 +229,7 @@ async def get_deposits(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(is_admin)
+    current_user: User = Depends(require_admin)
 ):
     """적재된 예적금 데이터 조회"""
     from app.models.securities import DepositProduct
@@ -256,18 +258,39 @@ async def get_deposits(
 
 @router.post("/alpha-vantage/load-all-stocks")
 async def load_all_alpha_vantage_stocks(
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: User = Depends(is_admin)
+    current_user: User = Depends(require_admin)
 ):
     """Alpha Vantage: 인기 미국 주식 전체 적재"""
     try:
-        loader = AlphaVantageDataLoader()
-        result = loader.load_all_popular_stocks(db)
+        # task_id 생성
+        task_id = f"us_stocks_{uuid.uuid4().hex[:8]}"
+
+        # 백그라운드에서 실행
+        def run_stock_loading():
+            logger.info(f"🚀 Background task started for task_id: {task_id}")
+            from app.database import SessionLocal
+            db = SessionLocal()
+            try:
+                logger.info(f"📊 Creating AlphaVantageDataLoader instance")
+                loader = AlphaVantageDataLoader()
+                logger.info(f"📥 Calling load_all_popular_stocks with task_id: {task_id}")
+                result = loader.load_all_popular_stocks(db, task_id=task_id)
+                logger.info(f"✅ Background task completed: {result}")
+            except Exception as e:
+                logger.error(f"❌ Background task failed: {str(e)}", exc_info=True)
+            finally:
+                logger.info(f"🔒 Closing database session for task_id: {task_id}")
+                db.close()
+
+        background_tasks.add_task(run_stock_loading)
+        logger.info(f"✅ Background task added to queue: {task_id}")
 
         return {
             "status": "success",
-            "message": "Alpha Vantage 주식 데이터 적재 완료",
-            "result": result
+            "message": "Alpha Vantage 주식 데이터 수집 시작",
+            "task_id": task_id
         }
     except Exception as e:
         logger.error(f"Alpha Vantage stock loading failed: {str(e)}")
@@ -277,24 +300,75 @@ async def load_all_alpha_vantage_stocks(
 @router.post("/alpha-vantage/load-stock/{symbol}")
 async def load_alpha_vantage_stock(
     symbol: str,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: User = Depends(is_admin)
+    current_user: User = Depends(require_admin)
 ):
     """Alpha Vantage: 특정 주식 적재"""
     try:
-        loader = AlphaVantageDataLoader()
-        result = loader.load_stock_data(db, symbol.upper())
+        symbol = symbol.upper()
+        task_id = f"stock_{symbol.lower()}_{uuid.uuid4().hex[:8]}"
 
-        if not result['success']:
-            raise HTTPException(status_code=400, detail=result['message'])
+        # 백그라운드에서 실행
+        def run_single_stock_loading():
+            logger.info(f"🚀 Background task started for stock {symbol}, task_id: {task_id}")
+            from app.database import SessionLocal
+            from app.progress_tracker import progress_tracker
+            db = SessionLocal()
+            try:
+                # 진행 상황 추적 시작 (1개 항목)
+                progress_tracker.start_task(task_id, 1, f"{symbol} 주식 데이터 수집")
+
+                progress_tracker.update_progress(
+                    task_id,
+                    current=1,
+                    current_item=f"{symbol} 시세 수집 중...",
+                    success=None
+                )
+
+                loader = AlphaVantageDataLoader()
+                result = loader.load_stock_data(db, symbol)
+
+                if result['success']:
+                    progress_tracker.update_progress(
+                        task_id,
+                        current=1,
+                        current_item=f"{symbol} - {result['message']}",
+                        success=True
+                    )
+                else:
+                    progress_tracker.update_progress(
+                        task_id,
+                        current=1,
+                        current_item=f"{symbol} - {result['message']}",
+                        success=False,
+                        error=result['message']
+                    )
+
+                progress_tracker.complete_task(task_id, "completed")
+                logger.info(f"✅ Background task completed for {symbol}: {result}")
+            except Exception as e:
+                logger.error(f"❌ Background task failed for {symbol}: {str(e)}", exc_info=True)
+                progress_tracker.update_progress(
+                    task_id,
+                    current=1,
+                    current_item=f"{symbol} - 오류 발생",
+                    success=False,
+                    error=str(e)
+                )
+                progress_tracker.complete_task(task_id, "failed")
+            finally:
+                logger.info(f"🔒 Closing database session for task_id: {task_id}")
+                db.close()
+
+        background_tasks.add_task(run_single_stock_loading)
+        logger.info(f"✅ Background task added to queue for {symbol}: {task_id}")
 
         return {
             "status": "success",
-            "message": result['message'],
-            "result": result
+            "message": f"{symbol} 주식 데이터 수집 시작",
+            "task_id": task_id
         }
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"Alpha Vantage stock loading failed for {symbol}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -303,24 +377,75 @@ async def load_alpha_vantage_stock(
 @router.post("/alpha-vantage/load-financials/{symbol}")
 async def load_alpha_vantage_financials(
     symbol: str,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: User = Depends(is_admin)
+    current_user: User = Depends(require_admin)
 ):
     """Alpha Vantage: 특정 주식의 재무제표 적재"""
     try:
-        loader = AlphaVantageDataLoader()
-        result = loader.load_financials(db, symbol.upper())
+        symbol = symbol.upper()
+        task_id = f"financials_{symbol.lower()}_{uuid.uuid4().hex[:8]}"
 
-        if not result['success']:
-            raise HTTPException(status_code=400, detail=result['message'])
+        # 백그라운드에서 실행
+        def run_financials_loading():
+            logger.info(f"🚀 Background task started for financials {symbol}, task_id: {task_id}")
+            from app.database import SessionLocal
+            from app.progress_tracker import progress_tracker
+            db = SessionLocal()
+            try:
+                # 진행 상황 추적 시작 (1개 항목)
+                progress_tracker.start_task(task_id, 1, f"{symbol} 재무제표 수집")
+
+                progress_tracker.update_progress(
+                    task_id,
+                    current=1,
+                    current_item=f"{symbol} 재무제표 수집 중...",
+                    success=None
+                )
+
+                loader = AlphaVantageDataLoader()
+                result = loader.load_financials(db, symbol)
+
+                if result['success']:
+                    progress_tracker.update_progress(
+                        task_id,
+                        current=1,
+                        current_item=f"{symbol} - {result['message']}",
+                        success=True
+                    )
+                else:
+                    progress_tracker.update_progress(
+                        task_id,
+                        current=1,
+                        current_item=f"{symbol} - {result['message']}",
+                        success=False,
+                        error=result['message']
+                    )
+
+                progress_tracker.complete_task(task_id, "completed")
+                logger.info(f"✅ Background task completed for financials {symbol}: {result}")
+            except Exception as e:
+                logger.error(f"❌ Background task failed for financials {symbol}: {str(e)}", exc_info=True)
+                progress_tracker.update_progress(
+                    task_id,
+                    current=1,
+                    current_item=f"{symbol} 재무제표 - 오류 발생",
+                    success=False,
+                    error=str(e)
+                )
+                progress_tracker.complete_task(task_id, "failed")
+            finally:
+                logger.info(f"🔒 Closing database session for task_id: {task_id}")
+                db.close()
+
+        background_tasks.add_task(run_financials_loading)
+        logger.info(f"✅ Background task added to queue for financials {symbol}: {task_id}")
 
         return {
             "status": "success",
-            "message": result['message'],
-            "result": result
+            "message": f"{symbol} 재무제표 수집 시작",
+            "task_id": task_id
         }
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"Alpha Vantage financials loading failed for {symbol}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -328,18 +453,39 @@ async def load_alpha_vantage_financials(
 
 @router.post("/alpha-vantage/load-all-etfs")
 async def load_all_alpha_vantage_etfs(
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: User = Depends(is_admin)
+    current_user: User = Depends(require_admin)
 ):
     """Alpha Vantage: 인기 미국 ETF 전체 적재"""
     try:
-        loader = AlphaVantageDataLoader()
-        result = loader.load_all_popular_etfs(db)
+        # task_id 생성
+        task_id = f"us_etfs_{uuid.uuid4().hex[:8]}"
+
+        # 백그라운드에서 실행
+        def run_etf_loading():
+            logger.info(f"🚀 Background task started for task_id: {task_id}")
+            from app.database import SessionLocal
+            db = SessionLocal()
+            try:
+                logger.info(f"📊 Creating AlphaVantageDataLoader instance")
+                loader = AlphaVantageDataLoader()
+                logger.info(f"📥 Calling load_all_popular_etfs with task_id: {task_id}")
+                result = loader.load_all_popular_etfs(db, task_id=task_id)
+                logger.info(f"✅ Background task completed: {result}")
+            except Exception as e:
+                logger.error(f"❌ Background task failed: {str(e)}", exc_info=True)
+            finally:
+                logger.info(f"🔒 Closing database session for task_id: {task_id}")
+                db.close()
+
+        background_tasks.add_task(run_etf_loading)
+        logger.info(f"✅ Background task added to queue: {task_id}")
 
         return {
             "status": "success",
-            "message": "Alpha Vantage ETF 데이터 적재 완료",
-            "result": result
+            "message": "Alpha Vantage ETF 데이터 수집 시작",
+            "task_id": task_id
         }
     except Exception as e:
         logger.error(f"Alpha Vantage ETF loading failed: {str(e)}")
@@ -351,7 +497,7 @@ async def get_alpha_vantage_stocks(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(is_admin)
+    current_user: User = Depends(require_admin)
 ):
     """Alpha Vantage: 적재된 미국 주식 데이터 조회"""
     from app.models.alpha_vantage import AlphaVantageStock
@@ -384,7 +530,7 @@ async def get_alpha_vantage_stocks(
 async def get_alpha_vantage_financials(
     symbol: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(is_admin)
+    current_user: User = Depends(require_admin)
 ):
     """Alpha Vantage: 특정 주식의 재무제표 조회"""
     from app.models.alpha_vantage import AlphaVantageFinancials
@@ -414,23 +560,142 @@ async def get_alpha_vantage_financials(
     }
 
 
+@router.post("/alpha-vantage/load-all-timeseries")
+async def load_all_alpha_vantage_timeseries(
+    background_tasks: BackgroundTasks,
+    outputsize: str = 'compact',  # 'compact' (최근 100일) or 'full' (20년)
+    current_user: User = Depends(require_admin)
+):
+    """Alpha Vantage: 모든 인기 주식/ETF 시계열 데이터 수집 (Background)
+
+    - outputsize='compact': 최근 100일 데이터 (빠름)
+    - outputsize='full': 전체 데이터 최대 20년 (느림, API 호출 많음)
+    """
+    import uuid
+    from app.services.alpha_vantage_loader import AlphaVantageDataLoader
+
+    task_id = f"us_timeseries_{uuid.uuid4().hex[:8]}"
+    logger.info(f"⏰ Creating background task for Alpha Vantage time series, task_id: {task_id}")
+
+    try:
+        def run_timeseries_loading():
+            logger.info(f"🚀 Background task started for Alpha Vantage time series, task_id: {task_id}")
+            from app.database import SessionLocal
+            db = SessionLocal()
+            try:
+                logger.info(f"📊 Creating AlphaVantageDataLoader instance")
+                loader = AlphaVantageDataLoader()
+                logger.info(f"📥 Calling load_all_time_series with task_id: {task_id}, outputsize: {outputsize}")
+                result = loader.load_all_time_series(db, task_id=task_id, outputsize=outputsize)
+                logger.info(f"✅ Background task completed: {result}")
+            except Exception as e:
+                logger.error(f"❌ Background task failed: {str(e)}", exc_info=True)
+            finally:
+                logger.info(f"🔒 Closing database session for task_id: {task_id}")
+                db.close()
+
+        background_tasks.add_task(run_timeseries_loading)
+        logger.info(f"✅ Background task added to queue: {task_id}")
+
+        return {
+            "status": "success",
+            "message": f"Alpha Vantage 시계열 데이터 수집 시작 (outputsize={outputsize})",
+            "task_id": task_id,
+            "note": "compact는 최근 100일, full은 최대 20년 데이터를 수집합니다. API 호출 제한으로 인해 시간이 오래 걸릴 수 있습니다."
+        }
+    except Exception as e:
+        logger.error(f"Alpha Vantage time series loading failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/alpha-vantage/load-timeseries/{symbol}")
+async def load_alpha_vantage_timeseries(
+    symbol: str,
+    background_tasks: BackgroundTasks,
+    outputsize: str = 'compact',
+    current_user: User = Depends(require_admin)
+):
+    """Alpha Vantage: 특정 종목의 시계열 데이터 수집 (Background)"""
+    import uuid
+    from app.services.alpha_vantage_loader import AlphaVantageDataLoader
+
+    task_id = f"us_timeseries_{symbol}_{uuid.uuid4().hex[:8]}"
+
+    try:
+        def run_timeseries_loading():
+            from app.database import SessionLocal
+            db = SessionLocal()
+            try:
+                from app.progress_tracker import progress_tracker
+                progress_tracker.start_task(task_id, 1, f"{symbol} 시계열 데이터 수집")
+
+                progress_tracker.update_progress(
+                    task_id,
+                    current=1,
+                    current_item=f"{symbol} 시계열 수집 중...",
+                    success=None
+                )
+
+                loader = AlphaVantageDataLoader()
+                result = loader.load_time_series_data(db, symbol, outputsize)
+
+                if result['success']:
+                    progress_tracker.update_progress(
+                        task_id,
+                        current=1,
+                        current_item=f"{symbol} - {result['message']}",
+                        success=True
+                    )
+                else:
+                    progress_tracker.update_progress(
+                        task_id,
+                        current=1,
+                        current_item=f"{symbol} - {result['message']}",
+                        success=False,
+                        error=result['message']
+                    )
+
+                progress_tracker.complete_task(task_id, "completed")
+            except Exception as e:
+                logger.error(f"Background task failed for {symbol} time series: {str(e)}", exc_info=True)
+            finally:
+                db.close()
+
+        background_tasks.add_task(run_timeseries_loading)
+
+        return {
+            "status": "success",
+            "message": f"{symbol} 시계열 데이터 수집 시작",
+            "task_id": task_id
+        }
+    except Exception as e:
+        logger.error(f"Time series loading failed for {symbol}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/alpha-vantage/data-status")
 async def get_alpha_vantage_data_status(
     db: Session = Depends(get_db),
-    current_user: User = Depends(is_admin)
+    current_user: User = Depends(require_admin)
 ):
     """Alpha Vantage: DB 통계"""
     from sqlalchemy import func
-    from app.models.alpha_vantage import AlphaVantageStock, AlphaVantageETF, AlphaVantageFinancials
+    from app.models.alpha_vantage import AlphaVantageStock, AlphaVantageETF, AlphaVantageFinancials, AlphaVantageTimeSeries
 
     stock_count = db.query(func.count(AlphaVantageStock.id)).scalar()
     etf_count = db.query(func.count(AlphaVantageETF.id)).scalar()
     financials_count = db.query(func.count(AlphaVantageFinancials.id)).scalar()
+    timeseries_count = db.query(func.count(AlphaVantageTimeSeries.id)).scalar()
+
+    # 시계열 데이터가 있는 고유 심볼 수
+    timeseries_symbols = db.query(func.count(func.distinct(AlphaVantageTimeSeries.symbol))).scalar()
 
     return {
         "stocks": stock_count,
         "etfs": etf_count,
         "financials": financials_count,
+        "timeseries_records": timeseries_count,
+        "timeseries_symbols": timeseries_symbols,
         "total": stock_count + etf_count
     }
 
@@ -439,18 +704,36 @@ async def get_alpha_vantage_data_status(
 
 @router.post("/pykrx/load-all-stocks")
 async def load_all_pykrx_stocks(
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: User = Depends(is_admin)
+    current_user: User = Depends(require_admin)
 ):
     """pykrx: 인기 한국 주식 전체 적재"""
     try:
-        loader = PyKrxDataLoader()
-        result = loader.load_all_popular_stocks(db)
+        task_id = f"pykrx_stocks_{uuid.uuid4().hex[:8]}"
+
+        # 백그라운드에서 실행
+        def run_pykrx_stock_loading():
+            logger.info(f"🚀 Background task started for pykrx stocks, task_id: {task_id}")
+            from app.database import SessionLocal
+            db = SessionLocal()
+            try:
+                loader = PyKrxDataLoader()
+                result = loader.load_all_popular_stocks(db, task_id=task_id)
+                logger.info(f"✅ Background task completed for pykrx stocks: {result}")
+            except Exception as e:
+                logger.error(f"❌ Background task failed for pykrx stocks: {str(e)}", exc_info=True)
+            finally:
+                logger.info(f"🔒 Closing database session for task_id: {task_id}")
+                db.close()
+
+        background_tasks.add_task(run_pykrx_stock_loading)
+        logger.info(f"✅ Background task added to queue for pykrx stocks: {task_id}")
 
         return {
             "status": "success",
-            "message": "한국 주식 데이터 적재 완료",
-            "result": result
+            "message": "pykrx 한국 주식 데이터 수집 시작",
+            "task_id": task_id
         }
     except Exception as e:
         logger.error(f"pykrx stock loading failed: {str(e)}")
@@ -460,24 +743,74 @@ async def load_all_pykrx_stocks(
 @router.post("/pykrx/load-stock/{ticker}")
 async def load_pykrx_stock(
     ticker: str,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: User = Depends(is_admin)
+    current_user: User = Depends(require_admin)
 ):
     """pykrx: 특정 한국 주식 적재"""
     try:
-        loader = PyKrxDataLoader()
-        result = loader.load_stock_data(db, ticker)
+        task_id = f"pykrx_stock_{ticker}_{uuid.uuid4().hex[:8]}"
 
-        if not result['success']:
-            raise HTTPException(status_code=400, detail=result['message'])
+        # 백그라운드에서 실행
+        def run_single_pykrx_stock_loading():
+            logger.info(f"🚀 Background task started for pykrx stock {ticker}, task_id: {task_id}")
+            from app.database import SessionLocal
+            from app.progress_tracker import progress_tracker
+            db = SessionLocal()
+            try:
+                # 진행 상황 추적 시작 (1개 항목)
+                progress_tracker.start_task(task_id, 1, f"{ticker} pykrx 주식 데이터 수집")
+
+                progress_tracker.update_progress(
+                    task_id,
+                    current=1,
+                    current_item=f"{ticker} 데이터 수집 중...",
+                    success=None
+                )
+
+                loader = PyKrxDataLoader()
+                result = loader.load_stock_data(db, ticker)
+
+                if result['success']:
+                    progress_tracker.update_progress(
+                        task_id,
+                        current=1,
+                        current_item=f"{ticker} - {result['message']}",
+                        success=True
+                    )
+                else:
+                    progress_tracker.update_progress(
+                        task_id,
+                        current=1,
+                        current_item=f"{ticker} - {result['message']}",
+                        success=False,
+                        error=result['message']
+                    )
+
+                progress_tracker.complete_task(task_id, "completed")
+                logger.info(f"✅ Background task completed for pykrx stock {ticker}: {result}")
+            except Exception as e:
+                logger.error(f"❌ Background task failed for pykrx stock {ticker}: {str(e)}", exc_info=True)
+                progress_tracker.update_progress(
+                    task_id,
+                    current=1,
+                    current_item=f"{ticker} - 오류 발생",
+                    success=False,
+                    error=str(e)
+                )
+                progress_tracker.complete_task(task_id, "failed")
+            finally:
+                logger.info(f"🔒 Closing database session for task_id: {task_id}")
+                db.close()
+
+        background_tasks.add_task(run_single_pykrx_stock_loading)
+        logger.info(f"✅ Background task added to queue for pykrx stock {ticker}: {task_id}")
 
         return {
             "status": "success",
-            "message": result['message'],
-            "result": result
+            "message": f"{ticker} pykrx 주식 데이터 수집 시작",
+            "task_id": task_id
         }
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"pykrx stock loading failed for {ticker}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -485,18 +818,36 @@ async def load_pykrx_stock(
 
 @router.post("/pykrx/load-all-etfs")
 async def load_all_pykrx_etfs(
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: User = Depends(is_admin)
+    current_user: User = Depends(require_admin)
 ):
     """pykrx: 인기 한국 ETF 전체 적재"""
     try:
-        loader = PyKrxDataLoader()
-        result = loader.load_all_popular_etfs(db)
+        task_id = f"pykrx_etfs_{uuid.uuid4().hex[:8]}"
+
+        # 백그라운드에서 실행
+        def run_pykrx_etf_loading():
+            logger.info(f"🚀 Background task started for pykrx ETFs, task_id: {task_id}")
+            from app.database import SessionLocal
+            db = SessionLocal()
+            try:
+                loader = PyKrxDataLoader()
+                result = loader.load_all_popular_etfs(db, task_id=task_id)
+                logger.info(f"✅ Background task completed for pykrx ETFs: {result}")
+            except Exception as e:
+                logger.error(f"❌ Background task failed for pykrx ETFs: {str(e)}", exc_info=True)
+            finally:
+                logger.info(f"🔒 Closing database session for task_id: {task_id}")
+                db.close()
+
+        background_tasks.add_task(run_pykrx_etf_loading)
+        logger.info(f"✅ Background task added to queue for pykrx ETFs: {task_id}")
 
         return {
             "status": "success",
-            "message": "한국 ETF 데이터 적재 완료",
-            "result": result
+            "message": "pykrx 한국 ETF 데이터 수집 시작",
+            "task_id": task_id
         }
     except Exception as e:
         logger.error(f"pykrx ETF loading failed: {str(e)}")
@@ -506,26 +857,192 @@ async def load_all_pykrx_etfs(
 @router.post("/pykrx/load-etf/{ticker}")
 async def load_pykrx_etf(
     ticker: str,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: User = Depends(is_admin)
+    current_user: User = Depends(require_admin)
 ):
     """pykrx: 특정 한국 ETF 적재"""
     try:
-        loader = PyKrxDataLoader()
-        result = loader.load_etf_data(db, ticker)
+        task_id = f"pykrx_etf_{ticker}_{uuid.uuid4().hex[:8]}"
 
-        if not result['success']:
-            raise HTTPException(status_code=400, detail=result['message'])
+        # 백그라운드에서 실행
+        def run_single_pykrx_etf_loading():
+            logger.info(f"🚀 Background task started for pykrx ETF {ticker}, task_id: {task_id}")
+            from app.database import SessionLocal
+            from app.progress_tracker import progress_tracker
+            db = SessionLocal()
+            try:
+                # 진행 상황 추적 시작 (1개 항목)
+                progress_tracker.start_task(task_id, 1, f"{ticker} pykrx ETF 데이터 수집")
+
+                progress_tracker.update_progress(
+                    task_id,
+                    current=1,
+                    current_item=f"{ticker} ETF 데이터 수집 중...",
+                    success=None
+                )
+
+                loader = PyKrxDataLoader()
+                result = loader.load_etf_data(db, ticker)
+
+                if result['success']:
+                    progress_tracker.update_progress(
+                        task_id,
+                        current=1,
+                        current_item=f"{ticker} - {result['message']}",
+                        success=True
+                    )
+                else:
+                    progress_tracker.update_progress(
+                        task_id,
+                        current=1,
+                        current_item=f"{ticker} - {result['message']}",
+                        success=False,
+                        error=result['message']
+                    )
+
+                progress_tracker.complete_task(task_id, "completed")
+                logger.info(f"✅ Background task completed for pykrx ETF {ticker}: {result}")
+            except Exception as e:
+                logger.error(f"❌ Background task failed for pykrx ETF {ticker}: {str(e)}", exc_info=True)
+                progress_tracker.update_progress(
+                    task_id,
+                    current=1,
+                    current_item=f"{ticker} ETF - 오류 발생",
+                    success=False,
+                    error=str(e)
+                )
+                progress_tracker.complete_task(task_id, "failed")
+            finally:
+                logger.info(f"🔒 Closing database session for task_id: {task_id}")
+                db.close()
+
+        background_tasks.add_task(run_single_pykrx_etf_loading)
+        logger.info(f"✅ Background task added to queue for pykrx ETF {ticker}: {task_id}")
 
         return {
             "status": "success",
-            "message": result['message'],
-            "result": result
+            "message": f"{ticker} pykrx ETF 데이터 수집 시작",
+            "task_id": task_id
         }
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"pykrx ETF loading failed for {ticker}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/pykrx/load-all-financials")
+async def load_all_pykrx_financials(
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    """pykrx: 인기 한국 주식 전체 재무제표 적재"""
+    try:
+        task_id = f"pykrx_financials_{uuid.uuid4().hex[:8]}"
+
+        # 백그라운드에서 실행
+        def run_all_pykrx_financials_loading():
+            logger.info(f"🚀 Background task started for all pykrx financials, task_id: {task_id}")
+            from app.database import SessionLocal
+            db = SessionLocal()
+            try:
+                loader = PyKrxDataLoader()
+                result = loader.load_all_stock_financials(db, task_id=task_id)
+                logger.info(f"✅ Background task completed for all pykrx financials: {result}")
+            except Exception as e:
+                logger.error(f"❌ Background task failed for all pykrx financials: {str(e)}", exc_info=True)
+                from app.progress_tracker import progress_tracker
+                progress_tracker.complete_task(task_id, "failed")
+            finally:
+                logger.info(f"🔒 Closing database session for task_id: {task_id}")
+                db.close()
+
+        background_tasks.add_task(run_all_pykrx_financials_loading)
+        logger.info(f"✅ Background task added to queue for all pykrx financials: {task_id}")
+
+        return {
+            "status": "success",
+            "message": "한국 주식 재무제표 전체 수집 시작",
+            "task_id": task_id
+        }
+    except Exception as e:
+        logger.error(f"All pykrx financials loading failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/pykrx/load-financials/{ticker}")
+async def load_pykrx_financials(
+    ticker: str,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    """pykrx: 특정 한국 주식 재무제표 적재"""
+    try:
+        task_id = f"pykrx_financials_{ticker}_{uuid.uuid4().hex[:8]}"
+
+        # 백그라운드에서 실행
+        def run_single_pykrx_financials_loading():
+            logger.info(f"🚀 Background task started for pykrx financials {ticker}, task_id: {task_id}")
+            from app.database import SessionLocal
+            from app.progress_tracker import progress_tracker
+            db = SessionLocal()
+            try:
+                # 진행 상황 추적 시작 (1개 항목)
+                progress_tracker.start_task(task_id, 1, f"{ticker} pykrx 재무제표 수집")
+
+                progress_tracker.update_progress(
+                    task_id,
+                    current=1,
+                    current_item=f"{ticker} 재무제표 수집 중...",
+                    success=None
+                )
+
+                loader = PyKrxDataLoader()
+                result = loader.load_stock_financials(db, ticker)
+
+                if result['success']:
+                    progress_tracker.update_progress(
+                        task_id,
+                        current=1,
+                        current_item=f"{ticker} - {result['message']}",
+                        success=True
+                    )
+                else:
+                    progress_tracker.update_progress(
+                        task_id,
+                        current=1,
+                        current_item=f"{ticker} - {result['message']}",
+                        success=False,
+                        error=result['message']
+                    )
+
+                progress_tracker.complete_task(task_id, "completed")
+                logger.info(f"✅ Background task completed for pykrx financials {ticker}: {result}")
+            except Exception as e:
+                logger.error(f"❌ Background task failed for pykrx financials {ticker}: {str(e)}", exc_info=True)
+                progress_tracker.update_progress(
+                    task_id,
+                    current=1,
+                    current_item=f"{ticker} 재무제표 - 오류 발생",
+                    success=False,
+                    error=str(e)
+                )
+                progress_tracker.complete_task(task_id, "failed")
+            finally:
+                logger.info(f"🔒 Closing database session for task_id: {task_id}")
+                db.close()
+
+        background_tasks.add_task(run_single_pykrx_financials_loading)
+        logger.info(f"✅ Background task added to queue for pykrx financials {ticker}: {task_id}")
+
+        return {
+            "status": "success",
+            "message": f"{ticker} pykrx 재무제표 수집 시작",
+            "task_id": task_id
+        }
+    except Exception as e:
+        logger.error(f"pykrx financials loading failed for {ticker}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -535,7 +1052,7 @@ async def load_pykrx_etf(
 async def analyze_stock_financials(
     symbol: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(is_admin)
+    current_user: User = Depends(require_admin)
 ):
     """
     종목 재무 분석
@@ -560,7 +1077,7 @@ async def analyze_stock_financials(
 async def compare_stocks_financials(
     symbols: List[str],
     db: Session = Depends(get_db),
-    current_user: User = Depends(is_admin)
+    current_user: User = Depends(require_admin)
 ):
     """
     여러 종목 재무 비교 분석
@@ -590,7 +1107,7 @@ async def compare_stocks_financials(
 async def get_stock_financial_score(
     symbol: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(is_admin)
+    current_user: User = Depends(require_admin)
 ):
     """
     종목 재무 건전성 점수 (100점 만점)
@@ -615,7 +1132,7 @@ async def get_stock_financial_score(
 async def get_stock_financial_score_v2(
     symbol: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(is_admin)
+    current_user: User = Depends(require_admin)
 ):
     """
     개선된 재무 건전성 점수 V2 (성숙한 대형주/성장주 적합)
