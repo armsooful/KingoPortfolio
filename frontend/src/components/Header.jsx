@@ -51,6 +51,13 @@ function Header() {
             진단이력
           </button>
           <button
+            className={`nav-link ${isActive('/profile') ? 'active' : ''}`}
+            onClick={() => navigate('/profile')}
+            title="내 프로필"
+          >
+            프로필
+          </button>
+          <button
             className={`nav-link ${isActive('/admin') ? 'active' : ''}`}
             onClick={() => navigate('/admin')}
             title="데이터 수집 및 관리"

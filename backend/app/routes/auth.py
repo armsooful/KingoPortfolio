@@ -904,3 +904,135 @@ async def delete_account(
     print(f"✅ 계정 삭제 완료: {user_email} (ID: {user_id})")
 
     return {"message": "계정이 성공적으로 삭제되었습니다"}
+
+
+# ============================================================
+# Profile Endpoints
+# ============================================================
+
+@router.get(
+    "/profile",
+    response_model=ProfileResponse,
+    summary="프로필 조회",
+    description="현재 로그인한 사용자의 프로필 정보를 조회합니다."
+)
+@limiter.limit(RateLimits.PROFILE_READ)
+async def get_profile(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    ## 프로필 조회
+
+    현재 로그인한 사용자의 전체 프로필 정보를 조회합니다.
+
+    ### 포함되는 정보
+
+    - 기본 정보: 이름, 이메일, 전화번호, 생년월일
+    - 직업 정보: 직업, 회사명, 연봉, 총 자산
+    - 주소 정보: 거주 도시, 구/군
+    - 투자 성향: 투자 경험, 투자 목표, 위험 감수 성향
+    - 시스템 정보: 사용자 ID, 역할, 가입일
+
+    ### 인증 필수
+
+    이 엔드포인트는 JWT 토큰 인증이 필요합니다.
+    """
+    return ProfileResponse(
+        id=current_user.id,
+        email=current_user.email,
+        name=current_user.name,
+        phone=current_user.phone,
+        birth_date=current_user.birth_date,
+        occupation=current_user.occupation,
+        company=current_user.company,
+        annual_income=current_user.annual_income,
+        total_assets=current_user.total_assets,
+        city=current_user.city,
+        district=current_user.district,
+        investment_experience=current_user.investment_experience,
+        investment_goal=current_user.investment_goal,
+        risk_tolerance=current_user.risk_tolerance,
+        role=current_user.role,
+        created_at=current_user.created_at
+    )
+
+
+@router.put(
+    "/profile",
+    response_model=ProfileResponse,
+    summary="프로필 수정",
+    description="현재 로그인한 사용자의 프로필 정보를 수정합니다."
+)
+@limiter.limit(RateLimits.PROFILE_UPDATE)
+async def update_profile(
+    request: Request,
+    profile_data: UpdateProfileRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    ## 프로필 수정
+
+    현재 로그인한 사용자의 프로필 정보를 수정합니다.
+
+    ### 수정 가능한 필드
+
+    - 기본 정보: name, phone, birth_date
+    - 직업 정보: occupation, company, annual_income, total_assets
+    - 주소 정보: city, district
+    - 투자 성향: investment_experience, investment_goal, risk_tolerance
+
+    ### 주의사항
+
+    - 모든 필드는 선택사항입니다 (제공된 필드만 업데이트됨)
+    - 이메일 변경은 현재 지원되지 않습니다
+    - null 값을 전송하면 해당 필드가 삭제됩니다
+
+    ### 예제 요청
+
+    ```json
+    {
+        "name": "김철수",
+        "phone": "010-1234-5678",
+        "occupation": "소프트웨어 엔지니어",
+        "company": "테크컴퍼니",
+        "annual_income": 5000,
+        "total_assets": 10000,
+        "city": "서울",
+        "district": "강남구",
+        "investment_experience": "중급",
+        "investment_goal": "노후 준비",
+        "risk_tolerance": "중립적"
+    }
+    ```
+    """
+    # 제공된 필드만 업데이트
+    update_data = profile_data.dict(exclude_unset=True)
+
+    for field, value in update_data.items():
+        setattr(current_user, field, value)
+
+    db.commit()
+    db.refresh(current_user)
+
+    print(f"✅ 프로필 업데이트 완료: {current_user.email}")
+
+    return ProfileResponse(
+        id=current_user.id,
+        email=current_user.email,
+        name=current_user.name,
+        phone=current_user.phone,
+        birth_date=current_user.birth_date,
+        occupation=current_user.occupation,
+        company=current_user.company,
+        annual_income=current_user.annual_income,
+        total_assets=current_user.total_assets,
+        city=current_user.city,
+        district=current_user.district,
+        investment_experience=current_user.investment_experience,
+        investment_goal=current_user.investment_goal,
+        risk_tolerance=current_user.risk_tolerance,
+        role=current_user.role,
+        created_at=current_user.created_at
+    )

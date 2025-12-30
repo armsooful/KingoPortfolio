@@ -4,6 +4,7 @@ import { getCurrentUser, logout as logoutApi } from './services/api';
 import Header from './components/Header';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import ProfilePage from './pages/ProfilePage';
 import SurveyPage from './pages/SurveyPage';
 import DiagnosisResultPage from './pages/DiagnosisResultPage';
 import DiagnosisHistoryPage from './pages/DiagnosisHistoryPage';
@@ -130,6 +131,14 @@ function AppContent() {
           <Route path="/signup" element={<SignupPage />} />
 
           {/* Protected Routes */}
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/survey"
             element={

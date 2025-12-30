@@ -185,24 +185,31 @@ class MessageResponse(BaseModel):
 
 
 class UpdateProfileRequest(BaseModel):
-    """프로필 수정 요청"""
+    """프로필 수정 요청 (확장)"""
     name: Optional[str] = Field(
         None,
         max_length=50,
         description="사용자 이름 (선택사항)",
         example="홍길동"
     )
-    email: Optional[EmailStr] = Field(
-        None,
-        description="이메일 주소 (선택사항)",
-        example="newemail@example.com"
-    )
+    phone: Optional[str] = Field(None, max_length=20, description="전화번호")
+    birth_date: Optional[date] = Field(None, description="생년월일")
+    occupation: Optional[str] = Field(None, max_length=100, description="직업")
+    company: Optional[str] = Field(None, max_length=100, description="회사명")
+    annual_income: Optional[int] = Field(None, description="연봉 (만원 단위)")
+    total_assets: Optional[int] = Field(None, description="총 자산 (만원 단위)")
+    city: Optional[str] = Field(None, max_length=50, description="거주 도시")
+    district: Optional[str] = Field(None, max_length=50, description="구/군")
+    investment_experience: Optional[str] = Field(None, max_length=20, description="투자 경험")
+    investment_goal: Optional[str] = Field(None, max_length=100, description="투자 목표")
+    risk_tolerance: Optional[str] = Field(None, max_length=20, description="위험 감수 성향")
 
     class Config:
         schema_extra = {
             "example": {
                 "name": "김철수",
-                "email": "newemail@example.com"
+                "phone": "010-1234-5678",
+                "occupation": "소프트웨어 엔지니어"
             }
         }
 
@@ -236,6 +243,17 @@ class ProfileResponse(BaseModel):
     id: str = Field(..., description="사용자 고유 ID", example="usr_abc123xyz")
     email: str = Field(..., description="이메일 주소", example="user@example.com")
     name: Optional[str] = Field(None, description="사용자 이름", example="홍길동")
+    phone: Optional[str] = Field(None, description="전화번호")
+    birth_date: Optional[date] = Field(None, description="생년월일")
+    occupation: Optional[str] = Field(None, description="직업")
+    company: Optional[str] = Field(None, description="회사명")
+    annual_income: Optional[int] = Field(None, description="연봉 (만원 단위)")
+    total_assets: Optional[int] = Field(None, description="총 자산 (만원 단위)")
+    city: Optional[str] = Field(None, description="거주 도시")
+    district: Optional[str] = Field(None, description="구/군")
+    investment_experience: Optional[str] = Field(None, description="투자 경험")
+    investment_goal: Optional[str] = Field(None, description="투자 목표")
+    risk_tolerance: Optional[str] = Field(None, description="위험 감수 성향")
     role: str = Field(..., description="사용자 역할 (user/premium/admin)", example="user")
     created_at: datetime = Field(..., description="계정 생성 일시", example="2025-12-29T10:00:00Z")
 
