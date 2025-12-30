@@ -57,13 +57,15 @@ function Header() {
           >
             프로필
           </button>
-          <button
-            className={`nav-link ${isActive('/admin') ? 'active' : ''}`}
-            onClick={() => navigate('/admin')}
-            title="데이터 수집 및 관리"
-          >
-            🔧 관리자
-          </button>
+          {user && user.role === 'admin' && (
+            <button
+              className={`nav-link ${isActive('/admin') ? 'active' : ''}`}
+              onClick={() => navigate('/admin')}
+              title="데이터 수집 및 관리"
+            >
+              🔧 관리자
+            </button>
+          )}
         </nav>
 
         {/* 사용자 정보 및 로그아웃 */}
