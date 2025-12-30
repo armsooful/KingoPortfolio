@@ -66,6 +66,10 @@ class RateLimits:
     AUTH_REFRESH = "20/hour"         # 토큰 갱신: 시간당 20회
     AUTH_PASSWORD_RESET = "3/hour"   # 비밀번호 재설정: 시간당 3회
 
+    # 프로필 관련
+    PROFILE_READ = "100/hour"        # 프로필 조회: 시간당 100회
+    PROFILE_UPDATE = "20/hour"       # 프로필 수정: 시간당 20회
+
     # 진단 관련
     DIAGNOSIS_SUBMIT = "10/hour"     # 진단 제출: 시간당 10회
     DIAGNOSIS_READ = "100/hour"      # 진단 조회: 시간당 100회
