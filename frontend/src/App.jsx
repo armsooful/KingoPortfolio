@@ -9,6 +9,7 @@ import DiagnosisResultPage from './pages/DiagnosisResultPage';
 import DiagnosisHistoryPage from './pages/DiagnosisHistoryPage';
 import AdminPage from './pages/AdminPage';
 import DataManagementPage from './pages/DataManagementPage';
+import UserManagementPage from './pages/UserManagementPage';
 import FinancialAnalysisPage from './pages/FinancialAnalysisPage';
 import ValuationPage from './pages/ValuationPage';
 import QuantAnalysisPage from './pages/QuantAnalysisPage';
@@ -166,6 +167,14 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <DataManagementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute>
+                <UserManagementPage />
               </ProtectedRoute>
             }
           />

@@ -1463,3 +1463,165 @@ async def get_news_sentiment(symbol: str):
     except Exception as e:
         logger.error(f"News sentiment analysis failed for {symbol}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================
+# User Management Endpoints
+# ============================================================
+
+@router.get("/users")
+async def get_all_users(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    """
+    모든 사용자 목록 조회 (관리자 전용)
+
+    Parameters:
+    - skip: 건너뛸 레코드 수
+    - limit: 조회할 최대 레코드 수
+
+    Returns:
+    - 사용자 목록 (이메일, 이름, 역할, 가입일 등)
+    """
+    try:
+        users = db.query(User).offset(skip).limit(limit).all()
+        total = db.query(User).count()
+
+        return {
+            "total": total,
+            "items": [
+                {
+                    "id": u.id,
+                    "email": u.email,
+                    "name": u.name,
+                    "role": u.role,
+                    "created_at": u.created_at.isoformat() if u.created_at else None
+                }
+                for u in users
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Failed to fetch users: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/users/{user_id}/role")
+async def update_user_role(
+    user_id: str,
+    role: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    """
+    사용자 역할 변경 (관리자 전용)
+
+    Parameters:
+    - user_id: 변경할 사용자 ID
+    - role: 새로운 역할 ("user" 또는 "admin")
+
+    Returns:
+    - 업데이트된 사용자 정보
+    """
+    try:
+        # 역할 유효성 검증
+        if role not in ["user", "admin"]:
+            raise HTTPException(
+                status_code=400,
+                detail="역할은 'user' 또는 'admin'만 가능합니다"
+            )
+
+        # 사용자 조회
+        user = db.query(User).filter(User.id == user_id).first()
+
+        if not user:
+            raise HTTPException(
+                status_code=404,
+                detail="사용자를 찾을 수 없습니다"
+            )
+
+        # 자기 자신의 역할은 변경할 수 없음
+        if user.id == current_user.id:
+            raise HTTPException(
+                status_code=400,
+                detail="자신의 역할은 변경할 수 없습니다"
+            )
+
+        # 역할 업데이트
+        old_role = user.role
+        user.role = role
+        db.commit()
+        db.refresh(user)
+
+        logger.info(f"User role updated: {user.email} ({old_role} -> {role}) by {current_user.email}")
+
+        return {
+            "success": True,
+            "message": f"사용자 역할이 {old_role}에서 {role}로 변경되었습니다",
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "name": user.name,
+                "role": user.role,
+                "created_at": user.created_at.isoformat() if user.created_at else None
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to update user role: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/users/{user_id}")
+async def delete_user(
+    user_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    """
+    사용자 삭제 (관리자 전용)
+
+    Parameters:
+    - user_id: 삭제할 사용자 ID
+
+    Returns:
+    - 삭제 성공 메시지
+    """
+    try:
+        # 사용자 조회
+        user = db.query(User).filter(User.id == user_id).first()
+
+        if not user:
+            raise HTTPException(
+                status_code=404,
+                detail="사용자를 찾을 수 없습니다"
+            )
+
+        # 자기 자신은 삭제할 수 없음
+        if user.id == current_user.id:
+            raise HTTPException(
+                status_code=400,
+                detail="자신의 계정은 삭제할 수 없습니다"
+            )
+
+        # 사용자 삭제
+        user_email = user.email
+        db.delete(user)
+        db.commit()
+
+        logger.info(f"User deleted: {user_email} by {current_user.email}")
+
+        return {
+            "success": True,
+            "message": f"사용자 {user_email}가 삭제되었습니다"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to delete user: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

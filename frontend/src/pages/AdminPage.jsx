@@ -14,6 +14,13 @@ export default function AdminPage() {
       color: '#2196F3'
     },
     {
+      icon: '👥',
+      title: '사용자 관리',
+      description: '사용자 목록, 역할 변경, 계정 삭제',
+      path: '/admin/users',
+      color: '#00BCD4'
+    },
+    {
       icon: '📊',
       title: '재무 분석',
       description: 'CAGR, ROE, 부채비율 등 재무제표 분석',
