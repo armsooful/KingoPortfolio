@@ -80,6 +80,12 @@ function SignupPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // 3단계가 아니면 제출하지 않음
+    if (step !== 3) {
+      return;
+    }
+
     setError('');
     setIsLoading(true);
 
@@ -121,6 +127,16 @@ function SignupPage() {
     }
   };
 
+  // 폼에서 Enter 키 눌렀을 때 처리
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (step < 3) {
+        handleNext();
+      }
+    }
+  };
+
   return (
     <div className="auth-container">
       <div className="auth-card signup-card">
@@ -151,7 +167,7 @@ function SignupPage() {
 
         {error && <div className="error-message">{error}</div>}
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} onKeyPress={handleKeyPress}>
           {/* Step 1: 기본 정보 */}
           {step === 1 && (
             <div className="form-step">
