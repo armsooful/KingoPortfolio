@@ -2,6 +2,7 @@ import { useState, useEffect, createContext, useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { getCurrentUser, logout as logoutApi } from './services/api';
 import Header from './components/Header';
+import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import ProfilePage from './pages/ProfilePage';
@@ -127,6 +128,7 @@ function AppContent() {
       <main className="main-content">
         <Routes>
           {/* Public Routes */}
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
 
@@ -221,8 +223,7 @@ function AppContent() {
           />
 
           {/* Default Route */}
-          <Route path="/" element={<Navigate to="/survey" replace />} />
-          <Route path="*" element={<Navigate to="/survey" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
     </div>
