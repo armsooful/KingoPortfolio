@@ -9,6 +9,7 @@ function UserManagementPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+  const [selectedUser, setSelectedUser] = useState(null);
 
   // 사용자 목록 조회
   const fetchUsers = async () => {
@@ -21,7 +22,6 @@ function UserManagementPage() {
       console.error('Failed to fetch users:', err);
       setError(err.response?.data?.detail || '사용자 목록을 불러오는데 실패했습니다.');
 
-      // 권한 없음 에러인 경우 로그인 페이지로 이동
       if (err.response?.status === 401 || err.response?.status === 403) {
         navigate('/login');
       }
@@ -43,17 +43,11 @@ function UserManagementPage() {
     try {
       const response = await api.put(`/admin/users/${userId}/role?role=${newRole}`);
       setSuccessMessage(response.data.message);
-
-      // 성공 메시지 3초 후 제거
       setTimeout(() => setSuccessMessage(''), 3000);
-
-      // 사용자 목록 새로고침
       await fetchUsers();
     } catch (err) {
       console.error('Failed to update user role:', err);
       setError(err.response?.data?.detail || '역할 변경에 실패했습니다.');
-
-      // 에러 메시지 5초 후 제거
       setTimeout(() => setError(null), 5000);
     }
   };
@@ -67,19 +61,29 @@ function UserManagementPage() {
     try {
       const response = await api.delete(`/admin/users/${userId}`);
       setSuccessMessage(response.data.message);
-
-      // 성공 메시지 3초 후 제거
       setTimeout(() => setSuccessMessage(''), 3000);
-
-      // 사용자 목록 새로고침
       await fetchUsers();
+      if (selectedUser?.id === userId) {
+        setSelectedUser(null);
+      }
     } catch (err) {
       console.error('Failed to delete user:', err);
       setError(err.response?.data?.detail || '사용자 삭제에 실패했습니다.');
-
-      // 에러 메시지 5초 후 제거
       setTimeout(() => setError(null), 5000);
     }
+  };
+
+  // 나이 계산
+  const calculateAge = (birthDate) => {
+    if (!birthDate) return null;
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
   };
 
   if (loading) {
@@ -94,25 +98,13 @@ function UserManagementPage() {
     <div className="user-management-container">
       <div className="user-management-header">
         <h1>사용자 관리</h1>
-        <button
-          className="btn-back"
-          onClick={() => navigate('/admin')}
-        >
+        <button className="btn-back" onClick={() => navigate('/admin')}>
           관리자 페이지로 돌아가기
         </button>
       </div>
 
-      {error && (
-        <div className="alert alert-error">
-          {error}
-        </div>
-      )}
-
-      {successMessage && (
-        <div className="alert alert-success">
-          {successMessage}
-        </div>
-      )}
+      {error && <div className="alert alert-error">{error}</div>}
+      {successMessage && <div className="alert alert-success">{successMessage}</div>}
 
       <div className="user-stats">
         <div className="stat-card">
@@ -135,6 +127,7 @@ function UserManagementPage() {
             <tr>
               <th>이메일</th>
               <th>이름</th>
+              <th>직업</th>
               <th>역할</th>
               <th>가입일</th>
               <th>관리</th>
@@ -145,6 +138,7 @@ function UserManagementPage() {
               <tr key={user.id}>
                 <td>{user.email}</td>
                 <td>{user.name || '(없음)'}</td>
+                <td>{user.occupation || '(없음)'}</td>
                 <td>
                   <span className={`role-badge role-${user.role}`}>
                     {user.role === 'admin' ? '관리자' : '일반 사용자'}
@@ -153,11 +147,17 @@ function UserManagementPage() {
                 <td>
                   {user.created_at
                     ? new Date(user.created_at).toLocaleDateString('ko-KR')
-                    : '(알 수 없음)'
-                  }
+                    : '(알 수 없음)'}
                 </td>
                 <td>
                   <div className="action-buttons">
+                    <button
+                      className="btn-action btn-view"
+                      onClick={() => setSelectedUser(user)}
+                      title="상세 정보 보기"
+                    >
+                      상세 보기
+                    </button>
                     {user.role === 'admin' ? (
                       <button
                         className="btn-action btn-demote"
@@ -190,11 +190,145 @@ function UserManagementPage() {
         </table>
 
         {users.length === 0 && (
-          <div className="no-users">
-            등록된 사용자가 없습니다.
-          </div>
+          <div className="no-users">등록된 사용자가 없습니다.</div>
         )}
       </div>
+
+      {/* User Detail Modal */}
+      {selectedUser && (
+        <div className="modal-overlay" onClick={() => setSelectedUser(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>사용자 상세 정보</h2>
+              <button className="modal-close" onClick={() => setSelectedUser(null)}>
+                ✕
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <div className="detail-section">
+                <h3>기본 정보</h3>
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <span className="detail-label">이름</span>
+                    <span className="detail-value">{selectedUser.name || '-'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">이메일</span>
+                    <span className="detail-value">{selectedUser.email}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">전화번호</span>
+                    <span className="detail-value">{selectedUser.phone || '-'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">생년월일</span>
+                    <span className="detail-value">
+                      {selectedUser.birth_date
+                        ? `${new Date(selectedUser.birth_date).toLocaleDateString('ko-KR')} (만 ${calculateAge(selectedUser.birth_date)}세)`
+                        : '-'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="detail-section">
+                <h3>직업 및 재무 정보</h3>
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <span className="detail-label">직업</span>
+                    <span className="detail-value">{selectedUser.occupation || '-'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">회사명</span>
+                    <span className="detail-value">{selectedUser.company || '-'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">연봉</span>
+                    <span className="detail-value">
+                      {selectedUser.annual_income
+                        ? `${selectedUser.annual_income.toLocaleString()}만원`
+                        : '-'}
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">총 자산</span>
+                    <span className="detail-value">
+                      {selectedUser.total_assets
+                        ? `${selectedUser.total_assets.toLocaleString()}만원`
+                        : '-'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="detail-section">
+                <h3>주소 정보</h3>
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <span className="detail-label">거주 도시</span>
+                    <span className="detail-value">{selectedUser.city || '-'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">구/군</span>
+                    <span className="detail-value">{selectedUser.district || '-'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="detail-section">
+                <h3>투자 성향</h3>
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <span className="detail-label">투자 경험</span>
+                    <span className="detail-value">{selectedUser.investment_experience || '-'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">투자 목표</span>
+                    <span className="detail-value">{selectedUser.investment_goal || '-'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">위험 감수 성향</span>
+                    <span className="detail-value">{selectedUser.risk_tolerance || '-'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="detail-section">
+                <h3>시스템 정보</h3>
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <span className="detail-label">사용자 ID</span>
+                    <span className="detail-value">{selectedUser.id}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">역할</span>
+                    <span className="detail-value">
+                      <span className={`role-badge role-${selectedUser.role}`}>
+                        {selectedUser.role === 'admin' ? '관리자' : '일반 사용자'}
+                      </span>
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">가입일</span>
+                    <span className="detail-value">
+                      {selectedUser.created_at
+                        ? new Date(selectedUser.created_at).toLocaleString('ko-KR')
+                        : '-'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn-modal btn-close" onClick={() => setSelectedUser(null)}>
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

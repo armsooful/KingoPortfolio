@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field
-from datetime import datetime
+from datetime import datetime, date
 from typing import List, Optional, Dict
 
 
@@ -9,31 +9,46 @@ from typing import List, Optional, Dict
 
 class UserCreate(BaseModel):
     """사용자 생성 요청"""
-    email: EmailStr = Field(
-        ...,
-        description="사용자 이메일 주소 (고유값)",
-        example="user@example.com"
-    )
-    password: str = Field(
-        ...,
-        min_length=8,
-        max_length=72,
-        description="비밀번호 (최소 8자, 최대 72바이트)",
-        example="securePassword123!"
-    )
-    name: Optional[str] = Field(
-        None,
-        max_length=50,
-        description="사용자 이름 (선택사항)",
-        example="홍길동"
-    )
+    email: EmailStr = Field(..., description="사용자 이메일 주소 (고유값)", example="user@example.com")
+    password: str = Field(..., min_length=8, max_length=72, description="비밀번호 (최소 8자, 최대 72바이트)", example="securePassword123!")
+
+    # 기본 정보
+    name: Optional[str] = Field(None, max_length=50, description="사용자 이름", example="홍길동")
+    phone: Optional[str] = Field(None, max_length=20, description="전화번호", example="010-1234-5678")
+    birth_date: Optional[date] = Field(None, description="생년월일", example="1990-01-01")
+
+    # 직업 및 재무 정보
+    occupation: Optional[str] = Field(None, max_length=100, description="직업", example="소프트웨어 엔지니어")
+    company: Optional[str] = Field(None, max_length=100, description="회사명", example="테크컴퍼니")
+    annual_income: Optional[int] = Field(None, ge=0, description="연봉 (만원 단위)", example=5000)
+    total_assets: Optional[int] = Field(None, ge=0, description="총 자산 (만원 단위)", example=10000)
+
+    # 주소 정보
+    city: Optional[str] = Field(None, max_length=50, description="거주 도시", example="서울")
+    district: Optional[str] = Field(None, max_length=50, description="구/군", example="강남구")
+
+    # 투자 성향 정보
+    investment_experience: Optional[str] = Field(None, description="투자 경험", example="중급")
+    investment_goal: Optional[str] = Field(None, max_length=100, description="투자 목표", example="노후 준비")
+    risk_tolerance: Optional[str] = Field(None, description="위험 감수 성향", example="중립적")
 
     class Config:
         schema_extra = {
             "example": {
                 "email": "user@example.com",
                 "password": "securePassword123!",
-                "name": "홍길동"
+                "name": "홍길동",
+                "phone": "010-1234-5678",
+                "birth_date": "1990-01-01",
+                "occupation": "소프트웨어 엔지니어",
+                "company": "테크컴퍼니",
+                "annual_income": 5000,
+                "total_assets": 10000,
+                "city": "서울",
+                "district": "강남구",
+                "investment_experience": "중급",
+                "investment_goal": "노후 준비",
+                "risk_tolerance": "중립적"
             }
         }
 

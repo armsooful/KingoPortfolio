@@ -1497,6 +1497,17 @@ async def get_all_users(
                     "id": u.id,
                     "email": u.email,
                     "name": u.name,
+                    "phone": u.phone,
+                    "birth_date": u.birth_date.isoformat() if u.birth_date else None,
+                    "occupation": u.occupation,
+                    "company": u.company,
+                    "annual_income": u.annual_income,
+                    "total_assets": u.total_assets,
+                    "city": u.city,
+                    "district": u.district,
+                    "investment_experience": u.investment_experience,
+                    "investment_goal": u.investment_goal,
+                    "risk_tolerance": u.risk_tolerance,
                     "role": u.role,
                     "created_at": u.created_at.isoformat() if u.created_at else None
                 }

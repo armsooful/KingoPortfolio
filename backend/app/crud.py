@@ -23,16 +23,27 @@ def create_user(db: Session, user_create: UserCreate):
     existing_user = get_user_by_email(db, user_create.email)
     if existing_user:
         raise ValueError("Email already registered")
-    
+
     hashed_password = hash_password(user_create.password)
-    
-    # ✅ FIX 1: full_name → name
+
+    # 모든 사용자 정보 포함
     db_user = User(
         email=user_create.email,
         hashed_password=hashed_password,
-        name=user_create.name
+        name=user_create.name,
+        phone=user_create.phone,
+        birth_date=user_create.birth_date,
+        occupation=user_create.occupation,
+        company=user_create.company,
+        annual_income=user_create.annual_income,
+        total_assets=user_create.total_assets,
+        city=user_create.city,
+        district=user_create.district,
+        investment_experience=user_create.investment_experience,
+        investment_goal=user_create.investment_goal,
+        risk_tolerance=user_create.risk_tolerance
     )
-    
+
     try:
         db.add(db_user)
         db.commit()
