@@ -79,13 +79,18 @@ function SignupPage() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
 
     // 3단계가 아니면 제출하지 않음
     if (step !== 3) {
+      console.log('Form submission blocked - not on step 3. Current step:', step);
       return;
     }
 
+    console.log('Form submission allowed - on step 3');
     setError('');
     setIsLoading(true);
 
@@ -127,6 +132,13 @@ function SignupPage() {
     }
   };
 
+  // 최종 제출 버튼 클릭 핸들러
+  const handleFinalSubmit = () => {
+    if (step === 3) {
+      handleSubmit(null);
+    }
+  };
+
   // 폼에서 Enter 키 눌렀을 때 처리
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
@@ -134,6 +146,7 @@ function SignupPage() {
       if (step < 3) {
         handleNext();
       }
+      // step 3에서는 Enter 키로 제출되지 않도록 함
     }
   };
 
@@ -392,8 +405,9 @@ function SignupPage() {
               </button>
             ) : (
               <button
-                type="submit"
+                type="button"
                 className="btn btn-primary"
+                onClick={handleFinalSubmit}
                 disabled={isLoading}
               >
                 {isLoading ? '가입 중...' : '회원가입 완료'}
