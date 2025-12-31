@@ -315,7 +315,13 @@ async def login(
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "user": {"id": user.id, "email": user.email, "name": getattr(user, "name", None), "created_at": user.created_at}
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "name": getattr(user, "name", None),
+            "role": user.role,
+            "created_at": user.created_at
+        }
     }
 
 @router.get(
@@ -403,7 +409,13 @@ async def get_me(current_user: User = Depends(__import__("app.auth", fromlist=["
     - 네비게이션 바에 사용자 이름 표시
     - 현재 로그인 상태 확인
     """
-    return {"id": current_user.id, "email": current_user.email, "name": getattr(current_user, "name", None), "created_at": current_user.created_at}
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "name": getattr(current_user, "name", None),
+        "role": current_user.role,
+        "created_at": current_user.created_at
+    }
 
 @router.post(
     "/forgot-password",
