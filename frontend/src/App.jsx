@@ -46,10 +46,16 @@ function AuthProvider({ children }) {
     const checkAuth = async () => {
       try {
         const token = localStorage.getItem('access_token');
+        console.log('App - checkAuth - token:', token ? 'exists' : 'not found');
+
         if (token) {
           const response = await getCurrentUser();
+          console.log('App - checkAuth - response.data:', response.data);
           setUser(response.data);
           setIsAuthenticated(true);
+          console.log('App - checkAuth - user set to:', response.data);
+        } else {
+          console.log('App - checkAuth - no token, user remains null');
         }
       } catch (error) {
         console.error('Auth check failed:', error);
@@ -64,10 +70,13 @@ function AuthProvider({ children }) {
   }, []);
 
   const login = (user, token) => {
+    console.log('App - login - user:', user);
+    console.log('App - login - token:', token ? 'exists' : 'not provided');
     localStorage.setItem('access_token', token);
     localStorage.setItem('user', JSON.stringify(user));
     setUser(user);
     setIsAuthenticated(true);
+    console.log('App - login - user state set to:', user);
   };
 
   const logout = () => {
