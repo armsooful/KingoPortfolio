@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import api, { changePassword } from '../services/api';
 import '../styles/ProfilePage.css';
 
 function ProfilePage() {
@@ -11,6 +11,16 @@ function ProfilePage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
+
+  // 비밀번호 변경 관련 상태
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    current_password: '',
+    new_password: '',
+    confirm_password: ''
+  });
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
 
   // 프로필 조회
   const fetchProfile = async () => {
@@ -93,6 +103,51 @@ function ProfilePage() {
       age--;
     }
     return age;
+  };
+
+  // 비밀번호 변경 처리
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    // 유효성 검증
+    if (!passwordData.current_password || !passwordData.new_password || !passwordData.confirm_password) {
+      setPasswordError('모든 필드를 입력해주세요.');
+      return;
+    }
+
+    if (passwordData.new_password.length < 8) {
+      setPasswordError('새 비밀번호는 최소 8자 이상이어야 합니다.');
+      return;
+    }
+
+    if (passwordData.new_password !== passwordData.confirm_password) {
+      setPasswordError('새 비밀번호가 일치하지 않습니다.');
+      return;
+    }
+
+    try {
+      await changePassword({
+        current_password: passwordData.current_password,
+        new_password: passwordData.new_password
+      });
+
+      setPasswordSuccess('비밀번호가 성공적으로 변경되었습니다.');
+      setPasswordData({ current_password: '', new_password: '', confirm_password: '' });
+      setIsChangingPassword(false);
+      setTimeout(() => setPasswordSuccess(''), 3000);
+    } catch (err) {
+      console.error('Failed to change password:', err);
+      setPasswordError(err.response?.data?.detail || '비밀번호 변경에 실패했습니다.');
+    }
+  };
+
+  // 비밀번호 변경 취소
+  const handlePasswordCancel = () => {
+    setPasswordData({ current_password: '', new_password: '', confirm_password: '' });
+    setIsChangingPassword(false);
+    setPasswordError('');
   };
 
   if (loading) {
@@ -349,6 +404,79 @@ function ProfilePage() {
           </div>
         </div>
       </form>
+
+      {/* 비밀번호 변경 */}
+      <div className="profile-section">
+        <h2>비밀번호 변경</h2>
+
+        {passwordSuccess && (
+          <div className="success-message">{passwordSuccess}</div>
+        )}
+
+        {!isChangingPassword ? (
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => setIsChangingPassword(true)}
+          >
+            비밀번호 변경
+          </button>
+        ) : (
+          <form onSubmit={handlePasswordChange} className="password-form">
+            {passwordError && (
+              <div className="error-message">{passwordError}</div>
+            )}
+
+            <div className="profile-field">
+              <label>현재 비밀번호 *</label>
+              <input
+                type="password"
+                value={passwordData.current_password}
+                onChange={(e) => setPasswordData(prev => ({ ...prev, current_password: e.target.value }))}
+                placeholder="현재 비밀번호를 입력하세요"
+                required
+              />
+            </div>
+
+            <div className="profile-field">
+              <label>새 비밀번호 *</label>
+              <input
+                type="password"
+                value={passwordData.new_password}
+                onChange={(e) => setPasswordData(prev => ({ ...prev, new_password: e.target.value }))}
+                placeholder="새 비밀번호 (최소 8자)"
+                required
+                minLength={8}
+              />
+            </div>
+
+            <div className="profile-field">
+              <label>새 비밀번호 확인 *</label>
+              <input
+                type="password"
+                value={passwordData.confirm_password}
+                onChange={(e) => setPasswordData(prev => ({ ...prev, confirm_password: e.target.value }))}
+                placeholder="새 비밀번호를 다시 입력하세요"
+                required
+                minLength={8}
+              />
+            </div>
+
+            <div className="form-actions">
+              <button type="submit" className="btn btn-primary">
+                비밀번호 변경
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handlePasswordCancel}
+              >
+                취소
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
     </div>
   );
 }

@@ -797,8 +797,10 @@ async def update_profile(
     description="현재 비밀번호를 확인하고 새 비밀번호로 변경합니다.",
     response_description="비밀번호 변경 완료 메시지"
 )
+@limiter.limit(RateLimits.AUTH_PASSWORD_RESET)
 async def change_password(
-    request: ChangePasswordRequest,
+    request: Request,
+    password_request: ChangePasswordRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -846,17 +848,17 @@ async def change_password(
     ```
     """
     # 현재 비밀번호 확인
-    if not verify_password(request.current_password, current_user.hashed_password):
+    if not verify_password(password_request.current_password, current_user.hashed_password):
         raise InvalidCredentialsError(detail="현재 비밀번호가 올바르지 않습니다")
 
     # 새 비밀번호가 현재 비밀번호와 동일한지 확인
-    if verify_password(request.new_password, current_user.hashed_password):
+    if verify_password(password_request.new_password, current_user.hashed_password):
         raise KingoValidationError(
             detail="새 비밀번호는 현재 비밀번호와 달라야 합니다"
         )
 
     # 새 비밀번호 해싱
-    new_hashed_password = hash_password(request.new_password)
+    new_hashed_password = hash_password(password_request.new_password)
 
     # 비밀번호 업데이트
     current_user.hashed_password = new_hashed_password

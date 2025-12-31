@@ -80,6 +80,7 @@ class UserResponse(BaseModel):
     id: str = Field(..., description="사용자 고유 ID", example="usr_abc123xyz")
     email: str = Field(..., description="이메일 주소", example="user@example.com")
     name: Optional[str] = Field(None, description="사용자 이름", example="홍길동")
+    role: str = Field(..., description="사용자 역할", example="user")
     created_at: datetime = Field(..., description="계정 생성 일시", example="2025-12-29T10:00:00Z")
 
     class Config:
@@ -89,6 +90,7 @@ class UserResponse(BaseModel):
                 "id": "usr_abc123xyz",
                 "email": "user@example.com",
                 "name": "홍길동",
+                "role": "user",
                 "created_at": "2025-12-29T10:00:00Z"
             }
         }

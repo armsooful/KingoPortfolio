@@ -83,6 +83,13 @@ export const logout = () => {
   localStorage.removeItem('user');
 };
 
+/**
+ * 비밀번호 변경
+ */
+export const changePassword = (data) => {
+  return api.put('/auth/change-password', data);
+};
+
 // ============================================================
 // Survey API
 // ============================================================

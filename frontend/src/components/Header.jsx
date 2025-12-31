@@ -6,11 +6,6 @@ function Header() {
   const location = useLocation();
   const { user, logout } = useAuth();
 
-  // 디버깅: user 객체 확인
-  console.log('Header - user:', user);
-  console.log('Header - user.role:', user?.role);
-  console.log('Header - is admin?:', user && user.role === 'admin');
-
   const handleLogout = () => {
     logout();
     navigate('/login');

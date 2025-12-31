@@ -272,7 +272,17 @@ async def login_for_access_token(
         expires_delta=access_token_expires
     )
 
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": db_user.id,
+            "email": db_user.email,
+            "name": getattr(db_user, "name", None),
+            "role": db_user.role,
+            "created_at": db_user.created_at
+        }
+    }
 
 @app.get(
     "/health",
