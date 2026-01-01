@@ -21,6 +21,12 @@ from app.exceptions import (
     InvalidCredentialsError
 )
 from app.rate_limiter import limiter, RateLimits
+from app.utils.email import send_verification_email, generate_verification_token, is_verification_token_expired
+from app.utils.tier_permissions import (
+    get_user_permissions, add_activity_points, update_vip_tier,
+    get_membership_status, reset_monthly_usage_if_needed
+)
+from datetime import datetime
 
 router = APIRouter(
     prefix="/auth",
@@ -171,20 +177,43 @@ async def signup(
     try:
         # 사용자 생성
         user = create_user(db, user_create)
-        
+
+        # 이메일 인증 토큰 생성 및 저장
+        verification_token = generate_verification_token()
+        user.email_verification_token = verification_token
+        user.email_verification_sent_at = datetime.utcnow()
+        db.commit()
+        db.refresh(user)
+
+        # 이메일 인증 메일 발송 (백그라운드에서 실행, 실패해도 회원가입은 성공)
+        try:
+            await send_verification_email(
+                to_email=user.email,
+                verification_token=verification_token
+            )
+            print(f"✅ 인증 이메일 발송 완료: {user.email}")
+        except Exception as e:
+            print(f"⚠️ 인증 이메일 발송 실패 (회원가입은 성공): {str(e)}")
+
         # 토큰 생성
         access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
         access_token = create_access_token(
             data={"sub": user.email},
             expires_delta=access_token_expires
         )
-        
+
         print(f"\n✅ 회원가입 성공: {user.email}\n")
-        
+
         return {
             "access_token": access_token,
             "token_type": "bearer",
-            "user": {"id": user.id, "email": user.email, "name": getattr(user, "name", None), "created_at": user.created_at}
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "name": getattr(user, "name", None),
+                "role": user.role,
+                "created_at": user.created_at
+            }
         }
     
     except ValueError as e:
@@ -704,7 +733,22 @@ async def get_profile(
         "id": current_user.id,
         "email": current_user.email,
         "name": getattr(current_user, "name", None),
+        "phone": getattr(current_user, "phone", None),
+        "birth_date": getattr(current_user, "birth_date", None),
+        "occupation": getattr(current_user, "occupation", None),
+        "company": getattr(current_user, "company", None),
+        "annual_income": getattr(current_user, "annual_income", None),
+        "total_assets": getattr(current_user, "total_assets", None),
+        "city": getattr(current_user, "city", None),
+        "district": getattr(current_user, "district", None),
+        "investment_experience": getattr(current_user, "investment_experience", None),
+        "investment_goal": getattr(current_user, "investment_goal", None),
+        "risk_tolerance": getattr(current_user, "risk_tolerance", None),
         "role": current_user.role,
+        "is_email_verified": getattr(current_user, "is_email_verified", False),
+        "vip_tier": getattr(current_user, "vip_tier", "bronze"),
+        "activity_points": getattr(current_user, "activity_points", 0),
+        "membership_plan": getattr(current_user, "membership_plan", "free"),
         "created_at": current_user.created_at
     }
 
@@ -968,6 +1012,10 @@ async def get_profile(
         investment_goal=current_user.investment_goal,
         risk_tolerance=current_user.risk_tolerance,
         role=current_user.role,
+        is_email_verified=getattr(current_user, 'is_email_verified', False),
+        vip_tier=getattr(current_user, 'vip_tier', 'bronze'),
+        activity_points=getattr(current_user, 'activity_points', 0),
+        membership_plan=getattr(current_user, 'membership_plan', 'free'),
         created_at=current_user.created_at
     )
 
@@ -1048,5 +1096,358 @@ async def update_profile(
         investment_goal=current_user.investment_goal,
         risk_tolerance=current_user.risk_tolerance,
         role=current_user.role,
+        is_email_verified=getattr(current_user, 'is_email_verified', False),
+        vip_tier=getattr(current_user, 'vip_tier', 'bronze'),
+        activity_points=getattr(current_user, 'activity_points', 0),
+        membership_plan=getattr(current_user, 'membership_plan', 'free'),
         created_at=current_user.created_at
     )
+
+
+# ============================================================
+# 이메일 인증 엔드포인트
+# ============================================================
+
+@router.post(
+    "/send-verification-email",
+    response_model=MessageResponse,
+    summary="인증 이메일 발송",
+    description="사용자의 이메일 주소로 인증 메일을 발송합니다."
+)
+@limiter.limit("3/hour")  # 시간당 3회로 제한
+async def send_verification_email_endpoint(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    ## 이메일 인증 메일 발송
+
+    로그인한 사용자의 이메일 주소로 인증 메일을 발송합니다.
+
+    ### 주의사항
+    - 이미 인증된 이메일의 경우 재발송이 불가능합니다
+    - 인증 링크는 24시간 동안 유효합니다
+    - 시간당 3회로 발송이 제한됩니다
+
+    ### 예제 응답 (200 OK)
+    ```json
+    {
+        "message": "인증 이메일이 발송되었습니다. 이메일을 확인해주세요."
+    }
+    ```
+    """
+    # 이미 인증된 경우
+    if current_user.is_email_verified:
+        raise HTTPException(
+            status_code=400,
+            detail="이미 인증된 이메일입니다."
+        )
+
+    # 인증 토큰 생성
+    verification_token = generate_verification_token()
+
+    # DB에 토큰 저장
+    current_user.email_verification_token = verification_token
+    current_user.email_verification_sent_at = datetime.utcnow()
+    db.commit()
+
+    # 이메일 발송
+    success = await send_verification_email(
+        to_email=current_user.email,
+        verification_token=verification_token
+    )
+
+    if not success:
+        raise HTTPException(
+            status_code=500,
+            detail="이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요."
+        )
+
+    print(f"✅ 인증 이메일 발송 완료: {current_user.email}")
+
+    return MessageResponse(
+        message="인증 이메일이 발송되었습니다. 이메일을 확인해주세요."
+    )
+
+
+@router.get(
+    "/verify-email",
+    response_model=MessageResponse,
+    summary="이메일 인증 확인",
+    description="이메일 인증 토큰을 확인하고 이메일을 인증 처리합니다."
+)
+async def verify_email(
+    token: str,
+    db: Session = Depends(get_db)
+):
+    """
+    ## 이메일 인증 확인
+
+    이메일로 발송된 인증 링크를 클릭했을 때 호출되는 엔드포인트입니다.
+
+    ### 파라미터
+    - **token**: 이메일 인증 토큰 (URL 쿼리 파라미터)
+
+    ### 주의사항
+    - 토큰은 24시간 동안 유효합니다
+    - 이미 인증된 이메일의 토큰은 사용할 수 없습니다
+
+    ### 예제 요청
+    ```
+    GET /auth/verify-email?token=abc123xyz456
+    ```
+
+    ### 예제 응답 (200 OK)
+    ```json
+    {
+        "message": "이메일 인증이 완료되었습니다."
+    }
+    ```
+    """
+    # 토큰으로 사용자 찾기
+    user = db.query(User).filter(
+        User.email_verification_token == token
+    ).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=400,
+            detail="유효하지 않은 인증 토큰입니다."
+        )
+
+    # 이미 인증된 경우
+    if user.is_email_verified:
+        raise HTTPException(
+            status_code=400,
+            detail="이미 인증된 이메일입니다."
+        )
+
+    # 토큰 만료 확인
+    if is_verification_token_expired(user.email_verification_sent_at):
+        raise HTTPException(
+            status_code=400,
+            detail="인증 링크가 만료되었습니다. 새로운 인증 이메일을 요청해주세요."
+        )
+
+    # 이메일 인증 처리
+    user.is_email_verified = True
+    user.email_verification_token = None  # 토큰 삭제
+    db.commit()
+
+    print(f"✅ 이메일 인증 완료: {user.email}")
+
+    return MessageResponse(
+        message="이메일 인증이 완료되었습니다."
+    )
+
+
+@router.post(
+    "/resend-verification-email",
+    response_model=MessageResponse,
+    summary="인증 이메일 재발송",
+    description="이메일 인증 메일을 재발송합니다."
+)
+@limiter.limit("3/hour")  # 시간당 3회로 제한
+async def resend_verification_email(
+    request: Request,
+    email: str,
+    db: Session = Depends(get_db)
+):
+    """
+    ## 인증 이메일 재발송
+
+    이메일 주소로 인증 메일을 재발송합니다. 로그인하지 않은 상태에서도 사용 가능합니다.
+
+    ### 파라미터
+    - **email**: 이메일 주소
+
+    ### 주의사항
+    - 이미 인증된 이메일의 경우 재발송이 불가능합니다
+    - 인증 링크는 24시간 동안 유효합니다
+    - 시간당 3회로 발송이 제한됩니다
+
+    ### 예제 요청
+    ```json
+    {
+        "email": "user@example.com"
+    }
+    ```
+
+    ### 예제 응답 (200 OK)
+    ```json
+    {
+        "message": "인증 이메일이 발송되었습니다. 이메일을 확인해주세요."
+    }
+    ```
+    """
+    # 사용자 찾기
+    user = db.query(User).filter(User.email == email).first()
+
+    if not user:
+        # 보안상 사용자가 존재하지 않아도 성공 메시지 반환
+        return MessageResponse(
+            message="인증 이메일이 발송되었습니다. 이메일을 확인해주세요."
+        )
+
+    # 이미 인증된 경우
+    if user.is_email_verified:
+        raise HTTPException(
+            status_code=400,
+            detail="이미 인증된 이메일입니다."
+        )
+
+    # 인증 토큰 생성
+    verification_token = generate_verification_token()
+
+    # DB에 토큰 저장
+    user.email_verification_token = verification_token
+    user.email_verification_sent_at = datetime.utcnow()
+    db.commit()
+
+    # 이메일 발송
+    success = await send_verification_email(
+        to_email=user.email,
+        verification_token=verification_token
+    )
+
+    if not success:
+        raise HTTPException(
+            status_code=500,
+            detail="이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요."
+        )
+
+    print(f"✅ 인증 이메일 재발송 완료: {user.email}")
+
+    return MessageResponse(
+        message="인증 이메일이 발송되었습니다. 이메일을 확인해주세요."
+    )
+
+
+# ============================================================
+# 등급 및 권한 관리 엔드포인트
+# ============================================================
+
+@router.get(
+    "/tier/permissions",
+    summary="사용자 권한 조회",
+    description="현재 로그인한 사용자의 VIP 등급 및 멤버십 플랜에 따른 권한을 조회합니다."
+)
+async def get_permissions(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    ## 사용자 권한 조회
+
+    현재 사용자의 VIP 등급, 멤버십 플랜, 그리고 이에 따른 모든 권한 정보를 반환합니다.
+
+    ### 응답 정보
+    - VIP 등급 권한 (포트폴리오 개수, 과거 데이터 조회 범위 등)
+    - 멤버십 플랜 권한 (AI 요청, 리포트 생성, 고급 기능 등)
+    - 현재 사용량 (이번 달 AI 요청 횟수, 리포트 생성 횟수)
+    """
+    # 월별 사용량 리셋 체크
+    reset_monthly_usage_if_needed(current_user)
+    db.commit()
+
+    permissions = get_user_permissions(current_user)
+    membership_status = get_membership_status(current_user)
+
+    return {
+        "user_id": current_user.id,
+        "email": current_user.email,
+        "vip_tier": current_user.vip_tier,
+        "activity_points": current_user.activity_points,
+        "membership_plan": current_user.membership_plan,
+        "membership_status": membership_status,
+        "permissions": permissions['combined_permissions'],
+        "vip_details": permissions['vip_permissions'],
+        "membership_details": permissions['membership_permissions'],
+    }
+
+
+@router.get(
+    "/tier/status",
+    summary="등급 상태 조회",
+    description="현재 로그인한 사용자의 등급 상태 및 다음 등급까지의 진행 상황을 조회합니다."
+)
+async def get_tier_status(
+    current_user: User = Depends(get_current_user)
+):
+    """
+    ## 등급 상태 조회
+
+    사용자의 현재 VIP 등급, 활동 점수, 다음 등급까지 필요한 점수 등을 반환합니다.
+    """
+    from app.utils.tier_permissions import VIP_TIER_THRESHOLDS
+
+    current_tier = current_user.vip_tier
+    activity_points = current_user.activity_points
+    total_assets = current_user.total_assets or 0
+
+    # 다음 등급 계산
+    tier_order = ['bronze', 'silver', 'gold', 'platinum', 'diamond']
+    current_index = tier_order.index(current_tier)
+
+    next_tier_info = None
+    if current_index < len(tier_order) - 1:
+        next_tier = tier_order[current_index + 1]
+        threshold = VIP_TIER_THRESHOLDS[next_tier]
+
+        next_tier_info = {
+            "tier": next_tier,
+            "required_activity_points": threshold['activity_points'],
+            "remaining_activity_points": max(0, threshold['activity_points'] - activity_points),
+            "required_total_assets_만원": threshold['total_assets_만원'],
+            "remaining_total_assets_만원": max(0, threshold['total_assets_만원'] - total_assets),
+            "progress_percentage": min(100, int((activity_points / threshold['activity_points']) * 100))
+        }
+
+    return {
+        "current_tier": current_tier,
+        "activity_points": activity_points,
+        "total_assets_만원": total_assets,
+        "next_tier": next_tier_info,
+        "membership_plan": current_user.membership_plan,
+        "membership_active": get_membership_status(current_user)['is_active']
+    }
+
+
+@router.post(
+    "/tier/test-upgrade",
+    summary="[테스트] VIP 등급 업그레이드 테스트",
+    description="활동 점수를 추가하여 VIP 등급을 업그레이드합니다. (테스트/데모용)"
+)
+async def test_tier_upgrade(
+    points: int = 100,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    ## VIP 등급 업그레이드 테스트
+
+    **주의**: 이 엔드포인트는 테스트/데모용입니다.
+    실제 프로덕션 환경에서는 제거하거나 admin 권한으로 제한해야 합니다.
+
+    활동 점수를 추가하여 VIP 등급 업그레이드를 테스트합니다.
+    """
+    old_tier = current_user.vip_tier
+    old_points = current_user.activity_points
+
+    # 활동 점수 추가
+    new_points = add_activity_points(current_user, points, "테스트 활동")
+
+    db.commit()
+    db.refresh(current_user)
+
+    return {
+        "message": "활동 점수가 추가되었습니다.",
+        "old_tier": old_tier,
+        "new_tier": current_user.vip_tier,
+        "tier_changed": old_tier != current_user.vip_tier,
+        "old_points": old_points,
+        "new_points": new_points,
+        "points_added": points
+    }

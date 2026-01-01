@@ -134,7 +134,19 @@
   padding: 1rem;
   text-align: left;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 1rem;
+}
+
+.users-table th:first-child {
+  width: 40%;
+}
+
+.users-table th:nth-child(2) {
+  width: 35%;
+}
+
+.users-table th:last-child {
+  width: 25%;
 }
 
 .users-table tbody tr {
@@ -151,9 +163,92 @@
 }
 
 .users-table td {
-  padding: 1rem;
+  padding: 1.25rem 1rem;
   color: #333;
   font-size: 0.95rem;
+  vertical-align: top;
+}
+
+/* User Info Cell */
+.user-info-cell {
+  padding: 1rem !important;
+}
+
+.user-info-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.user-primary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.user-email {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.user-name {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.user-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.join-date {
+  font-size: 0.8rem;
+  color: #888;
+  white-space: nowrap;
+}
+
+/* Tier Info Cell */
+.tier-info-cell {
+  padding: 1rem !important;
+}
+
+.tier-info-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tier-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4rem 0;
+}
+
+.tier-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #666;
+  min-width: 60px;
+  text-transform: uppercase;
+}
+
+.tier-value {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.tier-value.activity-points {
+  color: #667eea;
+}
+
+/* Actions Cell */
+.actions-cell {
+  padding: 1rem !important;
+  vertical-align: middle;
 }
 
 .role-badge {
@@ -411,15 +506,61 @@
   }
 
   .users-table {
-    min-width: 800px;
+    min-width: 100%;
+  }
+
+  .users-table th:first-child {
+    width: 45%;
+  }
+
+  .users-table th:nth-child(2) {
+    width: 30%;
+  }
+
+  .users-table th:last-child {
+    width: 25%;
+  }
+
+  .user-info-row,
+  .tier-info-row {
+    gap: 0.5rem;
+  }
+
+  .user-email {
+    font-size: 0.85rem;
+  }
+
+  .user-name {
+    font-size: 0.75rem;
+  }
+
+  .tier-item {
+    gap: 0.5rem;
+    padding: 0.3rem 0;
+  }
+
+  .tier-label {
+    min-width: 50px;
+    font-size: 0.7rem;
+  }
+
+  .tier-value {
+    font-size: 0.8rem;
+  }
+
+  .join-date {
+    font-size: 0.75rem;
   }
 
   .action-buttons {
     flex-direction: column;
+    gap: 0.4rem;
   }
 
   .btn-action {
     width: 100%;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
   }
 
   .modal-content {

@@ -1509,6 +1509,9 @@ async def get_all_users(
                     "investment_goal": u.investment_goal,
                     "risk_tolerance": u.risk_tolerance,
                     "role": u.role,
+                    "vip_tier": getattr(u, "vip_tier", "bronze"),
+                    "activity_points": getattr(u, "activity_points", 0),
+                    "membership_plan": getattr(u, "membership_plan", "free"),
                     "created_at": u.created_at.isoformat() if u.created_at else None
                 }
                 for u in users

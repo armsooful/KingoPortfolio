@@ -37,6 +37,27 @@ class User(Base):
     # 시스템 필드
     is_admin = Column(Boolean, default=False)  # 하위 호환성 유지
     role = Column(String(20), default='user')  # 'user', 'premium', 'admin'
+
+    # 이메일 인증 필드
+    is_email_verified = Column(Boolean, default=False)  # 이메일 인증 여부
+    email_verification_token = Column(String(100), nullable=True)  # 이메일 인증 토큰
+    email_verification_sent_at = Column(DateTime, nullable=True)  # 인증 이메일 발송 시간
+
+    # 복합 등급 체계
+    # 1. VIP 등급 (활동 기반, 자동 계산)
+    vip_tier = Column(String(20), default='bronze')  # 'bronze', 'silver', 'gold', 'platinum', 'diamond'
+    activity_points = Column(Integer, default=0)  # 활동 점수 (포트폴리오 생성, 진단 등으로 획득)
+
+    # 2. 멤버십 플랜 (유료 구독)
+    membership_plan = Column(String(20), default='free')  # 'free', 'starter', 'pro', 'enterprise'
+    membership_start_date = Column(DateTime, nullable=True)  # 멤버십 시작일
+    membership_end_date = Column(DateTime, nullable=True)  # 멤버십 만료일
+
+    # 사용량 추적 (월별 리셋)
+    monthly_ai_requests = Column(Integer, default=0)  # 이번 달 AI 요청 횟수
+    monthly_reports_generated = Column(Integer, default=0)  # 이번 달 리포트 생성 횟수
+    last_usage_reset = Column(DateTime, default=datetime.utcnow)  # 마지막 사용량 리셋 시간
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

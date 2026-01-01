@@ -150,6 +150,19 @@ function ProfilePage() {
     setPasswordError('');
   };
 
+  // 이메일 인증 메일 발송
+  const handleSendVerificationEmail = async () => {
+    try {
+      await api.post('/auth/send-verification-email');
+      setSuccessMessage('인증 이메일이 발송되었습니다. 이메일을 확인해주세요.');
+      setTimeout(() => setSuccessMessage(''), 5000);
+    } catch (err) {
+      console.error('Failed to send verification email:', err);
+      setError(err.response?.data?.detail || '이메일 발송에 실패했습니다.');
+      setTimeout(() => setError(null), 5000);
+    }
+  };
+
   if (loading) {
     return (
       <div className="profile-container">
@@ -204,7 +217,75 @@ function ProfilePage() {
                 disabled
                 className="disabled-input"
               />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '5px' }}>
+                {profile.is_email_verified ? (
+                  <span style={{ color: '#28a745', fontSize: '14px' }}>
+                    ✓ 인증 완료
+                  </span>
+                ) : (
+                  <>
+                    <span style={{ color: '#dc3545', fontSize: '14px' }}>
+                      ✗ 미인증
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-secondary"
+                      onClick={handleSendVerificationEmail}
+                      style={{ fontSize: '12px', padding: '4px 8px' }}
+                    >
+                      인증 이메일 발송
+                    </button>
+                  </>
+                )}
+              </div>
               <small>이메일은 변경할 수 없습니다</small>
+            </div>
+
+            {/* 등급 정보 표시 */}
+            <div className="profile-field">
+              <label>VIP 등급</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
+                <span style={{
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  color: profile.vip_tier === 'diamond' ? '#b9f2ff' :
+                         profile.vip_tier === 'platinum' ? '#e5e4e2' :
+                         profile.vip_tier === 'gold' ? '#ffd700' :
+                         profile.vip_tier === 'silver' ? '#c0c0c0' : '#cd7f32'
+                }}>
+                  {profile.vip_tier === 'diamond' && '💠'}
+                  {profile.vip_tier === 'platinum' && '💎'}
+                  {profile.vip_tier === 'gold' && '🥇'}
+                  {profile.vip_tier === 'silver' && '🥈'}
+                  {profile.vip_tier === 'bronze' && '🥉'}
+                  {' '}
+                  {profile.vip_tier?.toUpperCase() || 'BRONZE'}
+                </span>
+                <span style={{ fontSize: '14px', color: '#666' }}>
+                  활동 점수: {profile.activity_points || 0}점
+                </span>
+              </div>
+            </div>
+
+            <div className="profile-field">
+              <label>멤버십 플랜</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
+                <span style={{
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  color: profile.membership_plan === 'enterprise' ? '#8b5cf6' :
+                         profile.membership_plan === 'pro' ? '#3b82f6' :
+                         profile.membership_plan === 'starter' ? '#10b981' : '#6b7280'
+                }}>
+                  {profile.membership_plan === 'enterprise' && '🏢'}
+                  {profile.membership_plan === 'pro' && '🚀'}
+                  {profile.membership_plan === 'starter' && '🌱'}
+                  {profile.membership_plan === 'free' && '🆓'}
+                  {' '}
+                  {profile.membership_plan?.toUpperCase() || 'FREE'}
+                </span>
+              </div>
+              <small>등급에 따라 포트폴리오 개수, AI 분석 횟수 등이 제한됩니다</small>
             </div>
 
             <div className="profile-field">

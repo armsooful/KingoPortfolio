@@ -257,6 +257,13 @@ class ProfileResponse(BaseModel):
     investment_goal: Optional[str] = Field(None, description="투자 목표")
     risk_tolerance: Optional[str] = Field(None, description="위험 감수 성향")
     role: str = Field(..., description="사용자 역할 (user/premium/admin)", example="user")
+    is_email_verified: bool = Field(default=False, description="이메일 인증 여부", example=False)
+
+    # 복합 등급 체계
+    vip_tier: str = Field(default="bronze", description="VIP 등급 (bronze/silver/gold/platinum/diamond)", example="bronze")
+    activity_points: int = Field(default=0, description="활동 점수", example=0)
+    membership_plan: str = Field(default="free", description="멤버십 플랜 (free/starter/pro/enterprise)", example="free")
+
     created_at: datetime = Field(..., description="계정 생성 일시", example="2025-12-29T10:00:00Z")
 
     class Config:

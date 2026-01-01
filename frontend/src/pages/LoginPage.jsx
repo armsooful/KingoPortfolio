@@ -33,7 +33,13 @@ function LoginPage() {
       // 성공
       const { access_token, user } = response.data;
       login(user, access_token);
-      navigate('/survey');
+
+      // 역할에 따라 다른 페이지로 이동
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/survey');
+      }
     } catch (err) {
       // 에러 처리 - 백엔드에서 전달된 메시지 우선 사용
       const errorMessage = err.response?.data?.detail || '로그인에 실패했습니다.';

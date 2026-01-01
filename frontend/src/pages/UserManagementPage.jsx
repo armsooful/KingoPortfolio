@@ -119,37 +119,90 @@ function UserManagementPage() {
           <h3>일반 사용자</h3>
           <p className="stat-value">{users.filter(u => u.role === 'user').length}명</p>
         </div>
+        <div className="stat-card">
+          <h3>Diamond VIP</h3>
+          <p className="stat-value">{users.filter(u => u.vip_tier === 'diamond').length}명</p>
+        </div>
+        <div className="stat-card">
+          <h3>유료 멤버십</h3>
+          <p className="stat-value">{users.filter(u => u.membership_plan !== 'free').length}명</p>
+        </div>
       </div>
 
       <div className="users-table-container">
         <table className="users-table">
           <thead>
             <tr>
-              <th>이메일</th>
-              <th>이름</th>
-              <th>직업</th>
-              <th>역할</th>
-              <th>가입일</th>
+              <th>사용자 정보</th>
+              <th>등급 정보</th>
               <th>관리</th>
             </tr>
           </thead>
           <tbody>
             {users.map((user) => (
-              <tr key={user.id}>
-                <td>{user.email}</td>
-                <td>{user.name || '(없음)'}</td>
-                <td>{user.occupation || '(없음)'}</td>
-                <td>
-                  <span className={`role-badge role-${user.role}`}>
-                    {user.role === 'admin' ? '관리자' : '일반 사용자'}
-                  </span>
+              <tr key={user.id} className="user-row">
+                <td className="user-info-cell">
+                  <div className="user-info-row">
+                    <div className="user-primary">
+                      <div className="user-email">{user.email}</div>
+                      <div className="user-name">{user.name || '(이름 없음)'}</div>
+                    </div>
+                    <div className="user-meta">
+                      <span className={`role-badge role-${user.role}`}>
+                        {user.role === 'admin' ? '관리자' : '일반 사용자'}
+                      </span>
+                      <span className="join-date">
+                        가입: {user.created_at
+                          ? new Date(user.created_at).toLocaleDateString('ko-KR')
+                          : '(알 수 없음)'}
+                      </span>
+                    </div>
+                  </div>
                 </td>
-                <td>
-                  {user.created_at
-                    ? new Date(user.created_at).toLocaleDateString('ko-KR')
-                    : '(알 수 없음)'}
+                <td className="tier-info-cell">
+                  <div className="tier-info-row">
+                    <div className="tier-item">
+                      <span className="tier-label">VIP</span>
+                      <span className="tier-value" style={{
+                        color: user.vip_tier === 'diamond' ? '#b9f2ff' :
+                               user.vip_tier === 'platinum' ? '#e5e4e2' :
+                               user.vip_tier === 'gold' ? '#ffd700' :
+                               user.vip_tier === 'silver' ? '#c0c0c0' : '#cd7f32'
+                      }}>
+                        {user.vip_tier === 'diamond' && '💠'}
+                        {user.vip_tier === 'platinum' && '💎'}
+                        {user.vip_tier === 'gold' && '🥇'}
+                        {user.vip_tier === 'silver' && '🥈'}
+                        {user.vip_tier === 'bronze' && '🥉'}
+                        {!user.vip_tier && '🥉'}
+                        {' '}
+                        {(user.vip_tier || 'bronze').toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="tier-item">
+                      <span className="tier-label">멤버십</span>
+                      <span className="tier-value" style={{
+                        color: user.membership_plan === 'enterprise' ? '#8b5cf6' :
+                               user.membership_plan === 'pro' ? '#3b82f6' :
+                               user.membership_plan === 'starter' ? '#10b981' : '#6b7280'
+                      }}>
+                        {user.membership_plan === 'enterprise' && '🏢'}
+                        {user.membership_plan === 'pro' && '🚀'}
+                        {user.membership_plan === 'starter' && '🌱'}
+                        {(user.membership_plan === 'free' || !user.membership_plan) && '🆓'}
+                        {' '}
+                        {(user.membership_plan || 'free').toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="tier-item">
+                      <span className="tier-label">활동 점수</span>
+                      <span className="tier-value activity-points">
+                        {user.activity_points || 0}점
+                      </span>
+                    </div>
+                  </div>
                 </td>
-                <td>
+                <td className="actions-cell">
                   <div className="action-buttons">
                     <button
                       className="btn-action btn-view"
@@ -290,6 +343,56 @@ function UserManagementPage() {
                   <div className="detail-item">
                     <span className="detail-label">위험 감수 성향</span>
                     <span className="detail-value">{selectedUser.risk_tolerance || '-'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="detail-section">
+                <h3>등급 정보</h3>
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <span className="detail-label">VIP 등급</span>
+                    <span className="detail-value">
+                      <span style={{
+                        fontSize: '16px',
+                        fontWeight: 'bold',
+                        color: selectedUser.vip_tier === 'diamond' ? '#b9f2ff' :
+                               selectedUser.vip_tier === 'platinum' ? '#e5e4e2' :
+                               selectedUser.vip_tier === 'gold' ? '#ffd700' :
+                               selectedUser.vip_tier === 'silver' ? '#c0c0c0' : '#cd7f32'
+                      }}>
+                        {selectedUser.vip_tier === 'diamond' && '💠'}
+                        {selectedUser.vip_tier === 'platinum' && '💎'}
+                        {selectedUser.vip_tier === 'gold' && '🥇'}
+                        {selectedUser.vip_tier === 'silver' && '🥈'}
+                        {(selectedUser.vip_tier === 'bronze' || !selectedUser.vip_tier) && '🥉'}
+                        {' '}
+                        {(selectedUser.vip_tier || 'bronze').toUpperCase()}
+                      </span>
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">활동 점수</span>
+                    <span className="detail-value">{selectedUser.activity_points || 0}점</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">멤버십 플랜</span>
+                    <span className="detail-value">
+                      <span style={{
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: selectedUser.membership_plan === 'enterprise' ? '#8b5cf6' :
+                               selectedUser.membership_plan === 'pro' ? '#3b82f6' :
+                               selectedUser.membership_plan === 'starter' ? '#10b981' : '#6b7280'
+                      }}>
+                        {selectedUser.membership_plan === 'enterprise' && '🏢'}
+                        {selectedUser.membership_plan === 'pro' && '🚀'}
+                        {selectedUser.membership_plan === 'starter' && '🌱'}
+                        {(selectedUser.membership_plan === 'free' || !selectedUser.membership_plan) && '🆓'}
+                        {' '}
+                        {(selectedUser.membership_plan || 'free').toUpperCase()}
+                      </span>
+                    </span>
                   </div>
                 </div>
               </div>

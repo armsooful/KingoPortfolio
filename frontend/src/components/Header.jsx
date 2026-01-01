@@ -72,8 +72,45 @@ function Header() {
         <div className="header-user">
           {user && (
             <div className="user-info">
-              <span className="user-name">{user.name || user.email}</span>
-              <span className="user-email">({user.email})</span>
+              <div className="user-name-section">
+                <span className="user-name">{user.name || user.email}</span>
+                <span className="user-email">({user.email})</span>
+              </div>
+              <div className="user-tier-section">
+                <span
+                  className="tier-badge vip-tier"
+                  style={{
+                    color: user.vip_tier === 'diamond' ? '#b9f2ff' :
+                           user.vip_tier === 'platinum' ? '#e5e4e2' :
+                           user.vip_tier === 'gold' ? '#ffd700' :
+                           user.vip_tier === 'silver' ? '#c0c0c0' : '#cd7f32'
+                  }}
+                  title={`활동 점수: ${user.activity_points || 0}점`}
+                >
+                  {user.vip_tier === 'diamond' && '💠'}
+                  {user.vip_tier === 'platinum' && '💎'}
+                  {user.vip_tier === 'gold' && '🥇'}
+                  {user.vip_tier === 'silver' && '🥈'}
+                  {(!user.vip_tier || user.vip_tier === 'bronze') && '🥉'}
+                  {' '}
+                  {(user.vip_tier || 'bronze').toUpperCase()}
+                </span>
+                <span
+                  className="tier-badge membership-tier"
+                  style={{
+                    color: user.membership_plan === 'enterprise' ? '#8b5cf6' :
+                           user.membership_plan === 'pro' ? '#3b82f6' :
+                           user.membership_plan === 'starter' ? '#10b981' : '#6b7280'
+                  }}
+                >
+                  {user.membership_plan === 'enterprise' && '🏢'}
+                  {user.membership_plan === 'pro' && '🚀'}
+                  {user.membership_plan === 'starter' && '🌱'}
+                  {(!user.membership_plan || user.membership_plan === 'free') && '🆓'}
+                  {' '}
+                  {(user.membership_plan || 'free').toUpperCase()}
+                </span>
+              </div>
             </div>
           )}
           <button
