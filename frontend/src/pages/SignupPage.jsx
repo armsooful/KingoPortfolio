@@ -37,14 +37,20 @@ function SignupPage() {
     setError('');
   };
 
+  const validateEmail = (email) => {
+    // 이메일 정규식 (RFC 5322 기반)
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(email);
+  };
+
   const validateStep1 = () => {
     if (!formData.email || !formData.password || !formData.passwordConfirm || !formData.name) {
       setError('모든 필수 항목을 입력해주세요.');
       return false;
     }
 
-    if (!formData.email.includes('@')) {
-      setError('올바른 이메일 형식을 입력해주세요.');
+    if (!validateEmail(formData.email)) {
+      setError('올바른 이메일 형식을 입력해주세요. (예: user@example.com)');
       return false;
     }
 
@@ -119,6 +125,10 @@ function SignupPage() {
       // 성공
       const { access_token, user } = response.data;
       login(user, access_token);
+
+      // 이메일 인증 안내 메시지 표시
+      alert('회원가입이 완료되었습니다! 📧\n\n이메일 주소로 인증 메일이 발송되었습니다.\n이메일을 확인하여 인증을 완료해주세요.');
+
       navigate('/survey');
     } catch (err) {
       if (err.response?.status === 400) {

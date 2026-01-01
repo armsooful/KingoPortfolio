@@ -5,6 +5,7 @@ import Header from './components/Header';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import EmailVerificationPage from './pages/EmailVerificationPage';
 import ProfilePage from './pages/ProfilePage';
 import SurveyPage from './pages/SurveyPage';
 import DiagnosisResultPage from './pages/DiagnosisResultPage';
@@ -132,6 +133,7 @@ function AppContent() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/verify-email" element={<EmailVerificationPage />} />
 
           {/* Protected Routes */}
           <Route

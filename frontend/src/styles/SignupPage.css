@@ -188,3 +188,62 @@
     min-height: 350px;
   }
 }
+
+/* ============================================================
+   이메일 인증 페이지 스타일
+   ============================================================ */
+
+.verification-icon {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  font-size: 4rem;
+}
+
+.verification-icon .loading-spinner {
+  font-size: 4rem;
+  animation: spin 1s linear infinite;
+}
+
+.verification-icon .success-icon {
+  color: #28a745;
+  font-size: 4rem;
+}
+
+.verification-icon .error-icon {
+  color: #dc3545;
+  font-size: 4rem;
+}
+
+.verification-message {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.verification-message.success {
+  color: #155724;
+}
+
+.verification-message.error {
+  color: #721c24;
+}
+
+.verification-message p {
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.verification-message .subtitle {
+  color: #666;
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+}
+
+.verification-message .btn {
+  margin-top: 1rem;
+  min-width: 200px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
