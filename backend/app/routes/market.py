@@ -16,7 +16,30 @@ from app.routes.auth import get_current_user
 router = APIRouter(prefix="/api/market", tags=["market"])
 
 
-def generate_market_summary(indices: List[Dict], top_gainers: List[Dict], top_losers: List[Dict]) -> str:
+def calculate_market_sentiment(indices: List[Dict]) -> Dict[str, Any]:
+    """
+    시장 심리 분석 및 신호등 색상 결정
+    """
+    kospi = next((idx for idx in indices if idx['name'] == 'KOSPI'), None)
+    kosdaq = next((idx for idx in indices if idx['name'] == 'KOSDAQ'), None)
+
+    if not kospi:
+        return {"color": "yellow", "status": "중립", "emoji": "🟡"}
+
+    # 평균 변화율 계산
+    changes = [idx['changePercent'] for idx in indices if 'changePercent' in idx]
+    avg_change = sum(changes) / len(changes) if changes else 0
+
+    # 신호등 색상 결정
+    if avg_change > 0.5:  # 0.5% 이상 상승
+        return {"color": "green", "status": "긍정적", "emoji": "🟢"}
+    elif avg_change < -0.5:  # 0.5% 이상 하락
+        return {"color": "red", "status": "위험", "emoji": "🔴"}
+    else:  # -0.5% ~ 0.5%
+        return {"color": "yellow", "status": "중립", "emoji": "🟡"}
+
+
+def generate_market_summary(indices: List[Dict], top_gainers: List[Dict], top_losers: List[Dict]) -> Dict[str, Any]:
     """
     AI를 사용하여 시장 상황을 초보자가 이해할 수 있는 문장으로 요약
     """
@@ -59,14 +82,20 @@ def generate_market_summary(indices: List[Dict], top_gainers: List[Dict], top_lo
             ]
         )
 
-        return message.content[0].text.strip()
+        summary_text = message.content[0].text.strip()
+        sentiment = calculate_market_sentiment(indices)
+
+        return {
+            "text": summary_text,
+            "sentiment": sentiment
+        }
 
     except Exception as e:
         print(f"AI 요약 생성 실패: {e}")
         return generate_simple_summary(indices, top_gainers, top_losers)
 
 
-def generate_simple_summary(indices: List[Dict], top_gainers: List[Dict], top_losers: List[Dict]) -> str:
+def generate_simple_summary(indices: List[Dict], top_gainers: List[Dict], top_losers: List[Dict]) -> Dict[str, Any]:
     """
     AI 없이 간단한 템플릿 기반 요약 생성
     """
@@ -74,7 +103,10 @@ def generate_simple_summary(indices: List[Dict], top_gainers: List[Dict], top_lo
     kosdaq = next((idx for idx in indices if idx['name'] == 'KOSDAQ'), None)
 
     if not kospi:
-        return "오늘의 시장 데이터를 불러오는 중입니다."
+        return {
+            "text": "오늘의 시장 데이터를 불러오는 중입니다.",
+            "sentiment": {"color": "yellow", "status": "중립", "emoji": "🟡"}
+        }
 
     kospi_direction = "상승" if kospi['changePercent'] > 0 else "하락" if kospi['changePercent'] < 0 else "보합"
     kosdaq_direction = "올랐고" if kosdaq and kosdaq['changePercent'] > 0 else "내렸고" if kosdaq and kosdaq['changePercent'] < 0 else "보합을 보였고"
@@ -89,7 +121,12 @@ def generate_simple_summary(indices: List[Dict], top_gainers: List[Dict], top_lo
 
     summary += f"전반적으로 {mood} 분위기입니다."
 
-    return summary
+    sentiment = calculate_market_sentiment(indices)
+
+    return {
+        "text": summary,
+        "sentiment": sentiment
+    }
 
 
 @router.get("/overview")
