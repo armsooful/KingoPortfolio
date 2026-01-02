@@ -143,6 +143,19 @@ function MarketDashboardPage() {
         </button>
       </div>
 
+      {/* AI 시장 요약 */}
+      {marketData?.summary && (
+        <section className="market-summary">
+          <div className="summary-card">
+            <div className="summary-icon">💡</div>
+            <div className="summary-content">
+              <h3>오늘의 시장 한눈에 보기</h3>
+              <p className="summary-text">{marketData.summary}</p>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* 주요 지수 */}
       <section className="indices-section">
         <h2>주요 지수</h2>

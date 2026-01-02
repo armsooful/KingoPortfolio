@@ -6,12 +6,90 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 from typing import List, Dict, Any
 import yfinance as yf
+from anthropic import Anthropic
+import os
 
 from app.database import get_db
 from app.models.user import User
 from app.routes.auth import get_current_user
 
 router = APIRouter(prefix="/api/market", tags=["market"])
+
+
+def generate_market_summary(indices: List[Dict], top_gainers: List[Dict], top_losers: List[Dict]) -> str:
+    """
+    AI를 사용하여 시장 상황을 초보자가 이해할 수 있는 문장으로 요약
+    """
+    try:
+        # Anthropic API 키 확인
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not api_key:
+            return generate_simple_summary(indices, top_gainers, top_losers)
+
+        client = Anthropic(api_key=api_key)
+
+        # 데이터 요약 생성
+        indices_summary = "\n".join([
+            f"- {idx['name']}: {idx['value']} ({'+' if idx['change'] >= 0 else ''}{idx['changePercent']}%)"
+            for idx in indices
+        ])
+
+        gainers_summary = ", ".join([stock['name'] for stock in top_gainers[:3]])
+        losers_summary = ", ".join([stock['name'] for stock in top_losers[:3]])
+
+        prompt = f"""다음은 오늘의 주식 시장 데이터입니다:
+
+주요 지수:
+{indices_summary}
+
+오늘 많이 오른 종목: {gainers_summary}
+오늘 많이 내린 종목: {losers_summary}
+
+위 데이터를 바탕으로 주식 투자를 처음 시작하는 초보자가 이해할 수 있도록 오늘의 시장 상황을 2-3문장으로 쉽게 요약해주세요. 전문용어는 피하고, 일상적인 언어로 설명해주세요.
+
+예시 스타일:
+"오늘 한국 증시는 좋은 흐름을 보였어요. 삼성전자와 같은 대형주들이 힘을 받으면서 코스피가 올랐습니다. 미국 증시도 함께 상승하면서 전반적으로 긍정적인 분위기예요."
+"""
+
+        message = client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=200,
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
+
+        return message.content[0].text.strip()
+
+    except Exception as e:
+        print(f"AI 요약 생성 실패: {e}")
+        return generate_simple_summary(indices, top_gainers, top_losers)
+
+
+def generate_simple_summary(indices: List[Dict], top_gainers: List[Dict], top_losers: List[Dict]) -> str:
+    """
+    AI 없이 간단한 템플릿 기반 요약 생성
+    """
+    kospi = next((idx for idx in indices if idx['name'] == 'KOSPI'), None)
+    kosdaq = next((idx for idx in indices if idx['name'] == 'KOSDAQ'), None)
+
+    if not kospi:
+        return "오늘의 시장 데이터를 불러오는 중입니다."
+
+    kospi_direction = "상승" if kospi['changePercent'] > 0 else "하락" if kospi['changePercent'] < 0 else "보합"
+    kosdaq_direction = "올랐고" if kosdaq and kosdaq['changePercent'] > 0 else "내렸고" if kosdaq and kosdaq['changePercent'] < 0 else "보합을 보였고"
+
+    mood = "긍정적인" if kospi['changePercent'] > 0 else "조심스러운" if kospi['changePercent'] < 0 else "관망하는"
+
+    summary = f"오늘 한국 증시는 {kospi_direction} 마감했습니다. "
+    summary += f"코스피는 {abs(kospi['changePercent']):.2f}% {kospi_direction}했고, 코스닥은 {kosdaq_direction if kosdaq else '변동이 있었습니다'}. "
+
+    if top_gainers:
+        summary += f"{top_gainers[0]['name']} 같은 종목들이 상승세를 보였습니다. "
+
+    summary += f"전반적으로 {mood} 분위기입니다."
+
+    return summary
 
 
 @router.get("/overview")
@@ -172,7 +250,11 @@ async def get_market_overview(
             }
         ]
 
+        # AI 요약 생성
+        market_summary = generate_market_summary(indices, top_gainers, top_losers)
+
         return {
+            "summary": market_summary,
             "indices": indices,
             "topGainers": top_gainers,
             "topLosers": top_losers,
