@@ -148,7 +148,6 @@ function MarketDashboardPage() {
         <section className="market-summary">
           <div className="summary-card">
             <div className="summary-header">
-              <div className="summary-icon">💡</div>
               <div className="traffic-light">
                 <div className={`light ${marketData.summary.sentiment?.color === 'green' ? 'active' : ''}`} data-status="긍정적">
                   🟢
