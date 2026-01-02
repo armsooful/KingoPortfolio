@@ -38,7 +38,7 @@ function LoginPage() {
       if (user.role === 'admin') {
         navigate('/admin');
       } else {
-        navigate('/survey');
+        navigate('/dashboard');
       }
     } catch (err) {
       // 에러 처리 - 백엔드에서 전달된 메시지 우선 사용

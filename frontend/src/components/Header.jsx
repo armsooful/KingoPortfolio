@@ -33,6 +33,12 @@ function Header() {
         {/* 네비게이션 */}
         <nav className="header-nav">
           <button
+            className={`nav-link ${isActive('/dashboard') ? 'active' : ''}`}
+            onClick={() => navigate('/dashboard')}
+          >
+            시장현황
+          </button>
+          <button
             className={`nav-link ${isActive('/survey') ? 'active' : ''}`}
             onClick={() => navigate('/survey')}
           >

@@ -17,6 +17,7 @@ import FinancialAnalysisPage from './pages/FinancialAnalysisPage';
 import ValuationPage from './pages/ValuationPage';
 import QuantAnalysisPage from './pages/QuantAnalysisPage';
 import ReportPage from './pages/ReportPage';
+import MarketDashboardPage from './pages/MarketDashboardPage';
 import './styles/App.css';
 
 // ============================================================
@@ -136,6 +137,14 @@ function AppContent() {
           <Route path="/verify-email" element={<EmailVerificationPage />} />
 
           {/* Protected Routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <MarketDashboardPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/profile"
             element={

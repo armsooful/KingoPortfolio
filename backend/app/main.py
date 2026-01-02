@@ -13,7 +13,7 @@ load_dotenv()
 
 from app.config import settings
 from app.database import engine, Base, get_db
-from app.routes import auth, diagnosis, admin
+from app.routes import auth, diagnosis, admin, market
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.error_handlers import setup_exception_handlers
@@ -163,6 +163,7 @@ templates = Jinja2Templates(directory=str(templates_path))
 app.include_router(auth.router)
 app.include_router(diagnosis.router)
 app.include_router(admin.router)
+app.include_router(market.router)
 
 # Portfolio router
 from app.routes import portfolio
