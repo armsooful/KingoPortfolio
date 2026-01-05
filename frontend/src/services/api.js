@@ -151,6 +151,71 @@ export const healthCheck = () => {
   return axios.get(`${API_BASE_URL}/health`);
 };
 
+// ============================================================
+// PDF Report API
+// ============================================================
+
+/**
+ * 포트폴리오 PDF 리포트 다운로드
+ */
+export const downloadPortfolioPDF = async (investmentAmount = 10000000) => {
+  const token = localStorage.getItem('access_token');
+  const response = await fetch(`${API_BASE_URL}/reports/portfolio-pdf?investment_amount=${investmentAmount}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to download PDF report');
+  }
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `portfolio_report_${new Date().toISOString().split('T')[0]}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+};
+
+/**
+ * 특정 진단 결과 PDF 리포트 다운로드
+ */
+export const downloadDiagnosisPDF = async (diagnosisId) => {
+  const token = localStorage.getItem('access_token');
+  const response = await fetch(`${API_BASE_URL}/reports/diagnosis-pdf/${diagnosisId}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to download PDF report');
+  }
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `diagnosis_report_${diagnosisId}_${new Date().toISOString().split('T')[0]}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+};
+
+/**
+ * PDF 리포트 데이터 미리보기
+ */
+export const previewReportData = (investmentAmount = 10000000) => {
+  return api.get(`/reports/preview?investment_amount=${investmentAmount}`);
+};
+
 export default api;
 // ============================================================
 // Admin API
@@ -462,4 +527,68 @@ export const getComparisonReport = (symbols) => {
  */
 export const getNewsSentiment = (symbol) => {
   return api.get(`/admin/qualitative/news-sentiment/${symbol}`);
+};
+
+// ============================================================
+// Portfolio API
+// ============================================================
+
+/**
+ * 포트폴리오 생성
+ */
+export const generatePortfolio = (data) => {
+  return api.post('/portfolio/generate', data);
+};
+
+/**
+ * 포트폴리오 리밸런싱
+ */
+export const rebalancePortfolio = (diagnosisId, investmentAmount) => {
+  return api.post(`/portfolio/rebalance/${diagnosisId}?investment_amount=${investmentAmount}`);
+};
+
+/**
+ * 자산 배분 전략 조회
+ */
+export const getAssetAllocation = (investmentType) => {
+  return api.get(`/portfolio/asset-allocation/${investmentType}`);
+};
+
+/**
+ * 선택 가능한 섹터 목록
+ */
+export const getAvailableSectors = () => {
+  return api.get('/portfolio/available-sectors');
+};
+
+/**
+ * 포트폴리오 수익률 시뮬레이션
+ */
+export const simulatePortfolio = (investmentType, investmentAmount, years = 10) => {
+  return api.post(`/portfolio/simulate?investment_type=${investmentType}&investment_amount=${investmentAmount}&years=${years}`);
+};
+
+// ============================================================
+// Backtesting API
+// ============================================================
+
+/**
+ * 백테스트 실행
+ */
+export const runBacktest = (data) => {
+  return api.post('/backtest/run', data);
+};
+
+/**
+ * 포트폴리오 비교 백테스트
+ */
+export const comparePortfolios = (data) => {
+  return api.post('/backtest/compare', data);
+};
+
+/**
+ * 투자 성향별 과거 성과 지표 조회
+ */
+export const getBacktestMetrics = (investmentType, periodYears = 1) => {
+  return api.get(`/backtest/metrics/${investmentType}?period_years=${periodYears}`);
 };

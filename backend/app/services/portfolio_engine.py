@@ -157,7 +157,9 @@ class PortfolioEngine:
         query = self.db.query(Stock).filter(
             and_(
                 Stock.is_active == True,
-                Stock.investment_type.contains(investment_type)
+                Stock.investment_type.contains(investment_type),
+                Stock.current_price.isnot(None),
+                Stock.current_price > 0
             )
         )
 
@@ -173,7 +175,7 @@ class PortfolioEngine:
             if preferences.get("dividend_preference"):
                 query = query.filter(Stock.dividend_yield >= 2.0)
 
-        # 점수 계산 및 정렬
+        # 점수 계산
         stocks = query.all()
         scored_stocks = []
 
@@ -186,6 +188,16 @@ class PortfolioEngine:
 
         # 점수순 정렬
         scored_stocks.sort(key=lambda x: x["score"], reverse=True)
+
+        # 같은 이름의 주식 중복 제거 (점수가 높은 것만 유지)
+        seen_names = set()
+        unique_stocks = []
+        for item in scored_stocks:
+            if item["stock"].name not in seen_names:
+                unique_stocks.append(item)
+                seen_names.add(item["stock"].name)
+
+        scored_stocks = unique_stocks
 
         # 상위 3-5개 선정 (다각화)
         max_stocks = 5 if budget >= 5000000 else 3
@@ -324,14 +336,16 @@ class PortfolioEngine:
         query = self.db.query(ETF).filter(
             and_(
                 ETF.is_active == True,
-                ETF.investment_type.contains(investment_type)
+                ETF.investment_type.contains(investment_type),
+                ETF.current_price.isnot(None),
+                ETF.current_price > 0
             )
         )
 
         if risk_tolerance:
             query = query.filter(ETF.risk_level == risk_tolerance)
 
-        # 점수 계산 및 정렬
+        # 점수 계산
         etfs = query.all()
         scored_etfs = []
 
@@ -342,7 +356,18 @@ class PortfolioEngine:
                 "score": score
             })
 
+        # 점수 기준 정렬
         scored_etfs.sort(key=lambda x: x["score"], reverse=True)
+
+        # 같은 이름의 ETF 중복 제거 (점수가 높은 것만 유지)
+        seen_names = set()
+        unique_etfs = []
+        for item in scored_etfs:
+            if item["etf"].name not in seen_names:
+                unique_etfs.append(item)
+                seen_names.add(item["etf"].name)
+
+        scored_etfs = unique_etfs
 
         # 상위 2-3개 선정
         max_etfs = 3 if budget >= 1000000 else 2

@@ -17,7 +17,7 @@ router = APIRouter(prefix="/portfolio", tags=["Portfolio"])
 
 
 @router.post("/generate", response_model=PortfolioResponse)
-@limiter.limit(RateLimits.DIAGNOSIS_SUBMIT)  # 포트폴리오 생성도 시간당 10회 제한
+@limiter.limit(RateLimits.PORTFOLIO_GENERATE)  # 포트폴리오 생성 시간당 100회 제한
 async def generate_portfolio(
     request: Request,
     portfolio_request: PortfolioGenerateRequest,

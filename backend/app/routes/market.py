@@ -8,12 +8,126 @@ from typing import List, Dict, Any
 import yfinance as yf
 from anthropic import Anthropic
 import os
+import requests
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin
 
 from app.database import get_db
 from app.models.user import User
 from app.routes.auth import get_current_user
 
 router = APIRouter(prefix="/api/market", tags=["market"])
+
+
+def fetch_naver_finance_news(limit: int = 5) -> List[Dict[str, str]]:
+    """
+    네이버 금융에서 한국 경제 관련 최신 뉴스 크롤링
+    """
+    try:
+        # 네이버 금융 뉴스 URL - 국내증시 섹션 (해외 뉴스 제외)
+        # section_id=101: 증권, section_id2=258: 시황
+        url = "https://finance.naver.com/news/news_list.naver?mode=LSS2D&section_id=101&section_id2=258"
+
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        news_list = []
+
+        # 뉴스 목록 파싱 - dd.articleSubject 내의 a 태그
+        # 필터링을 고려해서 limit의 3배 정도 수집
+        news_items = soup.select('dd.articleSubject a')
+
+        for item in news_items[:limit * 3]:
+            try:
+                title = item.get('title', '').strip()
+                link = item.get('href', '')
+
+                if title and link:
+                    # § 문자를 &section으로 수정 (네이버 HTML 엔티티 오류 수정)
+                    link = link.replace('§ion_id', '&section_id')
+
+                    # 상대 URL을 절대 URL로 변환
+                    full_url = urljoin('https://finance.naver.com', link)
+
+                    # 언론사와 시간 정보 가져오기
+                    # dd 태그의 부모 li를 찾아서 wdate 정보 추출
+                    parent_dd = item.find_parent('dd')
+                    source = '네이버 뉴스'  # 모든 뉴스를 네이버 뉴스로 표기
+                    published_at = '방금 전'
+
+                    if parent_dd:
+                        parent_li = parent_dd.find_parent('li')
+                        if parent_li:
+                            # 날짜 정보 찾기
+                            date_span = parent_li.find('span', class_='wdate')
+                            if date_span:
+                                published_at = date_span.text.strip()
+
+                    # 한국 경제 관련 뉴스만 필터링 (해외 뉴스 제외)
+                    exclude_keywords = ['미국', '중국', '일본', '유럽', '달러', '엔화', '위안화',
+                                       '나스닥', '다우', 'S&P', '홍콩', '상하이', '닛케이',
+                                       '월가', '백악관', '연준', 'Fed', 'ECB', '바이든', '트럼프']
+
+                    # 제목에 해외 키워드가 있으면 제외
+                    if any(keyword in title for keyword in exclude_keywords):
+                        continue
+
+                    news_list.append({
+                        'title': title,
+                        'source': source,
+                        'publishedAt': published_at,
+                        'url': full_url
+                    })
+
+                    # 필요한 개수만큼 수집되면 중단
+                    if len(news_list) >= limit:
+                        break
+
+            except Exception as e:
+                print(f"뉴스 파싱 오류: {e}")
+                continue
+
+        # 뉴스가 없으면 기본 Mock 데이터 반환
+        if not news_list:
+            return get_mock_news()
+
+        return news_list[:limit]
+
+    except Exception as e:
+        print(f"네이버 금융 뉴스 크롤링 실패: {e}")
+        return get_mock_news()
+
+
+def get_mock_news() -> List[Dict[str, str]]:
+    """
+    Mock 뉴스 데이터 (크롤링 실패 시 대체용)
+    """
+    return [
+        {
+            "title": "미 연준 금리 동결 전망... 국내 증시 영향은?",
+            "source": "한국경제",
+            "publishedAt": "2시간 전",
+            "url": "#"
+        },
+        {
+            "title": "삼성전자, AI 반도체 신제품 공개",
+            "source": "전자신문",
+            "publishedAt": "4시간 전",
+            "url": "#"
+        },
+        {
+            "title": "KOSPI 2650 돌파... 외국인 매수세 지속",
+            "source": "연합뉴스",
+            "publishedAt": "5시간 전",
+            "url": "#"
+        }
+    ]
 
 
 def calculate_market_sentiment(indices: List[Dict]) -> Dict[str, Any]:
@@ -265,27 +379,8 @@ async def get_market_overview(
             {"symbol": "028260", "name": "삼성물산", "price": 128000, "change": -1.5}
         ]
 
-        # Mock 뉴스 데이터
-        news = [
-            {
-                "title": "미 연준 금리 동결 전망... 국내 증시 영향은?",
-                "source": "한국경제",
-                "publishedAt": "2시간 전",
-                "url": "#"
-            },
-            {
-                "title": "삼성전자, AI 반도체 신제품 공개",
-                "source": "전자신문",
-                "publishedAt": "4시간 전",
-                "url": "#"
-            },
-            {
-                "title": "KOSPI 2650 돌파... 외국인 매수세 지속",
-                "source": "연합뉴스",
-                "publishedAt": "5시간 전",
-                "url": "#"
-            }
-        ]
+        # 네이버 금융 뉴스 크롤링
+        news = fetch_naver_finance_news(limit=5)
 
         # AI 요약 생성
         market_summary = generate_market_summary(indices, top_gainers, top_losers)

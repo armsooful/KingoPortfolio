@@ -13,11 +13,17 @@ import DiagnosisHistoryPage from './pages/DiagnosisHistoryPage';
 import AdminPage from './pages/AdminPage';
 import DataManagementPage from './pages/DataManagementPage';
 import UserManagementPage from './pages/UserManagementPage';
+import PortfolioManagementPage from './pages/PortfolioManagementPage';
+import PortfolioComparisonPage from './pages/PortfolioComparisonPage';
+import BatchJobsPage from './pages/BatchJobsPage';
+import StockDetailPage from './pages/StockDetailPage';
 import FinancialAnalysisPage from './pages/FinancialAnalysisPage';
 import ValuationPage from './pages/ValuationPage';
 import QuantAnalysisPage from './pages/QuantAnalysisPage';
 import ReportPage from './pages/ReportPage';
 import MarketDashboardPage from './pages/MarketDashboardPage';
+import PortfolioRecommendationPage from './pages/PortfolioRecommendationPage';
+import BacktestPage from './pages/BacktestPage';
 import './styles/App.css';
 
 // ============================================================
@@ -178,6 +184,22 @@ function AppContent() {
             }
           />
           <Route
+            path="/portfolio"
+            element={
+              <ProtectedRoute>
+                <PortfolioRecommendationPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/backtest"
+            element={
+              <ProtectedRoute>
+                <BacktestPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/admin"
             element={
               <ProtectedRoute>
@@ -198,6 +220,38 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <UserManagementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/portfolio"
+            element={
+              <ProtectedRoute>
+                <PortfolioManagementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/portfolio-comparison"
+            element={
+              <ProtectedRoute>
+                <PortfolioComparisonPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/batch"
+            element={
+              <ProtectedRoute>
+                <BatchJobsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/stock-detail"
+            element={
+              <ProtectedRoute>
+                <StockDetailPage />
               </ProtectedRoute>
             }
           />

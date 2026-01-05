@@ -41,7 +41,7 @@ function DiagnosisResultPage() {
 
   const { investment_type, score, confidence, description, characteristics, recommended_ratio, expected_annual_return, monthly_investment, ai_analysis } = result;
 
-  // 투자성향별 색상 및 아이콘
+  // 투자 성향별 색상 및 아이콘
   const typeConfig = {
     conservative: {
       label: '보수형 투자자',
@@ -68,7 +68,7 @@ function DiagnosisResultPage() {
   return (
     <div className="result-container">
       <div className="result-card">
-        {/* 투자성향 결과 */}
+        {/* 투자 성향 결과 */}
         <div className="result-header">
           <div className="result-icon" style={{ fontSize: '3rem' }}>
             {config.icon}

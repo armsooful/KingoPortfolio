@@ -74,6 +74,10 @@ class RateLimits:
     DIAGNOSIS_SUBMIT = "10/hour"     # 진단 제출: 시간당 10회
     DIAGNOSIS_READ = "100/hour"      # 진단 조회: 시간당 100회
 
+    # 포트폴리오 관련
+    PORTFOLIO_GENERATE = "100/hour"  # 포트폴리오 생성: 시간당 100회
+    PORTFOLIO_READ = "200/hour"      # 포트폴리오 조회: 시간당 200회
+
     # 데이터 조회
     DATA_READ = "200/hour"           # 데이터 조회: 시간당 200회
     DATA_EXPORT = "20/hour"          # 데이터 내보내기: 시간당 20회

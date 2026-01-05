@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getDiagnosisHistory, getDiagnosis } from '../services/api';
+import { getDiagnosisHistory, getDiagnosis, downloadDiagnosisPDF } from '../services/api';
 
 function DiagnosisHistoryPage() {
   const [historyList, setHistoryList] = useState([]);
   const [selectedDiagnosis, setSelectedDiagnosis] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [downloadingPDF, setDownloadingPDF] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -34,6 +35,19 @@ function DiagnosisHistoryPage() {
     } catch (err) {
       setError('진단 상세 정보를 불러올 수 없습니다.');
       console.error('Load diagnosis error:', err);
+    }
+  };
+
+  const handleDownloadPDF = async (diagnosisId) => {
+    try {
+      setDownloadingPDF(diagnosisId);
+      await downloadDiagnosisPDF(diagnosisId);
+      alert('PDF 리포트가 다운로드되었습니다!');
+    } catch (err) {
+      console.error('PDF download error:', err);
+      alert('PDF 다운로드 중 오류가 발생했습니다.');
+    } finally {
+      setDownloadingPDF(null);
     }
   };
 
@@ -142,6 +156,28 @@ function DiagnosisHistoryPage() {
                         월 투자액: {diagnosis.monthly_investment}만원
                       </div>
                     )}
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDownloadPDF(diagnosis.diagnosis_id);
+                      }}
+                      disabled={downloadingPDF === diagnosis.diagnosis_id}
+                      style={{
+                        marginTop: '10px',
+                        width: '100%',
+                        padding: '8px 12px',
+                        background: downloadingPDF === diagnosis.diagnosis_id ? '#ccc' : '#667eea',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: downloadingPDF === diagnosis.diagnosis_id ? 'not-allowed' : 'pointer',
+                        fontSize: '0.9rem',
+                        fontWeight: '500'
+                      }}
+                    >
+                      {downloadingPDF === diagnosis.diagnosis_id ? '⏳ 생성 중...' : '📄 PDF 다운로드'}
+                    </button>
                   </div>
                 );
               })}

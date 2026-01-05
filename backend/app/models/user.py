@@ -63,6 +63,7 @@ class User(Base):
 
     # 관계
     diagnoses = relationship("Diagnosis", back_populates="user", cascade="all, delete-orphan")
+    portfolios = relationship("Portfolio", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<User(email='{self.email}', name='{self.name}')>"

@@ -406,12 +406,192 @@ export default function DataManagementPage() {
             </div>
           </div>
 
+          {/* pykrx Timeseries Section */}
+          <div className="description-section" style={{ marginTop: '40px', borderTop: '2px solid #e0e0e0', paddingTop: '30px' }}>
+            <h2>📈 pykrx - 한국 주식 시계열 데이터</h2>
+            <div className="info-box" style={{ marginTop: '15px', padding: '15px', background: '#e3f2fd', borderRadius: '8px', borderLeft: '4px solid #2196F3' }}>
+              <p style={{ margin: 0, color: '#333', fontSize: '0.9rem' }}>
+                📊 한국 주식의 과거 가격 데이터(OHLCV)를 수집하여 백테스팅에 활용합니다.<br />
+                ✅ KRX (한국거래소) 공식 데이터 - API 제한 없음
+              </p>
+            </div>
+
+            <div style={{ marginTop: '20px', padding: '20px', background: '#f5f5f5', borderRadius: '8px' }}>
+              <h3 style={{ marginBottom: '15px', fontSize: '1.1rem' }}>📥 단일 종목 시계열 데이터 수집</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem', fontWeight: '600' }}>
+                    종목 코드 (6자리)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="005930 (삼성전자)"
+                    maxLength={6}
+                    value={symbolInput}
+                    onChange={(e) => setSymbolInput(e.target.value.replace(/[^0-9]/g, ''))}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      fontSize: '1rem',
+                      border: '2px solid #ddd',
+                      borderRadius: '6px'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem', fontWeight: '600' }}>
+                    수집 기간
+                  </label>
+                  <select
+                    id="krx-timeseries-days"
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      fontSize: '1rem',
+                      border: '2px solid #ddd',
+                      borderRadius: '6px'
+                    }}
+                  >
+                    <option value="90">3개월 (90일)</option>
+                    <option value="180">6개월 (180일)</option>
+                    <option value="365">1년 (365일)</option>
+                    <option value="730">2년 (730일)</option>
+                    <option value="1825">5년 (1825일)</option>
+                    <option value="3650">10년 (3650일)</option>
+                  </select>
+                </div>
+              </div>
+              <button
+                onClick={async () => {
+                  const ticker = symbolInput.trim();
+                  if (!ticker) {
+                    alert('종목 코드를 입력하세요');
+                    return;
+                  }
+                  if (ticker.length !== 6) {
+                    alert('6자리 종목 코드를 입력하세요');
+                    return;
+                  }
+
+                  const days = document.getElementById('krx-timeseries-days').value;
+
+                  setLoading(true);
+                  setError(null);
+
+                  try {
+                    const token = localStorage.getItem('access_token');
+                    const response = await fetch(
+                      `${import.meta.env.VITE_API_URL}/admin/krx-timeseries/load-stock/${ticker}?days=${days}`,
+                      {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${token}` }
+                      }
+                    );
+
+                    if (!response.ok) {
+                      const errorData = await response.json();
+                      throw new Error(errorData.detail || '데이터 수집 실패');
+                    }
+
+                    const data = await response.json();
+                    alert(`✅ ${ticker} 종목 데이터 ${data.records_added}건 수집 완료`);
+                    await fetchDataStatus();
+                  } catch (err) {
+                    alert('❌ ' + err.message);
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                disabled={loading}
+                className="btn btn-primary"
+                style={{ width: '100%', padding: '12px', fontSize: '1rem', fontWeight: 'bold' }}
+              >
+                📊 시계열 데이터 수집
+              </button>
+              <div style={{ marginTop: '10px', fontSize: '0.85rem', color: '#666' }}>
+                💡 예: 005930 (삼성전자), 000660 (SK하이닉스), 035420 (NAVER)
+              </div>
+            </div>
+
+            <div style={{ marginTop: '20px', padding: '20px', background: '#fff3e0', borderRadius: '8px', border: '1px solid #ffb74d' }}>
+              <h3 style={{ marginBottom: '15px', fontSize: '1.1rem' }}>📦 전체 종목 시계열 데이터 일괄 수집</h3>
+              <div style={{ marginBottom: '10px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem', fontWeight: '600' }}>
+                  처리할 종목 수 (최대 200개)
+                </label>
+                <input
+                  type="number"
+                  id="krx-timeseries-limit"
+                  min="1"
+                  max="200"
+                  defaultValue="50"
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    fontSize: '1rem',
+                    border: '2px solid #ddd',
+                    borderRadius: '6px'
+                  }}
+                />
+              </div>
+              <button
+                onClick={async () => {
+                  const limit = document.getElementById('krx-timeseries-limit').value;
+                  const days = document.getElementById('krx-timeseries-days').value;
+
+                  if (!window.confirm(`${limit}개 종목의 시계열 데이터를 수집하시겠습니까? (백그라운드 처리, 약 ${Math.ceil(limit / 10)}분 예상)`)) {
+                    return;
+                  }
+
+                  setLoading(true);
+                  setError(null);
+
+                  try {
+                    const token = localStorage.getItem('access_token');
+                    const response = await fetch(
+                      `${import.meta.env.VITE_API_URL}/admin/krx-timeseries/load-all-stocks?days=${days}&limit=${limit}`,
+                      {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${token}` }
+                      }
+                    );
+
+                    if (!response.ok) {
+                      const errorData = await response.json();
+                      throw new Error(errorData.detail || '데이터 수집 실패');
+                    }
+
+                    const data = await response.json();
+                    alert(`✅ ${data.total_count}개 종목 데이터 수집 시작 (백그라운드)`);
+
+                    // 30초 후 상태 새로고침
+                    setTimeout(() => {
+                      fetchDataStatus();
+                    }, 30000);
+                  } catch (err) {
+                    alert('❌ ' + err.message);
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                disabled={loading}
+                className="btn btn-success"
+                style={{ width: '100%', padding: '15px', fontSize: '1rem', fontWeight: 'bold' }}
+              >
+                {loading ? '🔄 시작 중...' : '🚀 일괄 수집 시작'}
+              </button>
+              <div style={{ marginTop: '10px', fontSize: '0.85rem', color: '#666', padding: '10px', background: '#fff', borderRadius: '5px' }}>
+                ⚠️ 백그라운드에서 실행되며 시간이 걸릴 수 있습니다. 약 {Math.ceil(document.getElementById('krx-timeseries-limit')?.value / 10 || 5)}분 예상됩니다.
+              </div>
+            </div>
+          </div>
+
           {/* pykrx Section */}
           <div className="description-section" style={{ marginTop: '40px', borderTop: '2px solid #e0e0e0', paddingTop: '30px' }}>
-            <h2>🇰🇷 pykrx - 한국 주식 데이터</h2>
+            <h2>🇰🇷 pykrx - 한국 주식 기본 정보</h2>
             <div className="info-box" style={{ marginTop: '15px', padding: '15px', background: '#e8f5e9', borderRadius: '8px', borderLeft: '4px solid #4CAF50' }}>
               <p style={{ margin: 0, color: '#333', fontSize: '0.9rem' }}>
-                📊 pykrx 라이브러리를 통해 한국 증권시장 실시간 데이터를 수집합니다.<br />
+                📊 pykrx 라이브러리를 통해 한국 증권시장 종목 정보를 수집합니다.<br />
                 ✅ KRX (한국거래소) 공식 데이터 - API 제한 없음
               </p>
             </div>

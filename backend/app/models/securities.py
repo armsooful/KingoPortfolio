@@ -98,23 +98,43 @@ class Bond(Base):
 class DepositProduct(Base):
     """예금 상품"""
     __tablename__ = "deposit_products"
-    
+
     id = Column(Integer, primary_key=True)
     name = Column(String(100), unique=True, index=True)
     bank = Column(String(100))
     product_type = Column(String(50))                     # deposit, cma, savings
-    
+
     # 금리
     interest_rate = Column(Float)                         # 금리 (%)
     term_months = Column(Integer, nullable=True)          # 기간 (개월)
-    
+
     # 정보
     minimum_investment = Column(Integer)
     description = Column(String(500))
     is_active = Column(Boolean, default=True)
-    
+
     last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class KrxTimeSeries(Base):
+    """한국거래소 시계열 데이터 (일별)"""
+    __tablename__ = "krx_timeseries"
+
+    id = Column(Integer, primary_key=True)
+    ticker = Column(String(10), index=True, nullable=False)  # 005930, 069500 등
+    date = Column(Date, index=True, nullable=False)
+
+    open = Column(Float, nullable=False)
+    high = Column(Float, nullable=False)
+    low = Column(Float, nullable=False)
+    close = Column(Float, nullable=False)
+    volume = Column(Integer, nullable=False)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<KrxTimeSeries {self.ticker} {self.date}>"
 
 
 class StockFinancials(Base):

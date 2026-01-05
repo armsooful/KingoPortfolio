@@ -147,7 +147,7 @@ function MarketDashboardPage() {
       {marketData?.summary && (
         <section className="market-summary">
           <div className="summary-card">
-            <div className="summary-header">
+            <div className="summary-layout">
               <div className="traffic-light">
                 <div className={`light ${marketData.summary.sentiment?.color === 'green' ? 'active' : ''}`} data-status="긍정적">
                   🟢
@@ -159,15 +159,15 @@ function MarketDashboardPage() {
                   🔴
                 </div>
               </div>
-            </div>
-            <div className="summary-content">
-              <div className="summary-title-row">
-                <h3>오늘의 시장 한눈에 보기</h3>
-                <span className={`sentiment-badge ${marketData.summary.sentiment?.color || 'yellow'}`}>
-                  {marketData.summary.sentiment?.emoji || '🟡'} {marketData.summary.sentiment?.status || '중립'}
-                </span>
+              <div className="summary-content">
+                <div className="summary-title-row">
+                  <h3>오늘의 시장 한눈에 보기</h3>
+                  <span className={`sentiment-badge ${marketData.summary.sentiment?.color || 'yellow'}`}>
+                    {marketData.summary.sentiment?.emoji || '🟡'} {marketData.summary.sentiment?.status || '중립'}
+                  </span>
+                </div>
+                <p className="summary-text">{marketData.summary.text || marketData.summary}</p>
               </div>
-              <p className="summary-text">{marketData.summary.text || marketData.summary}</p>
             </div>
           </div>
         </section>
@@ -237,7 +237,10 @@ function MarketDashboardPage() {
               <div className="news-content">
                 <h3 className="news-title">{item.title}</h3>
                 <div className="news-meta">
-                  <span className="news-source">{item.source}</span>
+                  <span className="news-source">
+                    <span className="naver-logo">N</span>
+                    {item.source}
+                  </span>
                   <span className="news-time">{item.publishedAt}</span>
                 </div>
               </div>

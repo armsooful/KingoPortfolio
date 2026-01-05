@@ -13,7 +13,7 @@ load_dotenv()
 
 from app.config import settings
 from app.database import engine, Base, get_db
-from app.routes import auth, diagnosis, admin, market
+from app.routes import auth, diagnosis, admin, market, backtesting, krx_timeseries, admin_portfolio, batch_jobs, stock_detail, portfolio_comparison, pdf_report
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.error_handlers import setup_exception_handlers
@@ -164,6 +164,13 @@ app.include_router(auth.router)
 app.include_router(diagnosis.router)
 app.include_router(admin.router)
 app.include_router(market.router)
+app.include_router(backtesting.router)
+app.include_router(krx_timeseries.router)
+app.include_router(admin_portfolio.router)
+app.include_router(batch_jobs.router)
+app.include_router(stock_detail.router)
+app.include_router(portfolio_comparison.router)
+app.include_router(pdf_report.router)
 
 # Portfolio router
 from app.routes import portfolio

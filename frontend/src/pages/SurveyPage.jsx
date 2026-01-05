@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getSurveyQuestions, submitDiagnosis } from '../services/api';
 import SurveyQuestion from '../components/SurveyQuestion';
+import Disclaimer from '../components/Disclaimer';
 
 function SurveyPage() {
   const [questions, setQuestions] = useState([]);
@@ -138,6 +139,9 @@ const handleSubmit = async () => {
   return (
     <div className="survey-container">
       <div className="survey-card">
+        {/* 면책 문구 */}
+        {currentIndex === 0 && <Disclaimer type="diagnosis" />}
+
         {/* 진행률 */}
         <div className="progress-section">
           <div className="progress-header">

@@ -295,10 +295,10 @@ def update_diagnosis(db: Session, diagnosis_id: str, **kwargs):
 def delete_diagnosis(db: Session, diagnosis_id: str):
     """진단 결과 삭제"""
     diagnosis = get_diagnosis_by_id(db, diagnosis_id)
-    
+
     if not diagnosis:
         raise ValueError("Diagnosis not found")
-    
+
     try:
         db.delete(diagnosis)
         db.commit()
@@ -306,3 +306,39 @@ def delete_diagnosis(db: Session, diagnosis_id: str):
     except Exception as e:
         db.rollback()
         raise Exception(f"Failed to delete diagnosis: {str(e)}")
+
+
+# ============ SECURITIES CRUD ============
+
+def get_or_create_stock(db: Session, ticker: str, **kwargs):
+    """주식 조회 또는 생성"""
+    from app.models.securities import Stock
+
+    # Try to find existing stock
+    stock = db.query(Stock).filter(Stock.ticker == ticker).first()
+
+    if stock:
+        # Update existing stock with new data
+        print(f"[CRUD] Updating stock {ticker}")
+        updated_fields = []
+        for key, value in kwargs.items():
+            if value is not None and hasattr(stock, key):
+                old_value = getattr(stock, key)
+                setattr(stock, key, value)
+                updated_fields.append(f"{key}: {old_value} -> {value}")
+
+        if updated_fields:
+            print(f"[CRUD] Updated fields: {', '.join(updated_fields)}")
+
+        db.commit()
+        db.refresh(stock)
+        print(f"[CRUD] Stock {ticker} updated successfully")
+        return stock
+
+    # Create new stock
+    print(f"[CRUD] Creating new stock {ticker}")
+    stock = Stock(ticker=ticker, **kwargs)
+    db.add(stock)
+    db.commit()
+    db.refresh(stock)
+    return stock

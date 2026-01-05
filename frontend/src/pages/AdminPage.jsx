@@ -14,11 +14,39 @@ export default function AdminPage() {
       color: '#2196F3'
     },
     {
+      icon: '⚙️',
+      title: '배치 작업',
+      description: '한국 주식 데이터 일괄 수집 및 작업 모니터링',
+      path: '/admin/batch',
+      color: '#FF9800'
+    },
+    {
+      icon: '🔍',
+      title: '종목 조회',
+      description: '기본 정보, 시계열 데이터, 재무 지표 한눈에 확인',
+      path: '/admin/stock-detail',
+      color: '#673AB7'
+    },
+    {
       icon: '👥',
       title: '사용자 관리',
       description: '사용자 목록, 역할 변경, 계정 삭제',
       path: '/admin/users',
       color: '#00BCD4'
+    },
+    {
+      icon: '📊',
+      title: '포트폴리오 관리',
+      description: '투자 성향별 포트폴리오 전략 및 종목 구성',
+      path: '/admin/portfolio',
+      color: '#667eea'
+    },
+    {
+      icon: '📈',
+      title: '포트폴리오 성과 비교',
+      description: '여러 포트폴리오의 수익률과 성과를 비교 분석',
+      path: '/admin/portfolio-comparison',
+      color: '#9c27b0'
     },
     {
       icon: '📊',

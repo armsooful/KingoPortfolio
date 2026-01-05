@@ -57,6 +57,20 @@ function Header() {
             진단이력
           </button>
           <button
+            className={`nav-link ${isActive('/portfolio') ? 'active' : ''}`}
+            onClick={() => navigate('/portfolio')}
+            title="맞춤 포트폴리오"
+          >
+            포트폴리오
+          </button>
+          <button
+            className={`nav-link ${isActive('/backtest') ? 'active' : ''}`}
+            onClick={() => navigate('/backtest')}
+            title="백테스팅"
+          >
+            백테스팅
+          </button>
+          <button
             className={`nav-link ${isActive('/profile') ? 'active' : ''}`}
             onClick={() => navigate('/profile')}
             title="내 프로필"
