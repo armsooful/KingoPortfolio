@@ -261,10 +261,10 @@ async def get_market_overview(
         # KOSPI
         try:
             kospi = yf.Ticker("^KS11")
-            kospi_info = kospi.history(period="1d")
-            if not kospi_info.empty:
+            kospi_info = kospi.history(period="2d")
+            if not kospi_info.empty and len(kospi_info) >= 2:
                 current_price = kospi_info['Close'].iloc[-1]
-                prev_close = kospi_info['Open'].iloc[0]
+                prev_close = kospi_info['Close'].iloc[-2]
                 change = current_price - prev_close
                 change_percent = (change / prev_close) * 100
 
@@ -273,6 +273,16 @@ async def get_market_overview(
                     "value": round(current_price, 2),
                     "change": round(change, 2),
                     "changePercent": round(change_percent, 2),
+                    "updatedAt": datetime.now().isoformat()
+                })
+            elif not kospi_info.empty:
+                # 1일치 데이터만 있는 경우 (장 시작 전 등)
+                current_price = kospi_info['Close'].iloc[-1]
+                indices.append({
+                    "name": "KOSPI",
+                    "value": round(current_price, 2),
+                    "change": 0.0,
+                    "changePercent": 0.0,
                     "updatedAt": datetime.now().isoformat()
                 })
         except Exception as e:
@@ -288,10 +298,10 @@ async def get_market_overview(
         # KOSDAQ
         try:
             kosdaq = yf.Ticker("^KQ11")
-            kosdaq_info = kosdaq.history(period="1d")
-            if not kosdaq_info.empty:
+            kosdaq_info = kosdaq.history(period="2d")
+            if not kosdaq_info.empty and len(kosdaq_info) >= 2:
                 current_price = kosdaq_info['Close'].iloc[-1]
-                prev_close = kosdaq_info['Open'].iloc[0]
+                prev_close = kosdaq_info['Close'].iloc[-2]
                 change = current_price - prev_close
                 change_percent = (change / prev_close) * 100
 
@@ -300,6 +310,15 @@ async def get_market_overview(
                     "value": round(current_price, 2),
                     "change": round(change, 2),
                     "changePercent": round(change_percent, 2),
+                    "updatedAt": datetime.now().isoformat()
+                })
+            elif not kosdaq_info.empty:
+                current_price = kosdaq_info['Close'].iloc[-1]
+                indices.append({
+                    "name": "KOSDAQ",
+                    "value": round(current_price, 2),
+                    "change": 0.0,
+                    "changePercent": 0.0,
                     "updatedAt": datetime.now().isoformat()
                 })
         except Exception as e:
@@ -315,10 +334,10 @@ async def get_market_overview(
         # S&P 500
         try:
             sp500 = yf.Ticker("^GSPC")
-            sp500_info = sp500.history(period="1d")
-            if not sp500_info.empty:
+            sp500_info = sp500.history(period="2d")
+            if not sp500_info.empty and len(sp500_info) >= 2:
                 current_price = sp500_info['Close'].iloc[-1]
-                prev_close = sp500_info['Open'].iloc[0]
+                prev_close = sp500_info['Close'].iloc[-2]
                 change = current_price - prev_close
                 change_percent = (change / prev_close) * 100
 
@@ -327,6 +346,15 @@ async def get_market_overview(
                     "value": round(current_price, 2),
                     "change": round(change, 2),
                     "changePercent": round(change_percent, 2),
+                    "updatedAt": datetime.now().isoformat()
+                })
+            elif not sp500_info.empty:
+                current_price = sp500_info['Close'].iloc[-1]
+                indices.append({
+                    "name": "S&P 500",
+                    "value": round(current_price, 2),
+                    "change": 0.0,
+                    "changePercent": 0.0,
                     "updatedAt": datetime.now().isoformat()
                 })
         except Exception as e:
@@ -342,10 +370,10 @@ async def get_market_overview(
         # NASDAQ
         try:
             nasdaq = yf.Ticker("^IXIC")
-            nasdaq_info = nasdaq.history(period="1d")
-            if not nasdaq_info.empty:
+            nasdaq_info = nasdaq.history(period="2d")
+            if not nasdaq_info.empty and len(nasdaq_info) >= 2:
                 current_price = nasdaq_info['Close'].iloc[-1]
-                prev_close = nasdaq_info['Open'].iloc[0]
+                prev_close = nasdaq_info['Close'].iloc[-2]
                 change = current_price - prev_close
                 change_percent = (change / prev_close) * 100
 
@@ -354,6 +382,15 @@ async def get_market_overview(
                     "value": round(current_price, 2),
                     "change": round(change, 2),
                     "changePercent": round(change_percent, 2),
+                    "updatedAt": datetime.now().isoformat()
+                })
+            elif not nasdaq_info.empty:
+                current_price = nasdaq_info['Close'].iloc[-1]
+                indices.append({
+                    "name": "NASDAQ",
+                    "value": round(current_price, 2),
+                    "change": 0.0,
+                    "changePercent": 0.0,
                     "updatedAt": datetime.now().isoformat()
                 })
         except Exception as e:
