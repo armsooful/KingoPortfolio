@@ -147,81 +147,87 @@ def get_top_stocks_by_change(limit: int = 5) -> tuple:
         for i in range(max_attempts):
             try:
                 date_to_check = (datetime.now() - timedelta(days=i)).strftime("%Y%m%d")
-                # KOSPI 전체 종목 등락률 조회 시도
-                df = stock.get_market_cap_by_ticker(date_to_check, market="KOSPI")
-                if not df.empty:
+                # KOSPI 전체 종목 OHLCV 조회 시도
+                test_df = stock.get_market_ohlcv_by_date(
+                    date_to_check,
+                    date_to_check,
+                    "005930"  # 삼성전자 테스트
+                )
+                if not test_df.empty:
                     today = date_to_check
                     break
             except:
                 continue
 
-        # KOSPI + KOSDAQ 전체 종목의 등락률 가져오기
-        kospi_changes = stock.get_market_cap_by_ticker(today, market="KOSPI")
-        kosdaq_changes = stock.get_market_cap_by_ticker(today, market="KOSDAQ")
-
-        # 거래대금 상위 종목만 필터링 (유동성 있는 종목)
-        min_trading_value = 10000000000  # 100억원 이상
-
-        kospi_filtered = kospi_changes[kospi_changes['거래대금'] >= min_trading_value]
-        kosdaq_filtered = kosdaq_changes[kosdaq_changes['거래대금'] >= min_trading_value]
-
-        # 전일 대비 등락률 계산을 위해 2일간 데이터 필요
-        yesterday = (datetime.strptime(today, "%Y%m%d") - timedelta(days=1)).strftime("%Y%m%d")
-
-        # 최근 거래일 찾기
+        # 전일 대비 등락률 계산을 위해 전일 거래일 찾기
+        yesterday = today
         for i in range(1, 8):
             try:
                 yesterday = (datetime.strptime(today, "%Y%m%d") - timedelta(days=i)).strftime("%Y%m%d")
-                test_df = stock.get_market_cap_by_ticker(yesterday, market="KOSPI")
+                test_df = stock.get_market_ohlcv_by_date(
+                    yesterday,
+                    yesterday,
+                    "005930"
+                )
                 if not test_df.empty:
                     break
             except:
                 continue
 
-        top_gainers = []
-        top_losers = []
+        # 주요 종목 리스트 (거래량 많은 대표 종목)
+        major_tickers = [
+            "005930",  # 삼성전자
+            "000660",  # SK하이닉스
+            "035420",  # NAVER
+            "051910",  # LG화학
+            "006400",  # 삼성SDI
+            "035720",  # 카카오
+            "028260",  # 삼성물산
+            "105560",  # KB금융
+            "055550",  # 신한지주
+            "096770",  # SK이노베이션
+            "003670",  # 포스코퓨처엠
+            "000270",  # 기아
+            "005380",  # 현대차
+            "012330",  # 현대모비스
+            "017670",  # SK텔레콤
+            "068270",  # 셀트리온
+            "207940",  # 삼성바이오로직스
+            "032830",  # 삼성생명
+            "005935",  # 삼성전자우
+            "015760",  # 한국전력
+        ]
 
-        # KOSPI + KOSDAQ 통합
         all_stocks = []
 
-        for ticker in kospi_filtered.index:
+        for ticker in major_tickers:
             try:
-                # 오늘 종가
-                today_price = stock.get_market_ohlcv_by_ticker(today, market="KOSPI").loc[ticker, '종가']
-                # 어제 종가
-                yesterday_price = stock.get_market_ohlcv_by_ticker(yesterday, market="KOSPI").loc[ticker, '종가']
+                # 오늘/어제 데이터 조회
+                df = stock.get_market_ohlcv_by_date(
+                    yesterday,
+                    today,
+                    ticker
+                )
 
-                change_percent = ((today_price - yesterday_price) / yesterday_price) * 100
+                if len(df) >= 2:
+                    today_price = df.iloc[-1]['종가']
+                    yesterday_price = df.iloc[-2]['종가']
+                    change_percent = ((today_price - yesterday_price) / yesterday_price) * 100
 
-                # 종목명 조회
-                ticker_name = stock.get_market_ticker_name(ticker)
+                    ticker_name = stock.get_market_ticker_name(ticker)
 
-                all_stocks.append({
-                    "symbol": ticker,
-                    "name": ticker_name,
-                    "price": int(today_price),
-                    "change": round(change_percent, 2)
-                })
-            except:
+                    all_stocks.append({
+                        "symbol": ticker,
+                        "name": ticker_name,
+                        "price": int(today_price),
+                        "change": round(change_percent, 2)
+                    })
+            except Exception as e:
+                print(f"{ticker} 조회 실패: {e}")
                 continue
 
-        for ticker in kosdaq_filtered.index:
-            try:
-                today_price = stock.get_market_ohlcv_by_ticker(today, market="KOSDAQ").loc[ticker, '종가']
-                yesterday_price = stock.get_market_ohlcv_by_ticker(yesterday, market="KOSDAQ").loc[ticker, '종가']
-
-                change_percent = ((today_price - yesterday_price) / yesterday_price) * 100
-
-                ticker_name = stock.get_market_ticker_name(ticker)
-
-                all_stocks.append({
-                    "symbol": ticker,
-                    "name": ticker_name,
-                    "price": int(today_price),
-                    "change": round(change_percent, 2)
-                })
-            except:
-                continue
+        if not all_stocks:
+            return get_mock_stocks()
 
         # 상승/하락 정렬
         all_stocks_sorted = sorted(all_stocks, key=lambda x: x['change'], reverse=True)
