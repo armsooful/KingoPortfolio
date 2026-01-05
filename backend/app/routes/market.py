@@ -3,7 +3,7 @@
 """
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Dict, Any
 import yfinance as yf
 from anthropic import Anthropic
@@ -11,6 +11,7 @@ import os
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
+from pykrx import stock
 
 from app.database import get_db
 from app.models.user import User
@@ -128,6 +129,131 @@ def get_mock_news() -> List[Dict[str, str]]:
             "url": "#"
         }
     ]
+
+
+def get_top_stocks_by_change(limit: int = 5) -> tuple:
+    """
+    pykrx를 사용하여 실시간 상승/하락 종목 조회
+
+    Returns:
+        tuple: (top_gainers, top_losers)
+    """
+    try:
+        # 오늘 날짜
+        today = datetime.now().strftime("%Y%m%d")
+
+        # 주말이면 가장 최근 거래일 찾기
+        max_attempts = 7
+        for i in range(max_attempts):
+            try:
+                date_to_check = (datetime.now() - timedelta(days=i)).strftime("%Y%m%d")
+                # KOSPI 전체 종목 등락률 조회 시도
+                df = stock.get_market_cap_by_ticker(date_to_check, market="KOSPI")
+                if not df.empty:
+                    today = date_to_check
+                    break
+            except:
+                continue
+
+        # KOSPI + KOSDAQ 전체 종목의 등락률 가져오기
+        kospi_changes = stock.get_market_cap_by_ticker(today, market="KOSPI")
+        kosdaq_changes = stock.get_market_cap_by_ticker(today, market="KOSDAQ")
+
+        # 거래대금 상위 종목만 필터링 (유동성 있는 종목)
+        min_trading_value = 10000000000  # 100억원 이상
+
+        kospi_filtered = kospi_changes[kospi_changes['거래대금'] >= min_trading_value]
+        kosdaq_filtered = kosdaq_changes[kosdaq_changes['거래대금'] >= min_trading_value]
+
+        # 전일 대비 등락률 계산을 위해 2일간 데이터 필요
+        yesterday = (datetime.strptime(today, "%Y%m%d") - timedelta(days=1)).strftime("%Y%m%d")
+
+        # 최근 거래일 찾기
+        for i in range(1, 8):
+            try:
+                yesterday = (datetime.strptime(today, "%Y%m%d") - timedelta(days=i)).strftime("%Y%m%d")
+                test_df = stock.get_market_cap_by_ticker(yesterday, market="KOSPI")
+                if not test_df.empty:
+                    break
+            except:
+                continue
+
+        top_gainers = []
+        top_losers = []
+
+        # KOSPI + KOSDAQ 통합
+        all_stocks = []
+
+        for ticker in kospi_filtered.index:
+            try:
+                # 오늘 종가
+                today_price = stock.get_market_ohlcv_by_ticker(today, market="KOSPI").loc[ticker, '종가']
+                # 어제 종가
+                yesterday_price = stock.get_market_ohlcv_by_ticker(yesterday, market="KOSPI").loc[ticker, '종가']
+
+                change_percent = ((today_price - yesterday_price) / yesterday_price) * 100
+
+                # 종목명 조회
+                ticker_name = stock.get_market_ticker_name(ticker)
+
+                all_stocks.append({
+                    "symbol": ticker,
+                    "name": ticker_name,
+                    "price": int(today_price),
+                    "change": round(change_percent, 2)
+                })
+            except:
+                continue
+
+        for ticker in kosdaq_filtered.index:
+            try:
+                today_price = stock.get_market_ohlcv_by_ticker(today, market="KOSDAQ").loc[ticker, '종가']
+                yesterday_price = stock.get_market_ohlcv_by_ticker(yesterday, market="KOSDAQ").loc[ticker, '종가']
+
+                change_percent = ((today_price - yesterday_price) / yesterday_price) * 100
+
+                ticker_name = stock.get_market_ticker_name(ticker)
+
+                all_stocks.append({
+                    "symbol": ticker,
+                    "name": ticker_name,
+                    "price": int(today_price),
+                    "change": round(change_percent, 2)
+                })
+            except:
+                continue
+
+        # 상승/하락 정렬
+        all_stocks_sorted = sorted(all_stocks, key=lambda x: x['change'], reverse=True)
+
+        top_gainers = all_stocks_sorted[:limit]
+        top_losers = all_stocks_sorted[-limit:][::-1]  # 하락률 높은 순으로
+
+        return top_gainers, top_losers
+
+    except Exception as e:
+        print(f"실시간 종목 데이터 조회 실패: {e}")
+        # Mock 데이터 반환
+        return get_mock_stocks()
+
+
+def get_mock_stocks() -> tuple:
+    """
+    Mock 종목 데이터 (API 실패 시 대체용)
+    """
+    top_gainers = [
+        {"symbol": "005930", "name": "삼성전자", "price": 78500, "change": 3.5},
+        {"symbol": "000660", "name": "SK하이닉스", "price": 145000, "change": 4.2},
+        {"symbol": "035420", "name": "NAVER", "price": 245000, "change": 2.8}
+    ]
+
+    top_losers = [
+        {"symbol": "051910", "name": "LG화학", "price": 425000, "change": -2.3},
+        {"symbol": "006400", "name": "삼성SDI", "price": 485000, "change": -1.8},
+        {"symbol": "028260", "name": "삼성물산", "price": 128000, "change": -1.5}
+    ]
+
+    return top_gainers, top_losers
 
 
 def calculate_market_sentiment(indices: List[Dict]) -> Dict[str, Any]:
@@ -403,18 +529,8 @@ async def get_market_overview(
                 "updatedAt": datetime.now().isoformat()
             })
 
-        # Mock 데이터 - 상승/하락 종목 (실제로는 별도 API 또는 DB에서 조회)
-        top_gainers = [
-            {"symbol": "005930", "name": "삼성전자", "price": 78500, "change": 3.5},
-            {"symbol": "000660", "name": "SK하이닉스", "price": 145000, "change": 4.2},
-            {"symbol": "035420", "name": "NAVER", "price": 245000, "change": 2.8}
-        ]
-
-        top_losers = [
-            {"symbol": "051910", "name": "LG화학", "price": 425000, "change": -2.3},
-            {"symbol": "006400", "name": "삼성SDI", "price": 485000, "change": -1.8},
-            {"symbol": "028260", "name": "삼성물산", "price": 128000, "change": -1.5}
-        ]
+        # 실시간 상승/하락 종목 조회 (pykrx 사용)
+        top_gainers, top_losers = get_top_stocks_by_change(limit=3)
 
         # 네이버 금융 뉴스 크롤링
         news = fetch_naver_finance_news(limit=5)
