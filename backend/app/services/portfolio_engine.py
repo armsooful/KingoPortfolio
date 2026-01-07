@@ -141,16 +141,21 @@ class PortfolioEngine:
         """자산 배분 계산"""
         allocation = {}
 
-        for asset_class, weights in strategy.items():
-            target_ratio = weights["target"] / 100
-            amount = int(total_amount * target_ratio)
+        # 자산 클래스만 필터링 (stocks, etfs, bonds, deposits)
+        asset_classes = ["stocks", "etfs", "bonds", "deposits"]
 
-            allocation[asset_class] = {
-                "ratio": weights["target"],
-                "amount": amount,
-                "min_ratio": weights["min"],
-                "max_ratio": weights["max"]
-            }
+        for asset_class in asset_classes:
+            if asset_class in strategy:
+                weights = strategy[asset_class]
+                target_ratio = weights["target"] / 100
+                amount = int(total_amount * target_ratio)
+
+                allocation[asset_class] = {
+                    "ratio": weights["target"],
+                    "amount": amount,
+                    "min_ratio": weights["min"],
+                    "max_ratio": weights["max"]
+                }
 
         return allocation
 

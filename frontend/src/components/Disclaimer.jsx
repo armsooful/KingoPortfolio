@@ -55,22 +55,36 @@ const Disclaimer = ({ type = 'general' }) => {
   const selected = disclaimers[type] || disclaimers.general;
 
   return (
-    <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md mb-6">
-      <div className="flex">
-        <div className="flex-1">
-          <h3 className="text-sm font-bold text-yellow-800 mb-2">
-            {selected.title}
-          </h3>
-          <ul className="text-xs text-yellow-700 space-y-1">
-            {selected.content.map((item, index) => (
-              <li key={index} className="flex items-start">
-                <span className="mr-2">•</span>
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
+    <div style={{
+      background: 'rgba(255, 243, 224, 0.95)',
+      borderLeft: '4px solid #ff9800',
+      padding: '1.5rem',
+      borderRadius: '16px',
+      marginBottom: '2rem',
+      boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)'
+    }}>
+      <h3 style={{
+        fontSize: '1.1rem',
+        fontWeight: '700',
+        color: '#e65100',
+        marginBottom: '1rem',
+        marginTop: 0
+      }}>
+        {selected.title}
+      </h3>
+      <ul style={{
+        fontSize: '0.9rem',
+        color: '#f57c00',
+        margin: 0,
+        paddingLeft: '1.2rem',
+        lineHeight: '1.6'
+      }}>
+        {selected.content.map((item, index) => (
+          <li key={index} style={{ marginBottom: '0.5rem' }}>
+            {item}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 };
