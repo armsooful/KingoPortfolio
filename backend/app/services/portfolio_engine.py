@@ -15,25 +15,38 @@ import math
 class PortfolioEngine:
     """포트폴리오 추천 엔진"""
 
-    # 투자 성향별 자산 배분 전략
+    # 투자 성향별 자산 배분 전략 (알고리즘 문서 기반 개선)
     ASSET_ALLOCATION_STRATEGIES = {
         "conservative": {
-            "stocks": {"min": 10, "max": 30, "target": 20},
+            "stocks": {"min": 30, "max": 50, "target": 40},
             "etfs": {"min": 10, "max": 20, "target": 15},
-            "bonds": {"min": 30, "max": 45, "target": 35},
-            "deposits": {"min": 25, "max": 35, "target": 30},
+            "bonds": {"min": 25, "max": 35, "target": 30},
+            "deposits": {"min": 10, "max": 20, "target": 15},
+            "num_stocks": 7,
+            "preferred_sectors": ["금융", "필수소비재", "헬스케어", "산업재"],
+            "dividend_yield_min": 2.0,
+            "name": "보수적"
         },
         "moderate": {
-            "stocks": {"min": 30, "max": 50, "target": 40},
-            "etfs": {"min": 15, "max": 25, "target": 20},
-            "bonds": {"min": 20, "max": 30, "target": 25},
-            "deposits": {"min": 10, "max": 20, "target": 15},
+            "stocks": {"min": 50, "max": 70, "target": 60},
+            "etfs": {"min": 10, "max": 20, "target": 15},
+            "bonds": {"min": 15, "max": 25, "target": 20},
+            "deposits": {"min": 0, "max": 10, "target": 5},
+            "num_stocks": 10,
+            "preferred_sectors": ["IT", "금융", "산업재", "헬스케어", "소비재"],
+            "dividend_yield_min": 1.5,
+            "name": "중립적"
         },
         "aggressive": {
-            "stocks": {"min": 50, "max": 70, "target": 60},
-            "etfs": {"min": 15, "max": 25, "target": 20},
-            "bonds": {"min": 10, "max": 20, "target": 15},
-            "deposits": {"min": 0, "max": 10, "target": 5},
+            "stocks": {"min": 70, "max": 90, "target": 80},
+            "etfs": {"min": 5, "max": 15, "target": 10},
+            "bonds": {"min": 5, "max": 15, "target": 10},
+            "deposits": {"min": 0, "max": 5, "target": 0},
+            "num_stocks": 12,
+            "preferred_sectors": ["IT", "바이오", "2차전지", "반도체"],
+            "dividend_yield_min": 0,
+            "growth_focused": True,
+            "name": "공격적"
         }
     }
 
@@ -148,16 +161,18 @@ class PortfolioEngine:
         risk_tolerance: Optional[str],
         preferences: Optional[Dict]
     ) -> List[Dict]:
-        """주식 종목 선정"""
+        """주식 종목 선정 (알고리즘 문서 기반 개선)"""
 
         if budget < 100000:  # 10만원 미만이면 주식 미선정
             return []
 
-        # 기본 필터링
+        # 전략 프로필 가져오기
+        strategy = self.ASSET_ALLOCATION_STRATEGIES.get(investment_type, {})
+
+        # 1단계: 기본 필터링
         query = self.db.query(Stock).filter(
             and_(
                 Stock.is_active == True,
-                Stock.investment_type.contains(investment_type),
                 Stock.current_price.isnot(None),
                 Stock.current_price > 0
             )
@@ -171,16 +186,31 @@ class PortfolioEngine:
         if preferences:
             if preferences.get("sectors"):
                 query = query.filter(Stock.sector.in_(preferences["sectors"]))
-
             if preferences.get("dividend_preference"):
                 query = query.filter(Stock.dividend_yield >= 2.0)
 
-        # 점수 계산
-        stocks = query.all()
-        scored_stocks = []
+        # 전체 주식 로드
+        all_stocks = query.all()
 
-        for stock in stocks:
-            score = self._calculate_stock_score(stock, investment_type)
+        # 2단계: 필터링 (섹터, 배당)
+        filtered_stocks = []
+        for stock in all_stocks:
+            # 섹터 필터
+            if strategy.get("preferred_sectors") and stock.sector:
+                if stock.sector not in strategy["preferred_sectors"]:
+                    continue
+
+            # 배당 필터 (보수적 성향)
+            if strategy.get("dividend_yield_min", 0) > 0:
+                if not stock.dividend_yield or stock.dividend_yield < strategy["dividend_yield_min"]:
+                    continue
+
+            filtered_stocks.append(stock)
+
+        # 3단계: 점수 계산
+        scored_stocks = []
+        for stock in filtered_stocks:
+            score = self._calculate_stock_score_improved(stock, strategy)
             scored_stocks.append({
                 "stock": stock,
                 "score": score
@@ -189,7 +219,7 @@ class PortfolioEngine:
         # 점수순 정렬
         scored_stocks.sort(key=lambda x: x["score"], reverse=True)
 
-        # 같은 이름의 주식 중복 제거 (점수가 높은 것만 유지)
+        # 중복 제거 (같은 이름)
         seen_names = set()
         unique_stocks = []
         for item in scored_stocks:
@@ -197,19 +227,24 @@ class PortfolioEngine:
                 unique_stocks.append(item)
                 seen_names.add(item["stock"].name)
 
-        scored_stocks = unique_stocks
+        # 4단계: 상위 N개 선정
+        num_stocks = strategy.get("num_stocks", 5)
+        selected = unique_stocks[:num_stocks]
 
-        # 상위 3-5개 선정 (다각화)
-        max_stocks = 5 if budget >= 5000000 else 3
-        selected = scored_stocks[:max_stocks]
+        # 5단계: 섹터 다각화 적용 (한 섹터 최대 40%)
+        selected = self._apply_sector_diversification(selected)
 
-        # 금액 배분
+        # 6단계: 비중 계산 (점수 기반)
+        portfolio = self._calculate_weights_score_based(selected)
+
+        # 7단계: 금액 배분
         result = []
-        per_stock_budget = budget // len(selected) if selected else 0
-
-        for item in selected:
+        for item in portfolio:
             stock = item["stock"]
-            shares = per_stock_budget // stock.current_price if stock.current_price else 0
+            weight = item["weight"]
+
+            allocated_amount = int(budget * (weight / 100))
+            shares = allocated_amount // stock.current_price if stock.current_price else 0
             invested_amount = shares * stock.current_price if stock.current_price else 0
 
             result.append({
@@ -220,7 +255,7 @@ class PortfolioEngine:
                 "current_price": stock.current_price,
                 "shares": shares,
                 "invested_amount": invested_amount,
-                "weight": round((invested_amount / budget * 100), 2) if budget > 0 else 0,
+                "weight": round(weight, 2),
                 "expected_return": stock.one_year_return,
                 "dividend_yield": stock.dividend_yield,
                 "risk_level": stock.risk_level,
@@ -296,6 +331,116 @@ class PortfolioEngine:
             score += risk_adjustment[investment_type][stock.risk_level]
 
         return min(score, 100)  # 최대 100점
+
+    def _calculate_stock_score_improved(self, stock: Stock, strategy: Dict) -> float:
+        """개선된 종목 점수 계산 (알고리즘 문서 기반)"""
+        score = 0
+
+        # 1. 모멘텀 점수 (30점)
+        if stock.ytd_return is not None:
+            if 0 < stock.ytd_return < 20:  # 적정 상승
+                score += 20
+            elif 20 <= stock.ytd_return < 50:
+                score += 15
+            elif stock.ytd_return >= 50:  # 과열 가능성
+                score += 5
+            else:
+                score += 10
+
+        if stock.one_year_return is not None:
+            if stock.one_year_return > 10:
+                score += 10
+            elif stock.one_year_return > 0:
+                score += 5
+
+        # 2. 가치 점수 (PER, PBR) - 30점
+        if stock.pe_ratio and stock.pe_ratio > 0:
+            if 5 < stock.pe_ratio < 15:
+                score += 15
+            elif 15 <= stock.pe_ratio < 25:
+                score += 10
+            elif stock.pe_ratio > 30:
+                score -= 5
+
+        if stock.pb_ratio and stock.pb_ratio > 0:
+            if 0.5 < stock.pb_ratio < 2.0:
+                score += 15
+            elif 2.0 <= stock.pb_ratio < 3.0:
+                score += 10
+
+        # 3. 배당 점수 - 20점
+        if stock.dividend_yield:
+            if stock.dividend_yield > 3:
+                score += 20
+            elif stock.dividend_yield > 2:
+                score += 15
+            elif stock.dividend_yield > 1:
+                score += 10
+
+        # 4. 성장성 점수 (공격적 성향) - 20점
+        if strategy.get("growth_focused"):
+            if stock.one_year_return and stock.one_year_return > 20:
+                score += 15
+            if stock.ytd_return and stock.ytd_return > 15:
+                score += 5
+
+        return min(score, 100)
+
+    def _apply_sector_diversification(self, selected: List[Dict]) -> List[Dict]:
+        """섹터 다각화 적용 (한 섹터 최대 40%)"""
+        if not selected:
+            return selected
+
+        max_per_sector = max(2, int(len(selected) * 0.4))
+
+        result = []
+        sector_count = {}
+
+        for item in selected:
+            sector = item["stock"].sector or "기타"
+            current_count = sector_count.get(sector, 0)
+
+            if current_count < max_per_sector:
+                result.append(item)
+                sector_count[sector] = current_count + 1
+
+            if len(result) >= len(selected):
+                break
+
+        return result
+
+    def _calculate_weights_score_based(self, selected: List[Dict]) -> List[Dict]:
+        """점수 기반 비중 계산 (알고리즘 문서)"""
+        if not selected:
+            return []
+
+        total_score = sum(item["score"] for item in selected)
+
+        if total_score == 0:
+            # 점수가 모두 0이면 균등 배분
+            equal_weight = 100 / len(selected)
+            for item in selected:
+                item["weight"] = equal_weight
+            return selected
+
+        # 점수 비례 배분
+        for item in selected:
+            item["weight"] = (item["score"] / total_score) * 100
+
+        # 최대/최소 제약 적용
+        for item in selected:
+            if item["weight"] > 30:  # 한 종목 최대 30%
+                item["weight"] = 30
+            if item["weight"] < 5:  # 한 종목 최소 5%
+                item["weight"] = 5
+
+        # 재조정하여 100%로 맞추기
+        total_weight = sum(item["weight"] for item in selected)
+        if total_weight > 0:
+            for item in selected:
+                item["weight"] = (item["weight"] / total_weight) * 100
+
+        return selected
 
     def _generate_stock_rationale(self, stock: Stock, investment_type: str) -> str:
         """주식 추천 근거 생성"""
@@ -555,6 +700,15 @@ class PortfolioEngine:
         total_items = len(stocks) + len(etfs) + len(bonds) + len(deposits)
         diversification_score = min(total_items * 10, 100)  # 최대 100점
 
+        # 섹터 분포 계산 (주식 기준)
+        sector_breakdown = {}
+        total_stock_amount = sum(item["invested_amount"] for item in stocks)
+        if total_stock_amount > 0:
+            for stock in stocks:
+                sector = stock.get("sector") or "기타"
+                weight = (stock["invested_amount"] / total_stock_amount) * 100
+                sector_breakdown[sector] = sector_breakdown.get(sector, 0) + weight
+
         return {
             "total_investment": total_investment,
             "actual_invested": actual_invested,
@@ -568,7 +722,8 @@ class PortfolioEngine:
                 "etfs_count": len(etfs),
                 "bonds_count": len(bonds),
                 "deposits_count": len(deposits)
-            }
+            },
+            "sector_breakdown": {k: round(v, 2) for k, v in sector_breakdown.items()}
         }
 
     def _generate_recommendations(
@@ -576,12 +731,23 @@ class PortfolioEngine:
         investment_type: str,
         stats: Dict
     ) -> List[str]:
-        """포트폴리오 개선 추천"""
+        """포트폴리오 개선 추천 (알고리즘 문서 기반)"""
         recommendations = []
 
         # 다각화
-        if stats["diversification_score"] < 50:
+        if stats.get("diversification_score", 0) < 50:
             recommendations.append("더 많은 종목으로 다각화하여 리스크를 분산하는 것을 권장합니다.")
+
+        if stats["total_items"] < 5:
+            recommendations.append("종목 수가 적습니다. 최소 5개 이상의 종목으로 다각화하세요.")
+
+        # 섹터 집중도
+        if "sector_breakdown" in stats:
+            sector_breakdown = stats["sector_breakdown"]
+            if sector_breakdown:
+                max_sector_weight = max(sector_breakdown.values()) if sector_breakdown.values() else 0
+                if max_sector_weight > 40:
+                    recommendations.append(f"특정 섹터 비중이 {max_sector_weight:.1f}%로 높습니다. 섹터 다각화를 고려하세요.")
 
         # 현금 보유
         cash_ratio = (stats["cash_reserve"] / stats["total_investment"] * 100) if stats["total_investment"] > 0 else 0
@@ -590,16 +756,16 @@ class PortfolioEngine:
 
         # 기대 수익률
         expected_ranges = {
-            "conservative": (4, 6),
-            "moderate": (6, 9),
-            "aggressive": (9, 15)
+            "conservative": (4, 8),
+            "moderate": (6, 12),
+            "aggressive": (10, 20)
         }
 
         min_return, max_return = expected_ranges.get(investment_type, (5, 10))
         if stats["expected_annual_return"] < min_return:
-            recommendations.append(f"기대 수익률이 낮습니다. 더 높은 수익률의 상품을 추가하는 것을 고려해보세요.")
+            recommendations.append(f"기대 수익률이 {stats['expected_annual_return']:.1f}%로 낮습니다. 성장주 비중을 높이는 것을 고려하세요.")
         elif stats["expected_annual_return"] > max_return:
-            recommendations.append(f"기대 수익률이 높은 편입니다. 리스크가 적절한지 확인해보세요.")
+            recommendations.append(f"기대 수익률이 {stats['expected_annual_return']:.1f}%로 높습니다. 리스크를 확인하세요.")
 
         # 리스크
         risk_match = {
@@ -608,11 +774,14 @@ class PortfolioEngine:
             "aggressive": "high"
         }
 
-        if stats["portfolio_risk"] != risk_match.get(investment_type):
+        if stats.get("portfolio_risk") and stats["portfolio_risk"] != risk_match.get(investment_type):
             recommendations.append(f"포트폴리오 리스크가 투자 성향과 다릅니다. 자산 배분을 조정해보세요.")
 
+        # 리밸런싱 안내
         if not recommendations:
-            recommendations.append("잘 구성된 포트폴리오입니다. 정기적으로 리밸런싱을 진행하세요.")
+            recommendations.append("균형잡힌 포트폴리오입니다. 3개월마다 리밸런싱을 진행하세요.")
+        else:
+            recommendations.append("포트폴리오 개선 후 3개월마다 리밸런싱을 진행하세요.")
 
         return recommendations
 
