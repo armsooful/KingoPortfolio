@@ -52,15 +52,19 @@ app = FastAPI(
     description="""
 # KingoPortfolio API
 
-AI 기반 포트폴리오 추천 플랫폼 백엔드 API
+투자 전략 학습 플랫폼 백엔드 API
+
+⚠️ **중요**: 본 API는 교육 목적의 시뮬레이션 기능을 제공합니다.
+투자 권유·추천·자문·일임 서비스를 제공하지 않습니다.
+본 서비스는 자본시장법상 투자자문업·투자일임업에 해당하지 않습니다.
 
 ## 주요 기능
 
 - **인증 및 권한 관리**: JWT 기반 사용자 인증, RBAC (Role-Based Access Control)
-- **투자 성향 진단**: AI 기반 설문 분석 및 맞춤형 투자 전략 제안
-- **재무 분석**: 실시간 주가 데이터 수집 및 재무제표 분석
-- **밸류에이션**: DCF, DDM, 멀티플 비교 등 종합 기업 가치 평가
-- **퀀트 분석**: 베타, 샤프 비율, RSI, 이동평균 등 정량적 분석
+- **투자 성향 진단**: 설문 기반 투자 성향 분석 (교육 목적)
+- **재무 분석**: 주가 데이터 조회 및 재무제표 분석 (정보 제공)
+- **밸류에이션**: DCF, DDM, 멀티플 비교 등 기업 가치 평가 학습 도구
+- **포트폴리오 시뮬레이션**: 다양한 전략 유형별 구성 예시 (교육 목적)
 
 ## 인증 방법
 
@@ -91,7 +95,7 @@ AI 기반 포트폴리오 추천 플랫폼 백엔드 API
 }
 ```
     """,
-    summary="KingoPortfolio - AI 포트폴리오 추천 플랫폼",
+    summary="KingoPortfolio - 투자 전략 학습 플랫폼 (교육용)",
     terms_of_service="https://github.com/your-org/kingo-portfolio/blob/main/TERMS.md",
     contact={
         "name": "KingoPortfolio Team",
@@ -126,7 +130,7 @@ AI 기반 포트폴리오 추천 플랫폼 백엔드 API
         },
         {
             "name": "Diagnosis",
-            "description": "투자 성향 분석 및 맞춤형 포트폴리오 추천 API"
+            "description": "투자 성향 분석 API (교육 목적 - 투자 권유 아님)"
         },
         {
             "name": "Admin",

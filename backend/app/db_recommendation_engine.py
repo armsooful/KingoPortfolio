@@ -1,12 +1,17 @@
 # backend/app/db_recommendation_engine.py
 
+"""
+⚠️ 교육 목적: 본 모듈은 투자 전략 학습용 상품 정보 조회 도구입니다.
+투자 권유·추천·자문·일임 서비스를 제공하지 않습니다.
+"""
+
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 from app.models.securities import Stock, ETF, Bond, DepositProduct
 from typing import List, Dict
 
-class DBRecommendationEngine:
-    """DB 기반 추천 엔진"""
+class DBProductSampler:
+    """DB 기반 샘플 상품 조회 엔진 (교육용)"""
     
     @staticmethod
     def get_recommended_stocks(
@@ -14,7 +19,11 @@ class DBRecommendationEngine:
         investment_type: str,
         limit: int = 3
     ) -> List[Dict]:
-        """투자성향에 맞는 주식 추천"""
+        """
+        전략 유형별 샘플 주식 조회 (교육용)
+
+        ⚠️ 본 메서드는 학습용 샘플 데이터를 제공하며, 투자 권유가 아닙니다.
+        """
         
         # 투자성향에 맞는 주식 쿼리
         stocks = db.query(Stock).filter(

@@ -18,7 +18,7 @@ function LandingPage() {
     {
       icon: '📊',
       title: '포트폴리오 진단',
-      description: '당신의 투자 성향을 분석하고 최적의 포트폴리오를 추천합니다'
+      description: '투자 성향을 분석하고 다양한 전략 구성 예시를 제공합니다'
     },
     {
       icon: '💼',
@@ -32,8 +32,8 @@ function LandingPage() {
     },
     {
       icon: '🎯',
-      title: '맞춤형 추천',
-      description: '개인의 투자 목표와 위험 성향에 맞는 종목을 추천합니다'
+      title: '전략 학습',
+      description: '다양한 투자 전략의 포트폴리오 구성 방식을 시뮬레이션으로 학습합니다'
     },
     {
       icon: '📰',
@@ -89,7 +89,7 @@ function LandingPage() {
           </div>
           <div className="illustration-card card-3">
             <div className="card-icon">🎯</div>
-            <div className="card-text">맞춤형 추천</div>
+            <div className="card-text">전략 학습</div>
           </div>
         </div>
       </section>
@@ -136,9 +136,9 @@ function LandingPage() {
           <div className="step-arrow">→</div>
           <div className="step-card">
             <div className="step-number">3</div>
-            <h3 className="step-title">맞춤형 추천</h3>
+            <h3 className="step-title">전략 시뮬레이션</h3>
             <p className="step-description">
-              AI가 분석한 최적의 포트폴리오와 투자 전략을 확인합니다
+              다양한 투자 전략의 포트폴리오 구성 예시를 시뮬레이션으로 확인합니다
             </p>
           </div>
         </div>

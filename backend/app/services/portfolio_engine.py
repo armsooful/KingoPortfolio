@@ -1,7 +1,8 @@
 """
-포트폴리오 추천 엔진
+포트폴리오 시뮬레이션 엔진
 
-투자 성향과 주식 종목 분석 데이터를 기반으로 최적의 포트폴리오를 추천합니다.
+⚠️ 교육 목적: 본 모듈은 투자 전략 학습용 시뮬레이션 도구입니다.
+투자 권유·추천·자문·일임 서비스를 제공하지 않습니다.
 """
 
 from typing import List, Dict, Optional
@@ -13,7 +14,12 @@ import math
 
 
 class PortfolioEngine:
-    """포트폴리오 추천 엔진"""
+    """
+    포트폴리오 시뮬레이션 엔진 (교육용)
+
+    ⚠️ 본 클래스는 투자 전략 학습을 위한 시뮬레이션 도구이며,
+    투자 권유·추천·자문·일임 서비스를 제공하지 않습니다.
+    """
 
     # 투자 성향별 자산 배분 전략 (알고리즘 문서 기반 개선)
     ASSET_ALLOCATION_STRATEGIES = {
@@ -68,16 +74,19 @@ class PortfolioEngine:
         preferences: Optional[Dict] = None
     ) -> Dict:
         """
-        맞춤형 포트폴리오 생성
+        포트폴리오 구성 시뮬레이션 (교육용)
+
+        ⚠️ 본 메서드는 투자 전략 학습을 위한 예시 포트폴리오를 생성합니다.
+        특정인에 대한 맞춤형 투자 권유·추천이 아닙니다.
 
         Args:
-            investment_type: 투자 성향 (conservative, moderate, aggressive)
-            investment_amount: 투자 금액 (원)
-            risk_tolerance: 리스크 허용도 (low, medium, high) - 선택
-            preferences: 사용자 선호도 (섹터, 배당 선호 등) - 선택
+            investment_type: 전략 유형 (conservative, moderate, aggressive)
+            investment_amount: 시뮬레이션 금액 (원)
+            risk_tolerance: 리스크 레벨 (low, medium, high) - 선택
+            preferences: 전략 선호도 (섹터, 배당 등) - 선택
 
         Returns:
-            Dict: 포트폴리오 추천 결과
+            Dict: 시뮬레이션 결과 (교육 목적)
         """
         if investment_type not in self.ASSET_ALLOCATION_STRATEGIES:
             raise ValueError(f"Invalid investment type: {investment_type}")
@@ -718,7 +727,7 @@ class PortfolioEngine:
             "total_investment": total_investment,
             "actual_invested": actual_invested,
             "cash_reserve": total_investment - actual_invested,
-            "expected_annual_return": round(total_expected_return, 2),
+            "historical_avg_return": round(total_expected_return, 2),  # 과거 평균 수익률 (예상 수익률 아님)
             "portfolio_risk": portfolio_risk,
             "diversification_score": diversification_score,
             "total_items": total_items,
@@ -767,10 +776,10 @@ class PortfolioEngine:
         }
 
         min_return, max_return = expected_ranges.get(investment_type, (5, 10))
-        if stats["expected_annual_return"] < min_return:
-            recommendations.append(f"기대 수익률이 {stats['expected_annual_return']:.1f}%로 낮습니다. 성장주 비중을 높이는 것을 고려하세요.")
-        elif stats["expected_annual_return"] > max_return:
-            recommendations.append(f"기대 수익률이 {stats['expected_annual_return']:.1f}%로 높습니다. 리스크를 확인하세요.")
+        if stats.get("historical_avg_return", 0) < min_return:
+            recommendations.append(f"과거 평균 수익률이 {stats.get('historical_avg_return', 0):.1f}%로 낮습니다. 성장주 비중을 높이는 것을 고려할 수 있습니다.")
+        elif stats.get("historical_avg_return", 0) > max_return:
+            recommendations.append(f"과거 평균 수익률이 {stats.get('historical_avg_return', 0):.1f}%로 높습니다. 리스크를 확인하세요.")
 
         # 리스크
         risk_match = {

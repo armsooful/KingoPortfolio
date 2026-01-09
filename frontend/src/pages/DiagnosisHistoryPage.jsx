@@ -245,7 +245,7 @@ function DiagnosisHistoryPage() {
 
               {/* 포트폴리오 */}
               <div className="detail-portfolio">
-                <h3>추천 포트폴리오</h3>
+                <h3>참고용 포트폴리오 예시</h3>
                 <div className="portfolio-items">
                   {selectedDiagnosis.recommended_ratio &&
                     Object.entries(selectedDiagnosis.recommended_ratio).map(

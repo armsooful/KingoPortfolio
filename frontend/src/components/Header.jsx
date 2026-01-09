@@ -59,7 +59,7 @@ function Header() {
           <button
             className={`nav-link ${isActive('/portfolio') ? 'active' : ''}`}
             onClick={() => navigate('/portfolio')}
-            title="맞춤 포트폴리오"
+            title="전략 시뮬레이션"
           >
             포트폴리오
           </button>

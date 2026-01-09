@@ -130,8 +130,8 @@ function PortfolioRecommendationPage() {
       {/* 헤더 */}
       <div className="portfolio-header">
         <div className="header-content">
-          <h1>💼 맞춤 포트폴리오</h1>
-          <p className="subtitle">당신의 투자 성향에 맞는 포트폴리오를 추천해드립니다</p>
+          <h1>📊 포트폴리오 구성 예시</h1>
+          <p className="subtitle">투자 전략 유형별 포트폴리오 구성 방식을 시뮬레이션으로 학습하세요</p>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <button
@@ -261,9 +261,9 @@ function PortfolioRecommendationPage() {
         </div>
       </section>
 
-      {/* 추천 종목 */}
-      <section className="recommended-assets">
-        <h2>추천 종목</h2>
+      {/* 샘플 종목 */}
+      <section className="sample-assets">
+        <h2>포함된 샘플 종목</h2>
         <div className="assets-grid">
           {portfolio.portfolio && [
             ...(portfolio.portfolio.stocks || []).map(s => ({...s, asset_type: 'Stock'})),
@@ -342,8 +342,8 @@ function PortfolioRecommendationPage() {
       {/* CTA */}
       <section className="portfolio-cta">
         <div className="cta-card">
-          <h3>투자를 시작할 준비가 되셨나요?</h3>
-          <p>포트폴리오는 참고용이며, 실제 투자 결정은 신중히 하시기 바랍니다.</p>
+          <h3>더 많은 투자 전략을 학습하시겠습니까?</h3>
+          <p>본 시뮬레이션은 교육 목적이며, 실제 투자 결정은 본인의 판단과 책임 하에 신중히 하시기 바랍니다.</p>
           <div className="cta-buttons">
             <button onClick={() => navigate('/diagnosis/history')} className="btn-secondary">
               이전 진단 보기

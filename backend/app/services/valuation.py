@@ -621,10 +621,15 @@ class ValuationAnalyzer:
 
     @staticmethod
     def _generate_summary(result: Dict) -> Dict:
-        """종합 평가 요약 생성"""
+        """
+        종합 평가 요약 생성 (교육 목적)
+
+        ⚠️ 본 메서드는 학습용 밸류에이션 분석 결과를 제공합니다.
+        매수/매도 권유가 아닙니다.
+        """
         summary = {
             "valuations": [],
-            "recommendation": ""
+            "valuation_note": ""  # "recommendation" 제거
         }
 
         # 멀티플 비교 요약
@@ -658,16 +663,17 @@ class ValuationAnalyzer:
                     "upside": upside
                 })
 
-        # 종합 추천
+        # 종합 분석 결과 요약 (교육용)
         undervalued_count = sum(1 for v in summary["valuations"] if v["result"] == "저평가")
         overvalued_count = sum(1 for v in summary["valuations"] if v["result"] == "고평가")
 
+        # ⚠️ 매수/매도 권유 제거 - 중립적 관찰 사항만 제공
         if undervalued_count >= 2:
-            summary["recommendation"] = "매수 검토"
+            summary["valuation_note"] = "분석 결과: 현재가 대비 저평가 가능성 관찰"
         elif overvalued_count >= 2:
-            summary["recommendation"] = "매도 검토"
+            summary["valuation_note"] = "분석 결과: 현재가 대비 고평가 가능성 관찰"
         else:
-            summary["recommendation"] = "중립 (추가 분석 필요)"
+            summary["valuation_note"] = "분석 결과: 적정 평가 범위 (추가 분석 권장)"
 
         return summary
 

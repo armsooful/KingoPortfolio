@@ -161,9 +161,9 @@ function DiagnosisResultPage() {
           </ul>
         </div>
 
-        {/* 추천 포트폴리오 */}
+        {/* 참고 포트폴리오 */}
         <div className="portfolio-section">
-          <h2>추천 포트폴리오 구성</h2>
+          <h2>참고용 포트폴리오 구성 예시</h2>
           <div className="portfolio-grid">
             {recommended_ratio &&
               Object.entries(recommended_ratio).map(([asset, ratio]) => (

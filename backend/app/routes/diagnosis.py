@@ -241,35 +241,41 @@ async def get_diagnosis_history(
 # 기존 GET /diagnosis/me/products에 추가
 
 @router.get("/me/products")
-async def get_recommended_products(
+async def get_sample_products(
     current_user = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """DB 기반 추천 종목 조회"""
-    
+    """
+    전략 유형별 샘플 상품 조회 (교육용)
+
+    ⚠️ 본 엔드포인트는 학습용 샘플 상품 정보를 제공합니다.
+    투자 권유·추천이 아닙니다.
+    """
+
     diagnosis = db.query(models.Diagnosis).filter(
         models.Diagnosis.user_id == current_user.id
     ).order_by(models.Diagnosis.created_at.desc()).first()
-    
+
     if not diagnosis:
         raise HTTPException(
             status_code=404,
             detail="진단 결과가 없습니다"
         )
-    
-    # DB 기반 추천
-    from app.db_recommendation_engine import DBRecommendationEngine
-    
-    recommendations = DBRecommendationEngine.get_all_recommendations(
+
+    # DB 기반 샘플 조회 (교육용)
+    from app.db_recommendation_engine import DBProductSampler
+
+    sample_products = DBProductSampler.get_all_recommendations(
         db,
         diagnosis.investment_type
     )
-    
+
     return {
         "diagnosis_id": str(diagnosis.id),
-        "investment_type": diagnosis.investment_type,
-        "portfolio": diagnosis.portfolio_recommendation,
-        **recommendations
+        "strategy_type": diagnosis.investment_type,
+        "portfolio_example": diagnosis.portfolio_recommendation,
+        "disclaimer": "본 정보는 교육 목적이며 투자 권유가 아닙니다.",
+        **sample_products
     }
 
 @router.get(
