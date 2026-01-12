@@ -178,23 +178,9 @@ async def signup(
         # 사용자 생성
         user = create_user(db, user_create)
 
-        # 개발 단계: 이메일 인증 자동 활성화
+        # 이메일 인증 자동 활성화 (교육용 플랫폼이므로 인증 절차 생략)
         user.is_email_verified = True
-        print(f"🔓 개발 모드: 이메일 인증 자동 활성화 - {user.email}")
-
-        # 프로덕션 환경을 위한 이메일 인증 로직 (현재 비활성화)
-        # TODO: 배포 시 아래 코드 활성화하고 위의 자동 활성화 제거
-        # verification_token = generate_verification_token()
-        # user.email_verification_token = verification_token
-        # user.email_verification_sent_at = datetime.utcnow()
-        # try:
-        #     await send_verification_email(
-        #         to_email=user.email,
-        #         verification_token=verification_token
-        #     )
-        #     print(f"✅ 인증 이메일 발송 완료: {user.email}")
-        # except Exception as e:
-        #     print(f"⚠️ 인증 이메일 발송 실패: {str(e)}")
+        print(f"🔓 이메일 인증 자동 활성화 - {user.email}")
 
         db.commit()
         db.refresh(user)
