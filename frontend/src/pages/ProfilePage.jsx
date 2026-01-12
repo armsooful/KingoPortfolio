@@ -285,7 +285,7 @@ function ProfilePage() {
                   {profile.membership_plan?.toUpperCase() || 'FREE'}
                 </span>
               </div>
-              <small>등급에 따라 포트폴리오 개수, AI 분석 횟수 등이 제한됩니다</small>
+              <small>등급에 따라 시뮬레이션 생성 횟수, AI 학습 분석 횟수 등이 제한됩니다</small>
             </div>
 
             <div className="profile-field">
@@ -328,6 +328,9 @@ function ProfilePage() {
         {/* 직업 및 재무 정보 */}
         <div className="profile-section">
           <h2>직업 및 재무 정보</h2>
+          <p style={{ fontSize: '0.875rem', color: '#666', marginBottom: '16px' }}>
+            ⚠️ 입력하신 정보는 학습용 시뮬레이션 생성에만 참고되며, 투자 권유·추천 목적으로 사용되지 않습니다.
+          </p>
           <div className="profile-grid">
             <div className="profile-field">
               <label>직업</label>
@@ -405,45 +408,48 @@ function ProfilePage() {
           </div>
         </div>
 
-        {/* 투자 성향 */}
+        {/* 학습 성향 */}
         <div className="profile-section">
-          <h2>투자 성향</h2>
+          <h2>학습 성향</h2>
+          <p style={{ fontSize: '0.875rem', color: '#666', marginBottom: '16px' }}>
+            ⚠️ 학습 성향 정보는 교육 목적의 시뮬레이션 예시 생성에 활용되며, 실제 투자 권유가 아닙니다.
+          </p>
           <div className="profile-grid">
             <div className="profile-field">
-              <label>투자 경험</label>
+              <label>자산 운용 학습 수준</label>
               <select
                 value={formData.investment_experience || '초보'}
                 onChange={(e) => handleChange('investment_experience', e.target.value)}
                 disabled={!isEditing}
               >
-                <option value="초보">초보 - 투자 경험이 거의 없음</option>
-                <option value="중급">중급 - 1~3년 정도 투자 경험</option>
-                <option value="고급">고급 - 3년 이상 투자 경험</option>
-                <option value="전문가">전문가 - 전문적인 투자 지식 보유</option>
+                <option value="초보">초보 - 자산 운용 지식이 거의 없음</option>
+                <option value="중급">중급 - 기초적인 학습 완료</option>
+                <option value="고급">고급 - 중급 이상의 학습 완료</option>
+                <option value="전문가">전문가 - 전문적인 지식 보유</option>
               </select>
             </div>
 
             <div className="profile-field">
-              <label>위험 감수 성향</label>
+              <label>리스크 학습 선호도</label>
               <select
                 value={formData.risk_tolerance || '중립적'}
                 onChange={(e) => handleChange('risk_tolerance', e.target.value)}
                 disabled={!isEditing}
               >
-                <option value="보수적">보수적 - 안정적인 수익을 선호</option>
-                <option value="중립적">중립적 - 균형잡힌 투자 선호</option>
-                <option value="공격적">공격적 - 높은 수익을 위해 위험 감수 가능</option>
+                <option value="보수적">보수적 - 안정성 중심 전략 학습 선호</option>
+                <option value="중립적">중립적 - 균형잡힌 전략 학습 선호</option>
+                <option value="공격적">공격적 - 성장성 중심 전략 학습 선호</option>
               </select>
             </div>
 
             <div className="profile-field full-width">
-              <label>투자 목표</label>
+              <label>학습 목표</label>
               <input
                 type="text"
                 value={formData.investment_goal || ''}
                 onChange={(e) => handleChange('investment_goal', e.target.value)}
                 disabled={!isEditing}
-                placeholder="예: 노후 준비, 주택 구입, 자녀 교육비 등"
+                placeholder="예: 자산 배분 전략 이해, 재무지표 분석 학습, 퀀트 지표 학습 등"
               />
             </div>
           </div>

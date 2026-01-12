@@ -41,25 +41,25 @@ function DiagnosisResultPage() {
 
   const { investment_type, score, confidence, description, characteristics, recommended_ratio, expected_annual_return, monthly_investment, ai_analysis } = result;
 
-  // 투자 성향별 색상 및 아이콘
+  // 학습 성향별 색상 및 아이콘
   const typeConfig = {
     conservative: {
-      label: '보수형 투자자',
+      label: '안정성 중심 학습 성향',
       color: '#4CAF50',
       icon: '🛡️',
-      description: '안정성을 중시하는 보수형 투자자입니다.',
+      description: '안정적인 자산 운용 전략을 학습하고자 하는 성향입니다.',
     },
     moderate: {
-      label: '중도형 투자자',
+      label: '균형형 학습 성향',
       color: '#FF9800',
       icon: '⚖️',
-      description: '안정성과 수익성의 균형을 추구하는 투자자입니다.',
+      description: '안정성과 성장성의 균형을 이해하고자 하는 학습 성향입니다.',
     },
     aggressive: {
-      label: '적극형 투자자',
+      label: '성장성 중심 학습 성향',
       color: '#F44336',
       icon: '🚀',
-      description: '높은 수익을 추구하는 적극형 투자자입니다.',
+      description: '성장성 높은 자산군의 특성을 학습하고자 하는 성향입니다.',
     },
   };
 
@@ -68,7 +68,7 @@ function DiagnosisResultPage() {
   return (
     <div className="result-container">
       <div className="result-card">
-        {/* 투자 성향 결과 */}
+        {/* 학습 성향 결과 */}
         <div className="result-header">
           <div className="result-icon" style={{ fontSize: '3rem' }}>
             {config.icon}
@@ -116,7 +116,7 @@ function DiagnosisResultPage() {
 
         {/* 설명 */}
         <div className="description-section">
-          <h2>투자성향 설명</h2>
+          <h2>학습 성향 설명</h2>
           <p>{description}</p>
         </div>
 
@@ -129,14 +129,14 @@ function DiagnosisResultPage() {
 
             {ai_analysis.personalized_analysis && (
               <div className="ai-card">
-                <h3>개인화된 투자성향 분석</h3>
+                <h3>개인화된 학습 성향 분석</h3>
                 <p className="ai-content">{ai_analysis.personalized_analysis}</p>
               </div>
             )}
 
             {ai_analysis.investment_advice && (
               <div className="ai-card">
-                <h3>투자 조언</h3>
+                <h3>학습 방향 제안</h3>
                 <p className="ai-content">{ai_analysis.investment_advice}</p>
               </div>
             )}
@@ -161,9 +161,12 @@ function DiagnosisResultPage() {
           </ul>
         </div>
 
-        {/* 참고 포트폴리오 */}
+        {/* 시뮬레이션 예시 */}
         <div className="portfolio-section">
-          <h2>참고용 포트폴리오 구성 예시</h2>
+          <h2>시뮬레이션용 자산 배분 예시</h2>
+          <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1rem' }}>
+            ⚠️ 본 배분은 교육 목적의 일반적 예시이며, 특정인에 대한 맞춤형 투자 권유가 아닙니다.
+          </p>
           <div className="portfolio-grid">
             {recommended_ratio &&
               Object.entries(recommended_ratio).map(([asset, ratio]) => (
@@ -184,18 +187,21 @@ function DiagnosisResultPage() {
           </div>
         </div>
 
-        {/* 기대 수익률 */}
+        {/* 과거 평균 수익률 */}
         <div className="return-section">
-          <h2>기대 연 수익률</h2>
+          <h2>과거 평균 수익률 (참고)</h2>
           <div className="return-value" style={{ color: config.color }}>
             {expected_annual_return}
           </div>
+          <p style={{ fontSize: '0.85rem', color: '#888', marginTop: '0.5rem' }}>
+            * 과거 수익률은 미래 수익을 보장하지 않습니다
+          </p>
         </div>
 
-        {/* 월 투자액 */}
+        {/* 월 시뮬레이션 금액 */}
         {monthly_investment && (
           <div className="investment-section">
-            <h2>입력하신 월 투자액</h2>
+            <h2>시뮬레이션 월 투입 금액</h2>
             <div className="investment-value">{monthly_investment}만원</div>
           </div>
         )}
@@ -219,7 +225,10 @@ function DiagnosisResultPage() {
         {/* 안내 메시지 */}
         <div className="result-info">
           <p>
-            💡 이 진단 결과는 현재의 투자성향을 기반으로 합니다. 시간이 지나면서 변할 수 있으니 정기적으로 재진단을 권장합니다.
+            💡 본 결과는 현재 시점의 학습 성향 분석이며 시간이 지나면서 변할 수 있습니다. 정기적인 재진단을 권장합니다.
+          </p>
+          <p style={{ fontSize: '0.85rem', color: '#888', marginTop: '0.5rem' }}>
+            ⚠️ 본 서비스는 교육 목적의 학습 도구이며, 투자 권유·추천·자문을 제공하지 않습니다.
           </p>
         </div>
       </div>

@@ -727,7 +727,7 @@ class PortfolioEngine:
             "total_investment": total_investment,
             "actual_invested": actual_invested,
             "cash_reserve": total_investment - actual_invested,
-            "historical_avg_return": round(total_expected_return, 2),  # 과거 평균 수익률 (예상 수익률 아님)
+            "expected_annual_return": round(total_expected_return, 2),  # 과거 평균 수익률 (예상 수익률 아님)
             "portfolio_risk": portfolio_risk,
             "diversification_score": diversification_score,
             "total_items": total_items,

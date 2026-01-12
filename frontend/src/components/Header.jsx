@@ -23,10 +23,10 @@ function Header() {
           <button
             className="logo-button"
             onClick={() => navigate('/survey')}
-            title="KingoPortfolio 홈"
+            title="Foresto Compass 홈"
           >
-            <span className="logo-icon">👑</span>
-            <span className="logo-text">KingoPortfolio</span>
+            <span className="logo-icon">🌲</span>
+            <span className="logo-text">Foresto Compass</span>
           </button>
         </div>
 

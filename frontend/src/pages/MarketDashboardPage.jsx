@@ -136,10 +136,10 @@ function MarketDashboardPage() {
       <div className="dashboard-header">
         <div className="header-content">
           <h1>📈 시장 현황</h1>
-          <p className="subtitle">실시간 주식 시장 동향을 확인하세요</p>
+          <p className="subtitle">주식 시장 데이터를 학습용으로 확인하세요</p>
         </div>
         <button onClick={() => navigate('/survey')} className="btn-survey">
-          투자 성향 분석하기
+          학습 성향 진단하기
         </button>
       </div>
 
@@ -161,12 +161,15 @@ function MarketDashboardPage() {
               </div>
               <div className="summary-content">
                 <div className="summary-title-row">
-                  <h3>오늘의 시장 한눈에 보기</h3>
+                  <h3>오늘의 시장 데이터 요약 (참고용)</h3>
                   <span className={`sentiment-badge ${marketData.summary.sentiment?.color || 'yellow'}`}>
                     {marketData.summary.sentiment?.emoji || '🟡'} {marketData.summary.sentiment?.status || '중립'}
                   </span>
                 </div>
                 <p className="summary-text">{marketData.summary.text || marketData.summary}</p>
+                <p style={{ fontSize: '0.75rem', color: '#888', marginTop: '8px' }}>
+                  ⚠️ 본 정보는 교육 목적의 참고 자료이며, 투자 권유·추천이 아닙니다.
+                </p>
               </div>
             </div>
           </div>
@@ -255,15 +258,15 @@ function MarketDashboardPage() {
       {/* 추가 기능 안내 */}
       <section className="cta-section">
         <div className="cta-card">
-          <h3>🎯 맞춤형 투자 분석</h3>
-          <p>설문조사를 통해 당신에게 맞는 투자 전략을 찾아보세요</p>
+          <h3>🎯 학습 성향 진단</h3>
+          <p>설문조사를 통해 투자 전략 학습 방향을 파악해보세요 (교육용)</p>
           <button onClick={() => navigate('/survey')} className="btn-cta">
-            투자 성향 분석 시작
+            학습 성향 진단 시작
           </button>
         </div>
         <div className="cta-card">
-          <h3>📊 포트폴리오 관리</h3>
-          <p>체계적인 포트폴리오 분석과 관리를 시작하세요</p>
+          <h3>📊 시뮬레이션 학습</h3>
+          <p>다양한 포트폴리오 구성 예시를 시뮬레이션으로 학습하세요</p>
           <button onClick={() => navigate('/profile')} className="btn-cta">
             프로필 설정하기
           </button>

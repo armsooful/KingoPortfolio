@@ -42,7 +42,7 @@ const Footer = () => {
           color: '#999'
         }}>
           <p style={{ margin: 0 }}>
-            © 2026 KingoPortfolio. All rights reserved.
+            © 2026 Foresto Compass. All rights reserved.
           </p>
           <p style={{ margin: '4px 0 0', fontSize: '0.75rem' }}>
             본 서비스는 교육 및 연구 목적으로 제작되었습니다.

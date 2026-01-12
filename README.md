@@ -1,6 +1,8 @@
-# KingoPortfolio 👑
+# Foresto Compass 🌲
 
-> 당신의 투자 성향을 진단하고, 맞춤형 포트폴리오를 추천받으세요.
+> 투자 전략 학습을 위한 교육용 포트폴리오 시뮬레이션 플랫폼
+
+⚠️ **법적 고지**: 본 서비스는 교육 및 정보 제공 목적의 플랫폼이며, 투자 권유·추천·자문·일임을 제공하지 않습니다.
 
 [![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104-green?logo=fastapi)](https://fastapi.tiangolo.com/)

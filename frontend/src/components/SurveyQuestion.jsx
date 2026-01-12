@@ -59,11 +59,11 @@ function SurveyQuestion({ question, answer, onAnswerChange }) {
 
 function getCategoryLabel(category) {
   const categoryMap = {
-    experience: '투자 경험',
-    duration: '투자 기간',
-    risk: '위험성향',
-    knowledge: '금융 지식',
-    amount: '투자 규모',
+    experience: '경험 수준',
+    duration: '학습 방향',
+    risk: '위험 성향',
+    knowledge: '지식 수준',
+    amount: '시뮬레이션 설정',
   };
   return categoryMap[category] || category;
 }

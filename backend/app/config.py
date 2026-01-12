@@ -5,7 +5,7 @@ class Settings:
     """애플리케이션 설정 (환경변수 기반 CORS)"""
     
     # 앱 정보
-    app_name: str = "KingoPortfolio"
+    app_name: str = "Foresto Compass"
     app_version: str = "1.0.0"
     debug: bool = False
     

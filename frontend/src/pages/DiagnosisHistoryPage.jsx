@@ -54,17 +54,17 @@ function DiagnosisHistoryPage() {
   const getTypeConfig = (investmentType) => {
     const typeConfig = {
       conservative: {
-        label: '보수형',
+        label: '안정성 중심',
         color: '#4CAF50',
         icon: '🛡️',
       },
       moderate: {
-        label: '중도형',
+        label: '균형형',
         color: '#FF9800',
         icon: '⚖️',
       },
       aggressive: {
-        label: '적극형',
+        label: '성장성 중심',
         color: '#F44336',
         icon: '🚀',
       },
@@ -100,7 +100,7 @@ function DiagnosisHistoryPage() {
         {/* 왼쪽: 진단 이력 목록 */}
         <div className="history-list-section">
           <div className="history-header">
-            <h1>진단 이력</h1>
+            <h1>학습 성향 진단 이력</h1>
             <p className="history-count">총 {historyList.length}개</p>
           </div>
 
@@ -153,7 +153,7 @@ function DiagnosisHistoryPage() {
 
                     {diagnosis.monthly_investment && (
                       <div className="history-investment">
-                        월 투자액: {diagnosis.monthly_investment}만원
+                        월 시뮬레이션 금액: {diagnosis.monthly_investment}만원
                       </div>
                     )}
 
@@ -228,7 +228,7 @@ function DiagnosisHistoryPage() {
 
               {/* 설명 */}
               <div className="detail-description">
-                <h3>투자성향</h3>
+                <h3>학습 성향 설명</h3>
                 <p>{selectedDiagnosis.description}</p>
               </div>
 
@@ -245,7 +245,10 @@ function DiagnosisHistoryPage() {
 
               {/* 포트폴리오 */}
               <div className="detail-portfolio">
-                <h3>참고용 포트폴리오 예시</h3>
+                <h3>시뮬레이션용 자산 배분 예시</h3>
+                <p style={{ fontSize: '0.85rem', color: '#666', marginBottom: '12px' }}>
+                  ⚠️ 교육 목적의 일반적 예시이며, 투자 권유가 아닙니다.
+                </p>
                 <div className="portfolio-items">
                   {selectedDiagnosis.recommended_ratio &&
                     Object.entries(selectedDiagnosis.recommended_ratio).map(
@@ -261,18 +264,21 @@ function DiagnosisHistoryPage() {
                 </div>
               </div>
 
-              {/* 기대 수익률 */}
+              {/* 과거 평균 수익률 */}
               <div className="detail-return">
-                <h3>기대 연 수익률</h3>
+                <h3>과거 평균 수익률 (참고)</h3>
                 <p className="return-value">
                   {selectedDiagnosis.expected_annual_return}
                 </p>
+                <p style={{ fontSize: '0.85rem', color: '#888', marginTop: '8px' }}>
+                  * 과거 수익률은 미래 수익을 보장하지 않습니다
+                </p>
               </div>
 
-              {/* 월 투자액 */}
+              {/* 월 시뮬레이션 금액 */}
               {selectedDiagnosis.monthly_investment && (
                 <div className="detail-investment">
-                  <h3>월 투자액</h3>
+                  <h3>월 시뮬레이션 금액</h3>
                   <p>{selectedDiagnosis.monthly_investment}만원</p>
                 </div>
               )}
@@ -285,6 +291,20 @@ function DiagnosisHistoryPage() {
                 >
                   새로운 진단 시작
                 </button>
+              </div>
+
+              {/* 법적 고지사항 */}
+              <div style={{
+                marginTop: '24px',
+                padding: '16px',
+                background: '#f8f9fa',
+                borderRadius: '8px',
+                fontSize: '0.85rem',
+                color: '#666'
+              }}>
+                <p style={{ margin: 0 }}>
+                  ⚠️ 본 진단 결과는 교육 목적의 학습 성향 분석이며, 투자 권유·추천·자문을 제공하지 않습니다.
+                </p>
               </div>
             </div>
           ) : (
