@@ -27,8 +27,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     // 로그인/회원가입 요청의 401 에러는 정상적인 실패이므로 리다이렉트하지 않음
-    const isAuthEndpoint = error.config?.url === '/token' ||
-                          error.config?.url === '/auth/login' ||
+    const isAuthEndpoint = error.config?.url === '/auth/login' ||
                           error.config?.url === '/auth/signup';
 
     if (error.response?.status === 401 && !isAuthEndpoint) {
@@ -52,19 +51,12 @@ export const signUp = (data) => {
 };
 
 /**
- * 로그인 (OAuth2 형식)
+ * 로그인
  */
 export const login = (data) => {
-  // OAuth2 형식으로 변환 (form-urlencoded)
-  const formData = new URLSearchParams();
-  // email을 username으로 매핑 (OAuth2 표준)
-  formData.append('username', data.email || data.username);
-  formData.append('password', data.password);
-
-  return api.post('/token', formData, {
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
+  return api.post('/auth/login', {
+    email: data.email,
+    password: data.password
   });
 };
 
