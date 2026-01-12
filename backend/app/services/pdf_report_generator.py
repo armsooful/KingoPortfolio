@@ -158,7 +158,7 @@ class PDFReportGenerator:
 
         # 하단 문구
         footer = Paragraph(
-            "<para align=center><i>Powered by KingoPortfolio</i></para>",
+            "<para align=center><i>Powered by Foresto Compass</i></para>",
             self.styles['CustomBody']
         )
         elements.append(footer)
@@ -439,7 +439,7 @@ class PDFReportGenerator:
         Portfolio recommendations are generated using algorithmic analysis based on publicly available data.
         Data accuracy and timeliness are not guaranteed.<br/><br/>
 
-        <i>© 2026 KingoPortfolio. All rights reserved.</i>
+        <i>© 2025 Foresto Compass. All rights reserved.</i>
         """
 
         elements.append(Paragraph(disclaimer_text, self.styles['CustomBody']))

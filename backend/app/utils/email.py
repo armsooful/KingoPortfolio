@@ -16,7 +16,7 @@ SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER = os.getenv("SMTP_USER", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 SMTP_FROM_EMAIL = os.getenv("SMTP_FROM_EMAIL", SMTP_USER)
-SMTP_FROM_NAME = os.getenv("SMTP_FROM_NAME", "KingoPortfolio")
+SMTP_FROM_NAME = os.getenv("SMTP_FROM_NAME", "Foresto Compass")
 
 # 프론트엔드 URL (이메일 인증 링크에 사용)
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
@@ -168,12 +168,12 @@ async def send_verification_email(to_email: str, verification_token: str) -> boo
 <body>
     <div class="container">
         <div class="header">
-            <h1>👑 KingoPortfolio</h1>
+            <h1>🌲 Foresto Compass</h1>
         </div>
         <div class="content">
             <h2>이메일 인증</h2>
             <p>안녕하세요!</p>
-            <p>KingoPortfolio 회원가입을 환영합니다. 아래 버튼을 클릭하여 이메일 주소를 인증해주세요.</p>
+            <p>Foresto Compass 회원가입을 환영합니다. 아래 버튼을 클릭하여 이메일 주소를 인증해주세요.</p>
 
             <div style="text-align: center;">
                 <a href="{{ verification_url }}" class="button">이메일 인증하기</a>
@@ -188,7 +188,7 @@ async def send_verification_email(to_email: str, verification_token: str) -> boo
             </div>
         </div>
         <div class="footer">
-            <p>&copy; 2024 KingoPortfolio. All rights reserved.</p>
+            <p>&copy; 2025 Foresto Compass. All rights reserved.</p>
             <p>이 이메일은 발신 전용입니다. 회신하지 마세요.</p>
         </div>
     </div>
@@ -198,11 +198,11 @@ async def send_verification_email(to_email: str, verification_token: str) -> boo
 
     # 텍스트 템플릿 (HTML을 지원하지 않는 이메일 클라이언트용)
     text_template = Template("""
-KingoPortfolio 이메일 인증
+Foresto Compass 이메일 인증
 
 안녕하세요!
 
-KingoPortfolio 회원가입을 환영합니다.
+Foresto Compass 회원가입을 환영합니다.
 아래 링크를 클릭하여 이메일 주소를 인증해주세요.
 
 인증 링크: {{ verification_url }}
@@ -210,7 +210,7 @@ KingoPortfolio 회원가입을 환영합니다.
 이 인증 링크는 24시간 동안만 유효합니다.
 본인이 요청하지 않았다면 이 이메일을 무시하셔도 됩니다.
 
-© 2024 KingoPortfolio. All rights reserved.
+© 2025 Foresto Compass. All rights reserved.
     """)
 
     html_content = html_template.render(verification_url=verification_url)
@@ -218,7 +218,7 @@ KingoPortfolio 회원가입을 환영합니다.
 
     return await send_email(
         to_email=to_email,
-        subject="[KingoPortfolio] 이메일 주소를 인증해주세요",
+        subject="[Foresto Compass] 이메일 주소를 인증해주세요",
         html_content=html_content,
         text_content=text_content
     )

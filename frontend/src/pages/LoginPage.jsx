@@ -54,7 +54,7 @@ function LoginPage() {
     <div className="auth-container">
       <div className="auth-card">
         <h1>로그인</h1>
-        <p className="subtitle">KingoPortfolio에 로그인하세요</p>
+        <p className="subtitle">Foresto Compass에 로그인하세요</p>
 
         {error && <div className="error-message">{error}</div>}
 

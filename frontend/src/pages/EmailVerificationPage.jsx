@@ -87,7 +87,7 @@ function EmailVerificationPage() {
           <div className="verification-message success">
             <p className="success-message">{message}</p>
             <p className="subtitle">
-              이제 KingoPortfolio의 모든 기능을 사용하실 수 있습니다.
+              이제 Foresto Compass의 모든 기능을 사용하실 수 있습니다.
             </p>
             <button
               className="btn btn-primary"

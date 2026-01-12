@@ -183,9 +183,9 @@ function SignupPage() {
 
         <h1>회원가입</h1>
         <p className="subtitle">
-          {step === 1 && 'KingoPortfolio에 가입하세요'}
+          {step === 1 && 'Foresto Compass에 가입하세요'}
           {step === 2 && '추가 정보를 입력해주세요'}
-          {step === 3 && '투자 성향을 알려주세요'}
+          {step === 3 && '학습 성향을 알려주세요'}
         </p>
 
         {error && <div className="error-message">{error}</div>}
