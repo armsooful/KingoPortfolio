@@ -76,6 +76,14 @@ function LandingPage() {
             >
               로그인
             </button>
+            <a
+              href="https://blog.foresto.co.kr"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-blog-link"
+            >
+              📝 블로그
+            </a>
           </div>
         </div>
         <div className="hero-illustration">
@@ -162,7 +170,19 @@ function LandingPage() {
 
       {/* Footer */}
       <footer className="landing-footer">
-        <p>&copy; 2025 Foresto Compass. All rights reserved.</p>
+        <div className="footer-content">
+          <p>&copy; 2025 Foresto Compass. All rights reserved.</p>
+          <div className="footer-links">
+            <a
+              href="https://blog.foresto.co.kr"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="footer-link"
+            >
+              블로그
+            </a>
+          </div>
+        </div>
       </footer>
     </div>
   );
