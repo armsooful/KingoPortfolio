@@ -126,8 +126,8 @@ function SignupPage() {
       const { access_token, user } = response.data;
       login(user, access_token);
 
-      // 이메일 인증 안내 메시지 표시
-      alert('회원가입이 완료되었습니다! 📧\n\n이메일 주소로 인증 메일이 발송되었습니다.\n이메일을 확인하여 인증을 완료해주세요.');
+      // 회원가입 완료 메시지
+      alert('회원가입이 완료되었습니다! 🎉\n\n바로 학습 성향 진단을 시작하세요.');
 
       navigate('/survey');
     } catch (err) {
