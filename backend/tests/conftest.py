@@ -11,6 +11,7 @@ from app.main import app
 from app.database import Base, get_db
 from app.models.user import User
 from app.auth import hash_password
+from app.rate_limiter import limiter
 
 
 # 테스트용 인메모리 데이터베이스
@@ -46,8 +47,15 @@ def client(db):
             pass
 
     app.dependency_overrides[get_db] = override_get_db
+
+    # 테스트 환경에서 rate limiter 비활성화
+    limiter.enabled = False
+
     with TestClient(app) as test_client:
         yield test_client
+
+    # 정리
+    limiter.enabled = True
     app.dependency_overrides.clear()
 
 
