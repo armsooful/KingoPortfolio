@@ -244,42 +244,85 @@ function BacktestPage() {
         <div className="results-container">
           <h2>백테스트 결과</h2>
 
-          {/* 핵심 지표 */}
-          <div className="metrics-grid">
-            <div className="metric-card">
-              <div className="metric-label">총 수익률</div>
-              <div className={`metric-value ${result.total_return >= 0 ? 'positive' : 'negative'}`}>
-                {formatPercent(result.total_return)}
+          {/* 손실/회복 지표 (핵심 KPI) - 상단 배치 */}
+          <div className="risk-metrics-section">
+            <h3 className="section-title">📉 손실/회복 지표 (핵심)</h3>
+            <div className="metrics-grid primary">
+              <div className="metric-card highlight-risk">
+                <div className="metric-label">최대 낙폭 (MDD)</div>
+                <div className="metric-value negative">
+                  -{(result.risk_metrics?.max_drawdown ?? result.max_drawdown).toFixed(2)}%
+                </div>
+                <div className="metric-hint">고점 대비 최대 하락폭</div>
+              </div>
+
+              <div className="metric-card highlight-risk">
+                <div className="metric-label">최대 회복 기간</div>
+                <div className="metric-value">
+                  {result.risk_metrics?.max_recovery_days
+                    ? `${result.risk_metrics.max_recovery_days}일`
+                    : '데이터 없음'}
+                </div>
+                <div className="metric-hint">낙폭 후 원금 회복까지 소요 기간</div>
+              </div>
+
+              <div className="metric-card highlight-risk">
+                <div className="metric-label">최악의 1개월 수익률</div>
+                <div className="metric-value negative">
+                  {result.risk_metrics?.worst_1m_return
+                    ? `${result.risk_metrics.worst_1m_return.toFixed(2)}%`
+                    : '데이터 없음'}
+                </div>
+                <div className="metric-hint">단기 최대 손실 가능성</div>
+              </div>
+
+              <div className="metric-card highlight-risk">
+                <div className="metric-label">변동성 (위험도)</div>
+                <div className="metric-value">
+                  {formatPercent(result.risk_metrics?.volatility ?? result.volatility)}
+                </div>
+                <div className="metric-hint">수익률의 변동 폭</div>
               </div>
             </div>
 
-            <div className="metric-card">
-              <div className="metric-label">연평균 수익률</div>
-              <div className={`metric-value ${result.annualized_return >= 0 ? 'positive' : 'negative'}`}>
-                {formatPercent(result.annualized_return)}
+            {/* 해석 도움 문구 */}
+            <div className="interpretation-help">
+              <p>💡 <strong>해석 도움:</strong> 낙폭이 크면 회복에 시간이 걸릴 수 있습니다.
+              MDD가 높을수록 심리적 압박이 커지며, 회복 기간 동안 인내심이 필요합니다.</p>
+            </div>
+          </div>
+
+          {/* 수익률 지표 (보조) - 하단 배치 */}
+          <div className="return-metrics-section">
+            <h3 className="section-title">📈 과거 수익률 (참고용)</h3>
+            <p className="section-disclaimer">* 과거 수익률은 미래 성과를 보장하지 않습니다</p>
+            <div className="metrics-grid secondary">
+              <div className="metric-card">
+                <div className="metric-label">총 수익률</div>
+                <div className={`metric-value ${result.total_return >= 0 ? 'positive' : 'negative'}`}>
+                  {formatPercent(result.historical_observation?.total_return ?? result.total_return)}
+                </div>
               </div>
-            </div>
 
-            <div className="metric-card">
-              <div className="metric-label">변동성 (위험도)</div>
-              <div className="metric-value">{formatPercent(result.volatility)}</div>
-            </div>
+              <div className="metric-card">
+                <div className="metric-label">연평균 수익률 (CAGR)</div>
+                <div className={`metric-value ${result.annualized_return >= 0 ? 'positive' : 'negative'}`}>
+                  {formatPercent(result.historical_observation?.cagr ?? result.annualized_return)}
+                </div>
+              </div>
 
-            <div className="metric-card">
-              <div className="metric-label">샤프 비율</div>
-              <div className="metric-value">{result.sharpe_ratio.toFixed(2)}</div>
-              <div className="metric-hint">높을수록 좋음 (위험 대비 수익)</div>
-            </div>
+              <div className="metric-card">
+                <div className="metric-label">샤프 비율</div>
+                <div className="metric-value">
+                  {(result.historical_observation?.sharpe_ratio ?? result.sharpe_ratio).toFixed(2)}
+                </div>
+                <div className="metric-hint">위험 대비 초과 수익</div>
+              </div>
 
-            <div className="metric-card">
-              <div className="metric-label">최대 낙폭 (MDD)</div>
-              <div className="metric-value negative">-{result.max_drawdown.toFixed(2)}%</div>
-              <div className="metric-hint">최대 손실 구간</div>
-            </div>
-
-            <div className="metric-card">
-              <div className="metric-label">최종 자산</div>
-              <div className="metric-value">{formatCurrency(result.final_value)}원</div>
+              <div className="metric-card">
+                <div className="metric-label">최종 자산</div>
+                <div className="metric-value">{formatCurrency(result.final_value)}원</div>
+              </div>
             </div>
           </div>
 
@@ -297,53 +340,61 @@ function BacktestPage() {
         <div className="comparison-container">
           <h2>포트폴리오 비교 결과</h2>
 
-          {/* 최고 성과 */}
+          {/* 최고 성과 - 손실/회복 중심 재정렬 */}
           <div className="best-performers">
-            <div className="best-item">
-              <span className="label">최고 수익률:</span>
-              <span className="value">{result.best_return}</span>
+            <div className="best-item highlight">
+              <span className="label">최저 위험도:</span>
+              <span className="value">{result.lowest_risk}</span>
             </div>
             <div className="best-item">
               <span className="label">최고 위험 조정 수익:</span>
               <span className="value">{result.best_risk_adjusted}</span>
             </div>
-            <div className="best-item">
-              <span className="label">최저 위험도:</span>
-              <span className="value">{result.lowest_risk}</span>
+            <div className="best-item secondary">
+              <span className="label">최고 수익률:</span>
+              <span className="value">{result.best_return}</span>
             </div>
           </div>
 
-          {/* 비교 테이블 */}
+          {/* 해석 도움 문구 */}
+          <div className="interpretation-help">
+            <p>💡 <strong>해석 도움:</strong> 최저 위험도 포트폴리오는 변동성이 낮아 안정적입니다.
+            낙폭이 클수록 회복에 오래 걸릴 수 있습니다.</p>
+          </div>
+
+          {/* 비교 테이블 - 손실/회복 지표 먼저 */}
           <div className="comparison-table">
             <table>
               <thead>
                 <tr>
                   <th>포트폴리오</th>
-                  <th>총 수익률</th>
-                  <th>연평균 수익률</th>
-                  <th>변동성</th>
+                  <th className="risk-col">최대 낙폭 (MDD)</th>
+                  <th className="risk-col">변동성</th>
                   <th>샤프 비율</th>
-                  <th>최대 낙폭</th>
+                  <th className="return-col">총 수익률</th>
+                  <th className="return-col">연평균 수익률</th>
                 </tr>
               </thead>
               <tbody>
                 {result.comparison.map((item, idx) => (
                   <tr key={idx}>
                     <td><strong>{item.portfolio_name}</strong></td>
-                    <td className={item.total_return >= 0 ? 'positive' : 'negative'}>
+                    <td className="negative risk-col">-{item.max_drawdown.toFixed(2)}%</td>
+                    <td className="risk-col">{formatPercent(item.volatility)}</td>
+                    <td>{item.sharpe_ratio.toFixed(2)}</td>
+                    <td className={`return-col ${item.total_return >= 0 ? 'positive' : 'negative'}`}>
                       {formatPercent(item.total_return)}
                     </td>
-                    <td className={item.annualized_return >= 0 ? 'positive' : 'negative'}>
+                    <td className={`return-col ${item.annualized_return >= 0 ? 'positive' : 'negative'}`}>
                       {formatPercent(item.annualized_return)}
                     </td>
-                    <td>{formatPercent(item.volatility)}</td>
-                    <td>{item.sharpe_ratio.toFixed(2)}</td>
-                    <td className="negative">-{item.max_drawdown.toFixed(2)}%</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+
+          <p className="table-disclaimer">* 과거 수익률은 미래 성과를 보장하지 않습니다</p>
         </div>
       )}
 
@@ -357,12 +408,17 @@ function BacktestPage() {
           </p>
 
           <h3>주요 지표 설명</h3>
+          <h4>📉 손실/회복 지표 (핵심)</h4>
+          <ul>
+            <li><strong>최대 낙폭 (MDD)</strong>: 고점 대비 최대 하락폭 - 심리적 압박 수준을 나타냅니다</li>
+            <li><strong>최대 회복 기간</strong>: 낙폭 후 원금 회복까지 걸린 시간</li>
+            <li><strong>변동성</strong>: 수익률의 변동 폭 (높을수록 불안정)</li>
+            <li><strong>샤프 비율</strong>: 위험 대비 초과 수익 (높을수록 효율적)</li>
+          </ul>
+          <h4>📈 과거 수익률 (참고용)</h4>
           <ul>
             <li><strong>총 수익률</strong>: 전체 기간 동안의 누적 수익률</li>
-            <li><strong>연평균 수익률</strong>: 연간 기준으로 환산한 평균 수익률</li>
-            <li><strong>변동성</strong>: 수익률의 변동 폭 (높을수록 위험)</li>
-            <li><strong>샤프 비율</strong>: 위험 대비 초과 수익 (높을수록 우수)</li>
-            <li><strong>최대 낙폭 (MDD)</strong>: 고점 대비 최대 하락폭 (손실 내구성)</li>
+            <li><strong>연평균 수익률 (CAGR)</strong>: 연간 기준으로 환산한 복리 수익률</li>
           </ul>
 
           <h3>주의사항</h3>
