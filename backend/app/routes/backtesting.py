@@ -14,7 +14,7 @@ from app.auth import get_current_user
 from app.models.user import User
 from app.services.backtesting import BacktestingEngine, run_simple_backtest
 from app.services.portfolio_engine import create_default_portfolio
-from app.services.simulation_cache import get_or_compute, generate_request_hash
+from app.services.simulation_cache import get_or_compute, generate_request_hash, get_engine_version
 from app.rate_limiter import limiter, RateLimits
 
 logger = logging.getLogger(__name__)
@@ -91,7 +91,7 @@ async def run_backtest(
                     rebalance_frequency=backtest_request.rebalance_frequency
                 )
 
-            result, request_hash, cache_hit = get_or_compute(
+            result, request_hash, cache_hit, engine_version = get_or_compute(
                 db=db,
                 request_type="backtest_portfolio",
                 request_params=cache_params,
@@ -99,13 +99,14 @@ async def run_backtest(
                 ttl_days=7
             )
 
-            logger.info(f"Backtest portfolio - hash: {request_hash[:8]}..., cache_hit: {cache_hit}")
+            logger.info(f"Backtest portfolio - hash: {request_hash[:8]}..., cache_hit: {cache_hit}, engine: {engine_version}")
 
             return {
                 "success": True,
                 "data": result,
                 "request_hash": request_hash,
                 "cache_hit": cache_hit,
+                "engine_version": engine_version,
                 "message": f"사용자 포트폴리오 {backtest_request.period_years}년 백테스트 완료"
             }
 
@@ -126,7 +127,7 @@ async def run_backtest(
                     db=db
                 )
 
-            result, request_hash, cache_hit = get_or_compute(
+            result, request_hash, cache_hit, engine_version = get_or_compute(
                 db=db,
                 request_type="backtest_simple",
                 request_params=cache_params,
@@ -134,13 +135,14 @@ async def run_backtest(
                 ttl_days=7
             )
 
-            logger.info(f"Backtest simple - hash: {request_hash[:8]}..., cache_hit: {cache_hit}")
+            logger.info(f"Backtest simple - hash: {request_hash[:8]}..., cache_hit: {cache_hit}, engine: {engine_version}")
 
             return {
                 "success": True,
                 "data": result,
                 "request_hash": request_hash,
                 "cache_hit": cache_hit,
+                "engine_version": engine_version,
                 "message": f"{backtest_request.period_years}년 백테스트 완료"
             }
 
@@ -220,7 +222,7 @@ async def compare_portfolios(
 
             return comparison_result
 
-        result, request_hash, cache_hit = get_or_compute(
+        result, request_hash, cache_hit, engine_version = get_or_compute(
             db=db,
             request_type="backtest_compare",
             request_params=cache_params,
@@ -228,13 +230,14 @@ async def compare_portfolios(
             ttl_days=7
         )
 
-        logger.info(f"Backtest compare - hash: {request_hash[:8]}..., cache_hit: {cache_hit}")
+        logger.info(f"Backtest compare - hash: {request_hash[:8]}..., cache_hit: {cache_hit}, engine: {engine_version}")
 
         return {
             "success": True,
             "data": result,
             "request_hash": request_hash,
             "cache_hit": cache_hit,
+            "engine_version": engine_version,
             "message": f"{len(compare_request.investment_types)}개 포트폴리오 비교 완료"
         }
 
@@ -278,6 +281,7 @@ async def get_backtest_metrics(
         return {
             "investment_type": investment_type,
             "period_years": period_years,
+            "engine_version": get_engine_version(),
             # 손실/회복 지표 (top-level) - Foresto 핵심 KPI
             "risk_metrics": result["risk_metrics"],
             # 과거 관측치 (historical_observation)

@@ -75,6 +75,7 @@ class SimulationCache(Base):
     request_type = Column(String(50), nullable=False)  # backtest, compare, etc.
     request_params = Column(JSON, nullable=False)  # 원본 요청 파라미터
     result_data = Column(JSON, nullable=False)  # 캐시된 결과
+    engine_version = Column(String(20), nullable=False, default="1.0.0")  # 결과 생성 시 엔진 버전
 
     hit_count = Column(Integer, default=0)  # 캐시 히트 횟수
     created_at = Column(DateTime, default=datetime.utcnow)

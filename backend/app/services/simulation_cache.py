@@ -12,8 +12,14 @@ from typing import Optional, Any, Dict
 from sqlalchemy.orm import Session
 
 from app.models.portfolio import SimulationCache
+from app.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+def get_engine_version() -> str:
+    """현재 시뮬레이션 엔진 버전 반환"""
+    return settings.engine_version
 
 
 def canonicalize_request(request_data: Dict[str, Any]) -> str:
@@ -59,7 +65,7 @@ def generate_request_hash(request_type: str, request_data: Dict[str, Any]) -> st
 def get_cached_result(
     db: Session,
     request_hash: str
-) -> Optional[Dict[str, Any]]:
+) -> Optional[tuple[Dict[str, Any], str]]:
     """
     캐시에서 결과 조회
 
@@ -68,7 +74,7 @@ def get_cached_result(
         request_hash: 요청 해시
 
     Returns:
-        캐시된 결과 데이터 또는 None
+        (캐시된 결과 데이터, engine_version) 튜플 또는 None
     """
     cache_entry = db.query(SimulationCache).filter(
         SimulationCache.request_hash == request_hash
@@ -87,8 +93,8 @@ def get_cached_result(
         cache_entry.last_accessed_at = datetime.utcnow()
         db.commit()
 
-        logger.info(f"Cache HIT for hash {request_hash[:8]}... (hits: {cache_entry.hit_count})")
-        return cache_entry.result_data
+        logger.info(f"Cache HIT for hash {request_hash[:8]}... (hits: {cache_entry.hit_count}, engine: {cache_entry.engine_version})")
+        return cache_entry.result_data, cache_entry.engine_version
 
     logger.info(f"Cache MISS for hash {request_hash[:8]}...")
     return None
@@ -100,6 +106,7 @@ def save_to_cache(
     request_type: str,
     request_params: Dict[str, Any],
     result_data: Dict[str, Any],
+    engine_version: str,
     ttl_days: Optional[int] = 7
 ) -> SimulationCache:
     """
@@ -111,6 +118,7 @@ def save_to_cache(
         request_type: 요청 유형
         request_params: 원본 요청 파라미터
         result_data: 저장할 결과 데이터
+        engine_version: 결과 생성 시 엔진 버전
         ttl_days: 캐시 유효 기간 (일), None이면 무기한
 
     Returns:
@@ -125,6 +133,7 @@ def save_to_cache(
         request_type=request_type,
         request_params=request_params,
         result_data=result_data,
+        engine_version=engine_version,
         expires_at=expires_at
     )
 
@@ -132,7 +141,7 @@ def save_to_cache(
     db.commit()
     db.refresh(cache_entry)
 
-    logger.info(f"Cached result for hash {request_hash[:8]}... (type: {request_type})")
+    logger.info(f"Cached result for hash {request_hash[:8]}... (type: {request_type}, engine: {engine_version})")
     return cache_entry
 
 
@@ -142,7 +151,7 @@ def get_or_compute(
     request_params: Dict[str, Any],
     compute_fn: callable,
     ttl_days: Optional[int] = 7
-) -> tuple[Dict[str, Any], str, bool]:
+) -> tuple[Dict[str, Any], str, bool, str]:
     """
     캐시에서 결과를 조회하거나, 없으면 계산 후 캐시에 저장
 
@@ -154,26 +163,28 @@ def get_or_compute(
         ttl_days: 캐시 유효 기간 (일)
 
     Returns:
-        (결과 데이터, request_hash, cache_hit 여부) 튜플
+        (결과 데이터, request_hash, cache_hit 여부, engine_version) 튜플
     """
     request_hash = generate_request_hash(request_type, request_params)
+    current_engine_version = get_engine_version()
 
     # 캐시 조회
-    cached_result = get_cached_result(db, request_hash)
-    if cached_result is not None:
-        return cached_result, request_hash, True
+    cached = get_cached_result(db, request_hash)
+    if cached is not None:
+        cached_result, cached_engine_version = cached
+        return cached_result, request_hash, True, cached_engine_version
 
     # 결과 계산
     result = compute_fn()
 
     # 캐시에 저장
     try:
-        save_to_cache(db, request_hash, request_type, request_params, result, ttl_days)
+        save_to_cache(db, request_hash, request_type, request_params, result, current_engine_version, ttl_days)
     except Exception as e:
         # 중복 해시 등 예외 발생 시 로깅만 하고 진행
         logger.warning(f"Failed to cache result: {e}")
 
-    return result, request_hash, False
+    return result, request_hash, False, current_engine_version
 
 
 def cleanup_expired_cache(db: Session) -> int:

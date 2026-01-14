@@ -47,6 +47,12 @@ class Settings:
         "0"
     ) in ("1", "true", "True", "yes")
 
+    # 시뮬레이션 엔진 버전 (결과 재현성 추적용)
+    engine_version: str = os.getenv(
+        "ENGINE_VERSION",
+        "1.0.0"
+    )
+
     # CORS
     allowed_origins: List[str] = []
     
@@ -75,6 +81,7 @@ class Settings:
         print(f"✅ Database URL: {self.database_url[:30]}...")
         print(f"✅ App Name: {self.app_name}")
         print(f"✅ App Version: {self.app_version}")
+        print(f"✅ Engine Version: {self.engine_version}")
         print(f"🚩 Feature Flag - Recommendation Engine: {'ENABLED' if self.feature_recommendation_engine else 'DISABLED (Default)'}")
 
 
