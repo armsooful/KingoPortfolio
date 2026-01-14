@@ -55,11 +55,12 @@ FORBIDDEN_TERMS=(
 
 # 예외 패턴 (이 패턴이 포함된 라인은 무시)
 EXCEPTION_PATTERNS=(
-    # 부정문
+    # 부정문/제거 문맥
     "아닙니다"
     "않습니다"
     "제공하지"
     "아님"
+    "제거"
 
     # 문서/테스트
     "forbidden_terms"

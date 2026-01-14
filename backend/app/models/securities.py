@@ -171,7 +171,7 @@ class StockFinancials(Base):
 
 
 class ProductRecommendation(Base):
-    """상품 추천 규칙"""
+    """상품 매칭 규칙 (교육용 시나리오)"""
     __tablename__ = "product_recommendations"
 
     id = Column(Integer, primary_key=True)
@@ -181,6 +181,6 @@ class ProductRecommendation(Base):
     asset_class = Column(String(50))                      # stocks, bonds, cash
     allocation_weight = Column(Float)                     # 배분 비중
     score = Column(Float)                                 # 점수 (0~100)
-    reason = Column(String(500))                          # 추천 이유
+    reason = Column(String(500))                          # 매칭 사유
 
     created_at = Column(DateTime, default=datetime.utcnow)

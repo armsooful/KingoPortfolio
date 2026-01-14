@@ -1220,7 +1220,7 @@ async def get_comprehensive_valuation(symbol: str, db: Session = Depends(get_db)
     """
     종합 밸류에이션 분석
     - 멀티플 비교, DCF, DDM 통합
-    - 투자 추천 포함
+    - 가치 평가 참고치 포함
     """
     from app.services.valuation import ValuationAnalyzer
 

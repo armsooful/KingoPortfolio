@@ -264,7 +264,7 @@ class QualitativeAnalyzer:
             else:
                 insights.append("긍정/부정 뉴스 혼재 → 방향성 불명확")
                 key_issues.append("추가 뉴스 모니터링 필요")
-            action_guide = "관망 추천, 급격한 매매 자제"
+            action_guide = "관망 고려, 급격한 매매 자제"
 
         # 부정 신호
         elif avg_score > -0.25:

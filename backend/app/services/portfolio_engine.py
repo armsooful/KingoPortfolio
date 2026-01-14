@@ -822,7 +822,7 @@ def create_default_portfolio(
         investment_amount: 투자 금액
 
     Returns:
-        Dict: 포트폴리오 추천 결과
+        Dict: 포트폴리오 시뮬레이션 결과
     """
     engine = PortfolioEngine(db)
     return engine.generate_portfolio(investment_type, investment_amount)
@@ -848,7 +848,7 @@ def create_custom_portfolio(
         dividend_preference: 배당 선호 여부
 
     Returns:
-        Dict: 포트폴리오 추천 결과
+        Dict: 포트폴리오 시뮬레이션 결과
     """
     preferences = {
         "sectors": sector_preferences,

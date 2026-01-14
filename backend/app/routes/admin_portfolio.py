@@ -201,7 +201,7 @@ async def get_top_securities(
     """
     특정 투자 성향에서 점수가 높은 상위 종목 조회
 
-    관리자가 각 투자 성향별로 추천될 가능성이 높은 종목들을 확인합니다.
+    관리자가 각 투자 성향별로 매칭 점수가 높은 종목들을 확인합니다.
     """
     try:
         if investment_type not in ["conservative", "moderate", "aggressive"]:

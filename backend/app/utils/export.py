@@ -262,8 +262,8 @@ def generate_diagnosis_excel(diagnosis_data: Dict[str, Any]) -> bytes:
     ws2.column_dimensions['A'].width = 80
 
     # 3. 자산 배분 시트
-    ws3 = wb.create_sheet("추천 자산 배분")
-    ws3['A1'] = "추천 자산 배분"
+    ws3 = wb.create_sheet("학습 시나리오 자산 배분")
+    ws3['A1'] = "학습 시나리오 자산 배분"
     ws3['A1'].font = title_font
 
     ws3.cell(row=3, column=1).value = "자산"
