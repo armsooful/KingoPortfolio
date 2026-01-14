@@ -213,14 +213,14 @@ async def get_backtest_metrics(
             db=db
         )
 
-        # 핵심 지표만 반환
+        # B-1: 손실/회복 지표를 top-level로, 수익률 지표는 historical_observation으로
         return {
             "investment_type": investment_type,
             "period_years": period_years,
-            "annualized_return": result["annualized_return"],
-            "volatility": result["volatility"],
-            "sharpe_ratio": result["sharpe_ratio"],
-            "max_drawdown": result["max_drawdown"]
+            # 손실/회복 지표 (top-level) - Foresto 핵심 KPI
+            "risk_metrics": result["risk_metrics"],
+            # 과거 관측치 (historical_observation)
+            "historical_observation": result["historical_observation"]
         }
 
     except HTTPException:

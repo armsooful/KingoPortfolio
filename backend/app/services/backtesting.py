@@ -85,11 +85,27 @@ class BacktestingEngine:
             daily_values, initial_investment, days
         )
 
+        # B-1: 손실/회복 지표를 top-level로, 수익률 지표는 historical_observation으로
         return {
             "start_date": start_date.isoformat(),
             "end_date": end_date.isoformat(),
             "initial_investment": initial_investment,
             "final_value": daily_values[-1]["value"],
+            # 손실/회복 지표 (top-level) - Foresto 핵심 KPI
+            "risk_metrics": {
+                "max_drawdown": metrics["max_drawdown"],
+                "max_recovery_days": metrics.get("max_recovery_days", None),
+                "worst_1m_return": metrics.get("worst_1m_return", None),
+                "worst_3m_return": metrics.get("worst_3m_return", None),
+                "volatility": metrics["volatility"],
+            },
+            # 과거 관측치 (historical_observation) - 수익률 중심 지표
+            "historical_observation": {
+                "total_return": metrics["total_return"],
+                "cagr": metrics["annualized_return"],
+                "sharpe_ratio": metrics["sharpe_ratio"],
+            },
+            # 레거시 호환성 (프론트엔드 기존 코드 지원)
             "total_return": metrics["total_return"],
             "annualized_return": metrics["annualized_return"],
             "volatility": metrics["volatility"],
@@ -309,16 +325,49 @@ class BacktestingEngine:
         else:
             sharpe_ratio = 0
 
-        # 최대 낙폭 (Maximum Drawdown)
+        # 최대 낙폭 (Maximum Drawdown) 및 회복 기간
         max_value = initial_investment
         max_drawdown = 0
-        for value_data in daily_values:
+        max_drawdown_start = 0
+        max_recovery_days = 0
+        current_drawdown_start = 0
+        in_drawdown = False
+
+        for i, value_data in enumerate(daily_values):
             current_value = value_data["value"]
             if current_value > max_value:
+                # 신고가 갱신 - 낙폭에서 회복
+                if in_drawdown:
+                    recovery_days = i - current_drawdown_start
+                    if recovery_days > max_recovery_days:
+                        max_recovery_days = recovery_days
+                    in_drawdown = False
                 max_value = current_value
-            drawdown = ((max_value - current_value) / max_value) * 100
-            if drawdown > max_drawdown:
-                max_drawdown = drawdown
+            else:
+                drawdown = ((max_value - current_value) / max_value) * 100
+                if drawdown > 0 and not in_drawdown:
+                    # 낙폭 시작
+                    in_drawdown = True
+                    current_drawdown_start = i
+                if drawdown > max_drawdown:
+                    max_drawdown = drawdown
+                    max_drawdown_start = current_drawdown_start
+
+        # 최악의 1개월/3개월 수익률 계산
+        worst_1m_return = 0
+        worst_3m_return = 0
+
+        if len(daily_values) >= 22:  # 약 1개월 (영업일 기준)
+            for i in range(22, len(daily_values)):
+                period_return = ((daily_values[i]["value"] - daily_values[i-22]["value"]) / daily_values[i-22]["value"]) * 100
+                if period_return < worst_1m_return:
+                    worst_1m_return = period_return
+
+        if len(daily_values) >= 66:  # 약 3개월 (영업일 기준)
+            for i in range(66, len(daily_values)):
+                period_return = ((daily_values[i]["value"] - daily_values[i-66]["value"]) / daily_values[i-66]["value"]) * 100
+                if period_return < worst_3m_return:
+                    worst_3m_return = period_return
 
         return {
             "total_return": round(total_return, 2),
@@ -326,6 +375,9 @@ class BacktestingEngine:
             "volatility": round(annualized_volatility, 2),
             "sharpe_ratio": round(sharpe_ratio, 2),
             "max_drawdown": round(max_drawdown, 2),
+            "max_recovery_days": max_recovery_days if max_recovery_days > 0 else None,
+            "worst_1m_return": round(worst_1m_return, 2) if worst_1m_return < 0 else None,
+            "worst_3m_return": round(worst_3m_return, 2) if worst_3m_return < 0 else None,
             "rebalances": 0  # TODO: 실제 리밸런싱 횟수 카운트
         }
 

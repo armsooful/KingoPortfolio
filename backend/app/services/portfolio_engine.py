@@ -723,11 +723,11 @@ class PortfolioEngine:
                 weight = (stock["invested_amount"] / total_stock_amount) * 100
                 sector_breakdown[sector] = sector_breakdown.get(sector, 0) + weight
 
+        # B-1: expected_annual_return을 historical_observation으로 이동
         return {
             "total_investment": total_investment,
             "actual_invested": actual_invested,
             "cash_reserve": total_investment - actual_invested,
-            "expected_annual_return": round(total_expected_return, 2),  # 과거 평균 수익률 (예상 수익률 아님)
             "portfolio_risk": portfolio_risk,
             "diversification_score": diversification_score,
             "total_items": total_items,
@@ -737,7 +737,14 @@ class PortfolioEngine:
                 "bonds_count": len(bonds),
                 "deposits_count": len(deposits)
             },
-            "sector_breakdown": {k: round(v, 2) for k, v in sector_breakdown.items()}
+            "sector_breakdown": {k: round(v, 2) for k, v in sector_breakdown.items()},
+            # 과거 관측치 (historical_observation) - 기대/예상 수익률 아님
+            "historical_observation": {
+                "avg_annual_return": round(total_expected_return, 2),  # 과거 평균 연간 수익률
+                "note": "과거 데이터 기반 참고치이며 미래 수익을 보장하지 않습니다"
+            },
+            # 레거시 호환성 (프론트엔드 기존 코드 지원)
+            "expected_annual_return": round(total_expected_return, 2)
         }
 
     def _generate_simulation_notes(
@@ -768,7 +775,8 @@ class PortfolioEngine:
         if cash_ratio > 10:
             notes.append(f"현금 {cash_ratio:.1f}%가 유휴 자금으로 설정되어 있습니다. 자산 배분 전략을 학습해보세요.")
 
-        # 기대 수익률
+        # 과거 평균 수익률 (historical_observation에서 가져옴)
+        historical_return = stats.get("historical_observation", {}).get("avg_annual_return", 0)
         expected_ranges = {
             "conservative": (4, 8),
             "moderate": (6, 12),
@@ -776,10 +784,10 @@ class PortfolioEngine:
         }
 
         min_return, max_return = expected_ranges.get(investment_type, (5, 10))
-        if stats.get("historical_avg_return", 0) < min_return:
-            notes.append(f"과거 평균 수익률이 {stats.get('historical_avg_return', 0):.1f}%입니다. 성장주 특성을 학습해보세요.")
-        elif stats.get("historical_avg_return", 0) > max_return:
-            notes.append(f"과거 평균 수익률이 {stats.get('historical_avg_return', 0):.1f}%로 높습니다. 리스크 관리 전략을 학습해보세요.")
+        if historical_return < min_return:
+            notes.append(f"과거 평균 수익률이 {historical_return:.1f}%입니다. 성장주 특성을 학습해보세요.")
+        elif historical_return > max_return:
+            notes.append(f"과거 평균 수익률이 {historical_return:.1f}%로 높습니다. 리스크 관리 전략을 학습해보세요.")
 
         # 리스크
         risk_match = {
