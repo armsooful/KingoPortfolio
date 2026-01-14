@@ -8,11 +8,16 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 from app.models.securities import Stock, ETF, Bond, DepositProduct
+from app.config import settings
+from app.db_recommendation_dummy import DummyDataProvider
 from typing import List, Dict
+import logging
+
+logger = logging.getLogger(__name__)
 
 class DBProductSampler:
     """DB 기반 샘플 상품 조회 엔진 (교육용)"""
-    
+
     @staticmethod
     def get_recommended_stocks(
         db: Session,
@@ -24,6 +29,11 @@ class DBProductSampler:
 
         ⚠️ 본 메서드는 학습용 샘플 데이터를 제공하며, 투자 권유가 아닙니다.
         """
+
+        # Feature Flag 체크
+        if not settings.feature_recommendation_engine:
+            logger.info(f"🚫 Recommendation Engine DISABLED - returning dummy stock data for {investment_type}")
+            return DummyDataProvider.get_dummy_stocks(investment_type, limit)
         
         # 투자성향에 맞는 주식 쿼리
         stocks = db.query(Stock).filter(

@@ -41,6 +41,12 @@ class Settings:
         "false"
     ).lower() in ("true", "1", "yes")
 
+    # Feature Flags
+    feature_recommendation_engine: bool = os.getenv(
+        "FEATURE_RECOMMENDATION_ENGINE",
+        "0"
+    ) in ("1", "true", "True", "yes")
+
     # CORS
     allowed_origins: List[str] = []
     
@@ -69,6 +75,7 @@ class Settings:
         print(f"✅ Database URL: {self.database_url[:30]}...")
         print(f"✅ App Name: {self.app_name}")
         print(f"✅ App Version: {self.app_version}")
+        print(f"🚩 Feature Flag - Recommendation Engine: {'ENABLED' if self.feature_recommendation_engine else 'DISABLED (Default)'}")
 
 
 # 싱글톤 인스턴스
