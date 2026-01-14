@@ -249,7 +249,7 @@ async def get_sample_products(
     전략 유형별 샘플 상품 조회 (교육용)
 
     ⚠️ 본 엔드포인트는 학습용 샘플 상품 정보를 제공합니다.
-    투자 권유·추천이 아닙니다.
+    투자 권유·자문 서비스가 아닙니다.
     """
 
     diagnosis = db.query(models.Diagnosis).filter(

@@ -194,7 +194,7 @@ function DiagnosisResultPage() {
             {expected_annual_return}
           </div>
           <p style={{ fontSize: '0.85rem', color: '#888', marginTop: '0.5rem' }}>
-            * 과거 수익률은 미래 수익을 보장하지 않습니다
+            * 과거 수익률은 미래 성과를 예측하지 않습니다
           </p>
         </div>
 
@@ -228,7 +228,7 @@ function DiagnosisResultPage() {
             💡 본 결과는 현재 시점의 학습 성향 분석이며 시간이 지나면서 변할 수 있습니다. 정기적인 재진단을 권장합니다.
           </p>
           <p style={{ fontSize: '0.85rem', color: '#888', marginTop: '0.5rem' }}>
-            ⚠️ 본 서비스는 교육 목적의 학습 도구이며, 투자 권유·추천·자문을 제공하지 않습니다.
+            ⚠️ 본 서비스는 교육 목적의 학습 도구이며, 투자 권유·자문 서비스를 제공하지 않습니다.
           </p>
         </div>
       </div>

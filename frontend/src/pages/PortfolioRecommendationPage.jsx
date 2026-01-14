@@ -268,7 +268,7 @@ function PortfolioRecommendationPage() {
       <section className="sample-assets">
         <h2>시뮬레이션 구성 예시 종목</h2>
         <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '16px' }}>
-          ⚠️ 교육 목적의 예시 종목이며, 특정 종목 매수 추천이 아닙니다.
+          ⚠️ 교육 목적의 예시 종목이며, 학습용 시나리오입니다.
         </p>
         <div className="assets-grid">
           {portfolio.portfolio && [
@@ -349,7 +349,7 @@ function PortfolioRecommendationPage() {
       <section className="portfolio-cta">
         <div className="cta-card">
           <h3>더 많은 자산 배분 전략을 학습하시겠습니까?</h3>
-          <p>⚠️ 본 시뮬레이션은 교육 목적의 학습 도구이며, 투자 권유·추천을 제공하지 않습니다. 실제 투자 결정은 본인의 판단과 책임 하에 신중히 하시기 바랍니다.</p>
+          <p>⚠️ 본 시뮬레이션은 교육 목적의 학습 도구이며, 투자 권유·자문 서비스를 제공하지 않습니다. 실제 투자 결정은 본인의 판단과 책임 하에 신중히 하시기 바랍니다.</p>
           <div className="cta-buttons">
             <button onClick={() => navigate('/diagnosis/history')} className="btn-secondary">
               이전 진단 보기

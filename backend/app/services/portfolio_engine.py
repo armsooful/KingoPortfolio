@@ -2,7 +2,7 @@
 포트폴리오 시뮬레이션 엔진
 
 ⚠️ 교육 목적: 본 모듈은 투자 전략 학습용 시뮬레이션 도구입니다.
-투자 권유·추천·자문·일임 서비스를 제공하지 않습니다.
+투자 권유·자문·일임 서비스를 제공하지 않습니다.
 """
 
 from typing import List, Dict, Optional
@@ -18,7 +18,7 @@ class PortfolioEngine:
     포트폴리오 시뮬레이션 엔진 (교육용)
 
     ⚠️ 본 클래스는 투자 전략 학습을 위한 시뮬레이션 도구이며,
-    투자 권유·추천·자문·일임 서비스를 제공하지 않습니다.
+    투자 권유·자문·일임 서비스를 제공하지 않습니다.
     """
 
     # 투자 성향별 자산 배분 전략 (알고리즘 문서 기반 개선)
@@ -77,7 +77,7 @@ class PortfolioEngine:
         포트폴리오 구성 시뮬레이션 (교육용)
 
         ⚠️ 본 메서드는 투자 전략 학습을 위한 예시 포트폴리오를 생성합니다.
-        특정인에 대한 맞춤형 투자 권유·추천이 아닙니다.
+        특정인에 대한 맞춤형 투자 권유·자문 서비스가 아닙니다.
 
         Args:
             investment_type: 전략 유형 (conservative, moderate, aggressive)
@@ -457,7 +457,7 @@ class PortfolioEngine:
         return selected
 
     def _generate_stock_rationale(self, stock: Stock, investment_type: str) -> str:
-        """주식 추천 근거 생성"""
+        """주식 선정 근거 생성"""
         rationales = []
 
         # 성과
@@ -651,7 +651,7 @@ class PortfolioEngine:
                 "invested_amount": budget,
                 "weight": 100.0,
                 "expected_return": deposit.interest_rate,
-                "rationale": f"{deposit.bank} - 원금 보장 및 유동성 확보"
+                "rationale": f"{deposit.bank} - 원금 보전 및 유동성 확보"
             })
 
         return result
