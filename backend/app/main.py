@@ -13,7 +13,7 @@ load_dotenv()
 
 from app.config import settings
 from app.database import engine, Base, get_db
-from app.routes import auth, diagnosis, admin, market, backtesting, krx_timeseries, admin_portfolio, batch_jobs, stock_detail, portfolio_comparison, pdf_report
+from app.routes import auth, diagnosis, admin, market, backtesting, krx_timeseries, admin_portfolio, batch_jobs, stock_detail, portfolio_comparison, pdf_report, scenarios
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.error_handlers import setup_exception_handlers
@@ -139,6 +139,10 @@ app = FastAPI(
         {
             "name": "Health",
             "description": "서버 상태 확인 API"
+        },
+        {
+            "name": "Scenarios",
+            "description": "관리형 시나리오 API (교육 목적 - 투자 권유 아님)"
         }
     ]
 )
@@ -175,6 +179,7 @@ app.include_router(batch_jobs.router)
 app.include_router(stock_detail.router)
 app.include_router(portfolio_comparison.router)
 app.include_router(pdf_report.router)
+app.include_router(scenarios.router)
 
 # Portfolio router
 from app.routes import portfolio
