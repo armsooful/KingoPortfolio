@@ -356,6 +356,26 @@ function ScenarioSimulationPage() {
             <li><strong>방어형</strong>: 시장 하락에 대비하는 방어적 전략을 이해하고 싶은 경우</li>
             <li><strong>성장형</strong>: 장기적 자산 성장 전략의 특성을 파악하고 싶은 경우</li>
           </ul>
+
+          <h3>용어가 어렵다면?</h3>
+          <p>
+            투자 용어가 생소하다면{' '}
+            <button
+              onClick={() => navigate('/survey')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#667eea',
+                textDecoration: 'underline',
+                cursor: 'pointer',
+                padding: 0,
+                font: 'inherit'
+              }}
+            >
+              용어학습 도구
+            </button>
+            를 이용해 보세요. 설문을 완료하지 않아도 모의실험은 언제든 이용 가능합니다.
+          </p>
         </div>
       )}
     </div>

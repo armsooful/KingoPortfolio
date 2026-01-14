@@ -41,8 +41,9 @@ function Header() {
           <button
             className={`nav-link ${isActive('/survey') ? 'active' : ''}`}
             onClick={() => navigate('/survey')}
+            title="용어 이해를 돕는 선택적 도구"
           >
-            설문조사
+            용어학습
           </button>
           <button
             className={`nav-link ${isActive('/result') ? 'active' : ''}`}

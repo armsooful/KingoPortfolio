@@ -68,6 +68,20 @@ function DiagnosisResultPage() {
   return (
     <div className="result-container">
       <div className="result-card">
+        {/* 읽기 가이드 안내 */}
+        <div className="guide-notice" style={{
+          background: 'linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%)',
+          borderRadius: '12px',
+          padding: '1rem 1.5rem',
+          marginBottom: '1.5rem',
+          border: '1px solid #bbdefb'
+        }}>
+          <p style={{ margin: 0, color: '#1565c0', fontSize: '0.95rem' }}>
+            📖 이 결과는 <strong>용어 이해를 돕기 위한 읽기 가이드</strong>입니다.
+            실제 모의실험은 시나리오 페이지에서 직접 선택하여 진행할 수 있습니다.
+          </p>
+        </div>
+
         {/* 학습 성향 결과 */}
         <div className="result-header">
           <div className="result-icon" style={{ fontSize: '3rem' }}>
@@ -211,23 +225,30 @@ function DiagnosisResultPage() {
         {/* 버튼 영역 */}
         <div className="button-section">
           <button
+            className="btn btn-primary"
+            onClick={() => navigate('/scenarios')}
+            style={{ flex: 2 }}
+          >
+            시나리오 모의실험 시작하기
+          </button>
+          <button
             className="btn btn-secondary"
             onClick={() => navigate('/history')}
           >
-            진단 이력 보기
+            진단 이력
           </button>
           <button
-            className="btn btn-primary"
+            className="btn btn-secondary"
             onClick={() => navigate('/survey')}
           >
-            다시 진단하기
+            다시 진단
           </button>
         </div>
 
         {/* 안내 메시지 */}
         <div className="result-info">
           <p>
-            💡 본 결과는 현재 시점의 학습 성향 분석이며 시간이 지나면서 변할 수 있습니다. 정기적인 재진단을 권장합니다.
+            💡 이 결과는 투자 용어를 이해하기 위한 읽기 가이드입니다. 실제 모의실험은 시나리오 페이지에서 직접 선택하세요.
           </p>
           <p style={{ fontSize: '0.85rem', color: '#888', marginTop: '0.5rem' }}>
             ⚠️ 본 서비스는 교육 목적의 학습 도구이며, 투자 권유·자문 서비스를 제공하지 않습니다.
