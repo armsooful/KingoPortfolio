@@ -140,7 +140,7 @@ class PortfolioEngine:
                 "deposits": selected_deposits
             },
             "statistics": portfolio_stats,
-            "recommendations": self._generate_recommendations(
+            "simulation_notes": self._generate_simulation_notes(
                 investment_type,
                 portfolio_stats
             )
@@ -740,20 +740,20 @@ class PortfolioEngine:
             "sector_breakdown": {k: round(v, 2) for k, v in sector_breakdown.items()}
         }
 
-    def _generate_recommendations(
+    def _generate_simulation_notes(
         self,
         investment_type: str,
         stats: Dict
     ) -> List[str]:
-        """포트폴리오 개선 추천 (알고리즘 문서 기반)"""
-        recommendations = []
+        """포트폴리오 시뮬레이션 참고사항 (교육용)"""
+        notes = []
 
         # 다각화
         if stats.get("diversification_score", 0) < 50:
-            recommendations.append("더 많은 종목으로 다각화하여 리스크를 분산하는 것을 권장합니다.")
+            notes.append("더 많은 종목으로 다각화하여 리스크를 분산하는 방법을 학습할 수 있습니다.")
 
         if stats["total_items"] < 5:
-            recommendations.append("종목 수가 적습니다. 최소 5개 이상의 종목으로 다각화하세요.")
+            notes.append("종목 수가 적습니다. 최소 5개 이상의 종목으로 다각화하는 전략을 검토해보세요.")
 
         # 섹터 집중도
         if "sector_breakdown" in stats:
@@ -761,12 +761,12 @@ class PortfolioEngine:
             if sector_breakdown:
                 max_sector_weight = max(sector_breakdown.values()) if sector_breakdown.values() else 0
                 if max_sector_weight > 40:
-                    recommendations.append(f"특정 섹터 비중이 {max_sector_weight:.1f}%로 높습니다. 섹터 다각화를 고려하세요.")
+                    notes.append(f"특정 섹터 비중이 {max_sector_weight:.1f}%로 높습니다. 섹터 다각화 전략을 학습해보세요.")
 
         # 현금 보유
         cash_ratio = (stats["cash_reserve"] / stats["total_investment"] * 100) if stats["total_investment"] > 0 else 0
         if cash_ratio > 10:
-            recommendations.append(f"현금 {cash_ratio:.1f}%가 유휴 자금으로 남아있습니다. 추가 투자를 고려해보세요.")
+            notes.append(f"현금 {cash_ratio:.1f}%가 유휴 자금으로 설정되어 있습니다. 자산 배분 전략을 학습해보세요.")
 
         # 기대 수익률
         expected_ranges = {
@@ -777,9 +777,9 @@ class PortfolioEngine:
 
         min_return, max_return = expected_ranges.get(investment_type, (5, 10))
         if stats.get("historical_avg_return", 0) < min_return:
-            recommendations.append(f"과거 평균 수익률이 {stats.get('historical_avg_return', 0):.1f}%로 낮습니다. 성장주 비중을 높이는 것을 고려할 수 있습니다.")
+            notes.append(f"과거 평균 수익률이 {stats.get('historical_avg_return', 0):.1f}%입니다. 성장주 특성을 학습해보세요.")
         elif stats.get("historical_avg_return", 0) > max_return:
-            recommendations.append(f"과거 평균 수익률이 {stats.get('historical_avg_return', 0):.1f}%로 높습니다. 리스크를 확인하세요.")
+            notes.append(f"과거 평균 수익률이 {stats.get('historical_avg_return', 0):.1f}%로 높습니다. 리스크 관리 전략을 학습해보세요.")
 
         # 리스크
         risk_match = {
@@ -789,15 +789,15 @@ class PortfolioEngine:
         }
 
         if stats.get("portfolio_risk") and stats["portfolio_risk"] != risk_match.get(investment_type):
-            recommendations.append(f"포트폴리오 리스크가 투자 성향과 다릅니다. 자산 배분을 조정해보세요.")
+            notes.append(f"포트폴리오 리스크가 학습 성향과 다릅니다. 자산 배분 이론을 학습해보세요.")
 
         # 리밸런싱 안내
-        if not recommendations:
-            recommendations.append("균형잡힌 포트폴리오입니다. 3개월마다 리밸런싱을 진행하세요.")
+        if not notes:
+            notes.append("균형잡힌 시뮬레이션입니다. 리밸런싱 전략을 학습해보세요.")
         else:
-            recommendations.append("포트폴리오 개선 후 3개월마다 리밸런싱을 진행하세요.")
+            notes.append("시뮬레이션 조정 후 리밸런싱 전략을 학습해보세요.")
 
-        return recommendations
+        return notes
 
 
 def create_default_portfolio(

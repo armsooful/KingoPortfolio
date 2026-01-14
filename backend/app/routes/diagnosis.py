@@ -265,7 +265,7 @@ async def get_sample_products(
     # DB 기반 샘플 조회 (교육용)
     from app.db_recommendation_engine import DBProductSampler
 
-    sample_products = DBProductSampler.get_all_recommendations(
+    sample_products = DBProductSampler.get_all_samples(
         db,
         diagnosis.investment_type
     )
@@ -273,7 +273,6 @@ async def get_sample_products(
     return {
         "diagnosis_id": str(diagnosis.id),
         "strategy_type": diagnosis.investment_type,
-        "portfolio_example": diagnosis.portfolio_recommendation,
         "disclaimer": "본 정보는 교육 목적이며 투자 권유가 아닙니다.",
         **sample_products
     }

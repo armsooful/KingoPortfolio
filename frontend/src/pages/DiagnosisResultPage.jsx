@@ -39,7 +39,7 @@ function DiagnosisResultPage() {
     );
   }
 
-  const { investment_type, score, confidence, description, characteristics, recommended_ratio, expected_annual_return, monthly_investment, ai_analysis } = result;
+  const { investment_type, score, confidence, description, characteristics, scenario_ratio, expected_annual_return, monthly_investment, ai_analysis } = result;
 
   // 학습 성향별 색상 및 아이콘
   const typeConfig = {
@@ -168,8 +168,8 @@ function DiagnosisResultPage() {
             ⚠️ 본 배분은 교육 목적의 일반적 예시이며, 특정인에 대한 맞춤형 투자 권유가 아닙니다.
           </p>
           <div className="portfolio-grid">
-            {recommended_ratio &&
-              Object.entries(recommended_ratio).map(([asset, ratio]) => (
+            {scenario_ratio &&
+              Object.entries(scenario_ratio).map(([asset, ratio]) => (
                 <div key={asset} className="portfolio-item">
                   <div className="asset-name">{getAssetLabel(asset)}</div>
                   <div className="asset-ratio">{ratio}%</div>

@@ -17,7 +17,7 @@ DIAGNOSIS_PROFILES = {
             "채권, 예적금, 머니마켓 등을 학습 대상으로 고려합니다",
             "장기적 관점의 자산 보존 전략에 관심이 있습니다"
         ],
-        "recommended_ratio": {
+        "scenario_ratio": {
             "stocks": 20,
             "bonds": 35,
             "money_market": 30,
@@ -36,7 +36,7 @@ DIAGNOSIS_PROFILES = {
             "주식과 채권의 혼합 전략을 이해하고 싶어합니다",
             "중기(3-5년) 관점의 전략 학습을 선호합니다"
         ],
-        "recommended_ratio": {
+        "scenario_ratio": {
             "stocks": 40,
             "bonds": 25,
             "money_market": 20,
@@ -55,7 +55,7 @@ DIAGNOSIS_PROFILES = {
             "성장주와 신흥시장을 학습 대상으로 고려합니다",
             "장기적 관점의 자산 형성 전략에 관심이 있습니다"
         ],
-        "recommended_ratio": {
+        "scenario_ratio": {
             "stocks": 60,
             "bonds": 15,
             "money_market": 10,
@@ -154,7 +154,7 @@ def get_diagnosis_profile(investment_type: str) -> DiagnosisCharacteristics:
         title=profile["title"],
         description=profile["description"],
         characteristics=profile["characteristics"],
-        recommended_ratio=profile["recommended_ratio"],
+        scenario_ratio=profile["scenario_ratio"],
         expected_annual_return=profile["expected_annual_return"]
     )
 
@@ -180,7 +180,7 @@ def build_diagnosis_response(
         "monthly_investment": monthly_investment,
         "description": profile.description,
         "characteristics": profile.characteristics,
-        "recommended_ratio": profile.recommended_ratio,
+        "scenario_ratio": profile.scenario_ratio,
         "expected_annual_return": profile.expected_annual_return,
         "created_at": created_at
     }

@@ -250,8 +250,8 @@ function DiagnosisHistoryPage() {
                   ⚠️ 교육 목적의 일반적 예시이며, 투자 권유가 아닙니다.
                 </p>
                 <div className="portfolio-items">
-                  {selectedDiagnosis.recommended_ratio &&
-                    Object.entries(selectedDiagnosis.recommended_ratio).map(
+                  {selectedDiagnosis.scenario_ratio &&
+                    Object.entries(selectedDiagnosis.scenario_ratio).map(
                       ([asset, ratio]) => (
                         <div key={asset} className="portfolio-row">
                           <span className="portfolio-asset">

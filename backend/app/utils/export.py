@@ -180,10 +180,10 @@ def generate_diagnosis_csv(diagnosis_data: Dict[str, Any]) -> str:
     for i, char in enumerate(characteristics, 1):
         output.write(f"{i}. {char}\n")
 
-    # 추천 비율
-    output.write("\n=== 추천 자산 배분 ===\n")
-    recommended_ratio = diagnosis_data.get("recommended_ratio", {})
-    ratio_data = [{"자산": k, "비율": f"{v}%"} for k, v in recommended_ratio.items()]
+    # 시나리오 비율
+    output.write("\n=== 시나리오 자산 배분 ===\n")
+    scenario_ratio = diagnosis_data.get("scenario_ratio", {})
+    ratio_data = [{"자산": k, "비율": f"{v}%"} for k, v in scenario_ratio.items()]
     writer = csv.DictWriter(output, fieldnames=["자산", "비율"])
     writer.writeheader()
     writer.writerows(ratio_data)
@@ -276,8 +276,8 @@ def generate_diagnosis_excel(diagnosis_data: Dict[str, Any]) -> bytes:
     ws3.cell(row=3, column=2).font = header_font
     ws3.cell(row=3, column=2).border = border
 
-    recommended_ratio = diagnosis_data.get("recommended_ratio", {})
-    for row_idx, (asset, ratio) in enumerate(recommended_ratio.items(), start=4):
+    scenario_ratio = diagnosis_data.get("scenario_ratio", {})
+    for row_idx, (asset, ratio) in enumerate(scenario_ratio.items(), start=4):
         ws3.cell(row=row_idx, column=1).value = asset
         ws3.cell(row=row_idx, column=1).border = border
 
@@ -288,7 +288,7 @@ def generate_diagnosis_excel(diagnosis_data: Dict[str, Any]) -> bytes:
     ws3.column_dimensions['B'].width = 15
 
     # 기대 수익률
-    last_row = len(recommended_ratio) + 5
+    last_row = len(scenario_ratio) + 5
     ws3.cell(row=last_row, column=1).value = "기대 연 수익률"
     ws3.cell(row=last_row, column=1).font = Font(bold=True)
     ws3.cell(row=last_row, column=2).value = diagnosis_data.get("expected_annual_return", "")

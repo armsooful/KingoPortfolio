@@ -19,7 +19,7 @@ class DBProductSampler:
     """DB 기반 샘플 상품 조회 엔진 (교육용)"""
 
     @staticmethod
-    def get_recommended_stocks(
+    def get_sample_stocks(
         db: Session,
         investment_type: str,
         limit: int = 3
@@ -32,7 +32,7 @@ class DBProductSampler:
 
         # Feature Flag 체크
         if not settings.feature_recommendation_engine:
-            logger.info(f"🚫 Recommendation Engine DISABLED - returning dummy stock data for {investment_type}")
+            logger.info(f"🚫 Sampler Engine DISABLED - returning dummy stock data for {investment_type}")
             return DummyDataProvider.get_dummy_stocks(investment_type, limit)
         
         # 투자성향에 맞는 주식 쿼리
@@ -63,12 +63,12 @@ class DBProductSampler:
         ]
     
     @staticmethod
-    def get_recommended_etfs(
+    def get_sample_etfs(
         db: Session,
         investment_type: str,
         limit: int = 2
     ) -> List[Dict]:
-        """투자성향에 맞는 ETF 추천"""
+        """투자성향에 맞는 ETF 샘플 조회 (교육용)"""
         
         etfs = db.query(ETF).filter(
             and_(
@@ -97,12 +97,12 @@ class DBProductSampler:
         ]
     
     @staticmethod
-    def get_recommended_bonds(
+    def get_sample_bonds(
         db: Session,
         investment_type: str,
         limit: int = 2
     ) -> List[Dict]:
-        """투자성향에 맞는 채권 추천"""
+        """투자성향에 맞는 채권 샘플 조회 (교육용)"""
         
         bonds = db.query(Bond).filter(
             and_(
@@ -129,11 +129,11 @@ class DBProductSampler:
         ]
     
     @staticmethod
-    def get_recommended_deposits(
+    def get_sample_deposits(
         db: Session,
         limit: int = 1
     ) -> List[Dict]:
-        """추천 예금 상품"""
+        """샘플 예금 상품 조회 (교육용)"""
         
         deposits = db.query(DepositProduct).filter(
             DepositProduct.is_active == True
@@ -155,15 +155,15 @@ class DBProductSampler:
         ]
     
     @staticmethod
-    def get_all_recommendations(
+    def get_all_samples(
         db: Session,
         investment_type: str
     ) -> Dict:
-        """모든 추천 상품 조회"""
-        
+        """모든 샘플 상품 조회 (교육용)"""
+
         return {
-            "recommended_stocks": DBRecommendationEngine.get_recommended_stocks(db, investment_type),
-            "recommended_etfs": DBRecommendationEngine.get_recommended_etfs(db, investment_type),
-            "recommended_bonds": DBRecommendationEngine.get_recommended_bonds(db, investment_type),
-            "recommended_deposits": DBRecommendationEngine.get_recommended_deposits(db),
+            "sample_stocks": DBProductSampler.get_sample_stocks(db, investment_type),
+            "sample_etfs": DBProductSampler.get_sample_etfs(db, investment_type),
+            "sample_bonds": DBProductSampler.get_sample_bonds(db, investment_type),
+            "sample_deposits": DBProductSampler.get_sample_deposits(db),
         }

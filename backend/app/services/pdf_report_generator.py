@@ -398,21 +398,21 @@ class PDFReportGenerator:
 
             perf_text = f"""
             <b>Expected Annual Return:</b> {stats.get('expected_annual_return', 0):.2f}%<br/>
-            <b>Investment Horizon:</b> Long-term (3+ years recommended)<br/>
+            <b>Investment Horizon:</b> Long-term (3+ years suggested for learning)<br/>
             <b>Rebalancing Frequency:</b> Quarterly or semi-annually
             """
 
             elements.append(Paragraph(perf_text, self.styles['CustomBody']))
 
-            # 성과 달성을 위한 권장 사항
-            recommendations = """
-            <b>Recommendations:</b><br/>
-            • Maintain long-term perspective<br/>
-            • Regularly review and rebalance portfolio<br/>
-            • Stay informed about market conditions<br/>
-            • Consult with financial advisors for major decisions
+            # 학습 참고사항
+            learning_notes = """
+            <b>Learning Notes:</b><br/>
+            • This simulation is for educational purposes only<br/>
+            • Understand portfolio diversification concepts<br/>
+            • Learn about market conditions and their effects<br/>
+            • Consult with financial advisors for actual investment decisions
             """
-            elements.append(Paragraph(recommendations, self.styles['CustomBody']))
+            elements.append(Paragraph(learning_notes, self.styles['CustomBody']))
 
         return elements
 
@@ -425,8 +425,8 @@ class PDFReportGenerator:
         disclaimer_text = """
         <b>Important Legal Notice:</b><br/><br/>
 
-        This investment portfolio report is provided for informational purposes only and does not constitute
-        investment advice or a recommendation to buy or sell any securities.<br/><br/>
+        This investment portfolio report is provided for educational and informational purposes only and does not constitute
+        investment advice or a suggestion to buy or sell any securities.<br/><br/>
 
         <b>Key Points:</b><br/>
         • All investment decisions are made at your own risk and discretion<br/>
@@ -436,7 +436,7 @@ class PDFReportGenerator:
         • Consult with a licensed financial advisor before making investment decisions<br/><br/>
 
         <b>Data Sources:</b><br/>
-        Portfolio recommendations are generated using algorithmic analysis based on publicly available data.
+        Portfolio simulations are generated using algorithmic analysis based on publicly available data.
         Data accuracy and timeliness are not guaranteed.<br/><br/>
 
         <i>© 2025 Foresto Compass. All rights reserved.</i>

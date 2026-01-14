@@ -381,13 +381,13 @@ class PortfolioStatistics(BaseModel):
 
 
 class PortfolioResponse(BaseModel):
-    """포트폴리오 추천 응답"""
+    """포트폴리오 시뮬레이션 응답"""
     investment_type: str
     total_investment: int
     allocation: PortfolioAllocation
     portfolio: Dict[str, List[Dict]]
     statistics: PortfolioStatistics
-    recommendations: List[str]
+    simulation_notes: List[str]
 
     class Config:
         json_schema_extra = {
@@ -416,7 +416,7 @@ class PortfolioResponse(BaseModel):
                     "total_items": 8,
                     "asset_breakdown": {"stocks_count": 3, "etfs_count": 2, "bonds_count": 2, "deposits_count": 1}
                 },
-                "recommendations": ["잘 구성된 포트폴리오입니다."]
+                "simulation_notes": ["시나리오 기반 포트폴리오 구성 예시입니다."]
             }
         }
 
@@ -470,7 +470,7 @@ class DiagnosisCharacteristics(BaseModel):
     title: str
     description: str
     characteristics: List[str]
-    recommended_ratio: dict
+    scenario_ratio: dict
     expected_annual_return: str
 
 
@@ -483,7 +483,7 @@ class DiagnosisResponse(BaseModel):
     monthly_investment: Optional[int] = None
     description: str
     characteristics: List[str]
-    recommended_ratio: dict
+    scenario_ratio: dict
     expected_annual_return: str
     created_at: datetime
     # AI 분석 필드 (선택)
@@ -521,7 +521,7 @@ class DiagnosisMeResponse(BaseModel):
     monthly_investment: Optional[int] = None
     description: str
     characteristics: List[str]
-    recommended_ratio: dict
+    scenario_ratio: dict
     expected_annual_return: str
     created_at: datetime
     # AI 분석 필드 (선택)
