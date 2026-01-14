@@ -25,6 +25,12 @@
   ./scripts/check_system.sh
   ```
 
+### 코드 품질
+- **forbidden_terms_check.sh** - 금지어 스캔 (규제 준수)
+  ```bash
+  ./scripts/forbidden_terms_check.sh
+  ```
+
 ### 테스트 스크립트
 - **test_api.py** - API 엔드포인트 테스트
   ```bash
@@ -122,6 +128,34 @@ yfinance를 사용한 데이터 수집 기능을 테스트합니다.
 - 위험도 분류
 - 상품 추천 알고리즘
 - 포트폴리오 구성
+
+### forbidden_terms_check.sh
+자본시장법 준수를 위해 금지된 용어("추천", "보장" 등)를 코드에서 검사합니다.
+
+**기능**:
+- frontend/src 및 backend/app 디렉토리 스캔
+- 금지어 목록은 docs/forbidden_terms.md에서 관리
+- 면책 조항, 부정문 등 예외 자동 필터링
+- CI/pre-commit 연동 가능
+
+**사용법**:
+```bash
+# 전체 검사
+./scripts/forbidden_terms_check.sh
+
+# 특정 디렉토리만 검사
+./scripts/forbidden_terms_check.sh frontend/src
+```
+
+**pre-commit 훅 설정** (선택):
+```bash
+# .git/hooks/pre-commit 파일 생성
+cat > .git/hooks/pre-commit << 'EOF'
+#!/bin/bash
+./scripts/forbidden_terms_check.sh
+EOF
+chmod +x .git/hooks/pre-commit
+```
 
 ## ⚙️ 실행 권한 설정
 
