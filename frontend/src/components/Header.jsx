@@ -57,6 +57,13 @@ function Header() {
             진단이력
           </button>
           <button
+            className={`nav-link ${isActive('/scenarios') ? 'active' : ''}`}
+            onClick={() => navigate('/scenarios')}
+            title="시나리오 기반 모의실험"
+          >
+            시나리오
+          </button>
+          <button
             className={`nav-link ${isActive('/portfolio') ? 'active' : ''}`}
             onClick={() => navigate('/portfolio')}
             title="전략 시뮬레이션"

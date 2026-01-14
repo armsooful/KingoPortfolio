@@ -584,3 +584,21 @@ export const comparePortfolios = (data) => {
 export const getBacktestMetrics = (investmentType, periodYears = 1) => {
   return api.get(`/backtest/metrics/${investmentType}?period_years=${periodYears}`);
 };
+
+// ============================================================
+// Scenarios API
+// ============================================================
+
+/**
+ * 관리형 시나리오 목록 조회
+ */
+export const getScenarios = () => {
+  return api.get('/scenarios');
+};
+
+/**
+ * 시나리오 상세 조회
+ */
+export const getScenarioDetail = (scenarioId) => {
+  return api.get(`/scenarios/${scenarioId}`);
+};
