@@ -61,3 +61,22 @@ class PortfolioHistory(Base):
 
     # 관계
     portfolio = relationship("Portfolio", back_populates="histories")
+
+
+class SimulationCache(Base):
+    """
+    시뮬레이션 결과 캐시 모델
+    동일 요청에 대해 결과를 재사용하기 위한 캐시
+    """
+    __tablename__ = "simulation_cache"
+
+    id = Column(Integer, primary_key=True, index=True)
+    request_hash = Column(String(64), unique=True, nullable=False, index=True)  # SHA-256 해시
+    request_type = Column(String(50), nullable=False)  # backtest, compare, etc.
+    request_params = Column(JSON, nullable=False)  # 원본 요청 파라미터
+    result_data = Column(JSON, nullable=False)  # 캐시된 결과
+
+    hit_count = Column(Integer, default=0)  # 캐시 히트 횟수
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_accessed_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=True)  # 만료 시간 (None이면 무기한)

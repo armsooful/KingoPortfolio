@@ -2,6 +2,7 @@
 백테스팅 API 엔드포인트
 """
 
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
@@ -13,7 +14,10 @@ from app.auth import get_current_user
 from app.models.user import User
 from app.services.backtesting import BacktestingEngine, run_simple_backtest
 from app.services.portfolio_engine import create_default_portfolio
+from app.services.simulation_cache import get_or_compute, generate_request_hash
 from app.rate_limiter import limiter, RateLimits
+
+logger = logging.getLogger(__name__)
 
 
 router = APIRouter(prefix="/backtest", tags=["Backtesting"])
@@ -53,6 +57,7 @@ async def run_backtest(
     2. **정확 모드**: portfolio 데이터 제공 → 실제 사용자 포트폴리오로 백테스트
 
     **Rate Limit**: 시간당 5회
+    **캐싱**: 동일 요청은 캐시된 결과 반환 (request_hash로 추적)
     """
     try:
         # 포트폴리오 데이터 또는 투자 성향 중 하나는 필수
@@ -62,23 +67,45 @@ async def run_backtest(
                 detail="Either 'portfolio' or 'investment_type' must be provided"
             )
 
+        # 캐시용 요청 파라미터 구성
+        cache_params = {
+            "investment_type": backtest_request.investment_type,
+            "portfolio": backtest_request.portfolio,
+            "investment_amount": backtest_request.investment_amount,
+            "period_years": backtest_request.period_years,
+            "rebalance_frequency": backtest_request.rebalance_frequency
+        }
+
         # 정확 모드: 실제 포트폴리오 백테스트
         if backtest_request.portfolio:
-            end_date = datetime.now()
-            start_date = end_date - timedelta(days=backtest_request.period_years * 365)
+            def compute_portfolio_backtest():
+                end_date = datetime.now()
+                start_date = end_date - timedelta(days=backtest_request.period_years * 365)
 
-            engine = BacktestingEngine(db)
-            result = engine.run_backtest(
-                portfolio=backtest_request.portfolio,
-                start_date=start_date,
-                end_date=end_date,
-                initial_investment=backtest_request.investment_amount,
-                rebalance_frequency=backtest_request.rebalance_frequency
+                engine = BacktestingEngine(db)
+                return engine.run_backtest(
+                    portfolio=backtest_request.portfolio,
+                    start_date=start_date,
+                    end_date=end_date,
+                    initial_investment=backtest_request.investment_amount,
+                    rebalance_frequency=backtest_request.rebalance_frequency
+                )
+
+            result, request_hash, cache_hit = get_or_compute(
+                db=db,
+                request_type="backtest_portfolio",
+                request_params=cache_params,
+                compute_fn=compute_portfolio_backtest,
+                ttl_days=7
             )
+
+            logger.info(f"Backtest portfolio - hash: {request_hash[:8]}..., cache_hit: {cache_hit}")
 
             return {
                 "success": True,
                 "data": result,
+                "request_hash": request_hash,
+                "cache_hit": cache_hit,
                 "message": f"사용자 포트폴리오 {backtest_request.period_years}년 백테스트 완료"
             }
 
@@ -91,17 +118,29 @@ async def run_backtest(
                     detail="Invalid investment type. Must be one of: conservative, moderate, aggressive"
                 )
 
-            # 백테스트 실행
-            result = run_simple_backtest(
-                investment_type=backtest_request.investment_type,
-                investment_amount=backtest_request.investment_amount,
-                period_years=backtest_request.period_years,
-                db=db
+            def compute_simple_backtest():
+                return run_simple_backtest(
+                    investment_type=backtest_request.investment_type,
+                    investment_amount=backtest_request.investment_amount,
+                    period_years=backtest_request.period_years,
+                    db=db
+                )
+
+            result, request_hash, cache_hit = get_or_compute(
+                db=db,
+                request_type="backtest_simple",
+                request_params=cache_params,
+                compute_fn=compute_simple_backtest,
+                ttl_days=7
             )
+
+            logger.info(f"Backtest simple - hash: {request_hash[:8]}..., cache_hit: {cache_hit}")
 
             return {
                 "success": True,
                 "data": result,
+                "request_hash": request_hash,
+                "cache_hit": cache_hit,
                 "message": f"{backtest_request.period_years}년 백테스트 완료"
             }
 
@@ -128,6 +167,7 @@ async def compare_portfolios(
     다양한 투자 성향의 포트폴리오를 백테스트하여 비교합니다.
 
     **Rate Limit**: 시간당 5회
+    **캐싱**: 동일 요청은 캐시된 결과 반환 (request_hash로 추적)
     """
     try:
         # 투자 성향 검증
@@ -139,41 +179,62 @@ async def compare_portfolios(
                     detail=f"Invalid investment type: {inv_type}"
                 )
 
-        # 백테스트 기간 설정
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=compare_request.period_years * 365)
+        # 캐시용 요청 파라미터 구성
+        cache_params = {
+            "investment_types": sorted(compare_request.investment_types),  # 정렬하여 순서 무관하게 동일 해시
+            "investment_amount": compare_request.investment_amount,
+            "period_years": compare_request.period_years
+        }
 
-        # 각 투자 성향별 포트폴리오 생성
-        portfolios = []
-        for inv_type in compare_request.investment_types:
-            portfolio = create_default_portfolio(
-                db=db,
-                investment_type=inv_type,
-                investment_amount=compare_request.investment_amount
+        def compute_comparison():
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=compare_request.period_years * 365)
+
+            # 각 투자 성향별 포트폴리오 생성
+            portfolios = []
+            for inv_type in compare_request.investment_types:
+                portfolio = create_default_portfolio(
+                    db=db,
+                    investment_type=inv_type,
+                    investment_amount=compare_request.investment_amount
+                )
+                portfolio["name"] = {
+                    "conservative": "안정형",
+                    "moderate": "중립형",
+                    "aggressive": "공격형"
+                }.get(inv_type, inv_type)
+                portfolios.append(portfolio)
+
+            # 백테스팅 엔진으로 비교
+            engine = BacktestingEngine(db)
+            comparison_result = engine.compare_portfolios(
+                portfolios=[p["portfolio"] for p in portfolios],
+                start_date=start_date,
+                end_date=end_date,
+                initial_investment=compare_request.investment_amount
             )
-            portfolio["name"] = {
-                "conservative": "안정형",
-                "moderate": "중립형",
-                "aggressive": "공격형"
-            }.get(inv_type, inv_type)
-            portfolios.append(portfolio)
 
-        # 백테스팅 엔진으로 비교
-        engine = BacktestingEngine(db)
-        comparison_result = engine.compare_portfolios(
-            portfolios=[p["portfolio"] for p in portfolios],
-            start_date=start_date,
-            end_date=end_date,
-            initial_investment=compare_request.investment_amount
+            # 포트폴리오 이름 추가
+            for i, result in enumerate(comparison_result["comparison"]):
+                result["portfolio_name"] = portfolios[i]["name"]
+
+            return comparison_result
+
+        result, request_hash, cache_hit = get_or_compute(
+            db=db,
+            request_type="backtest_compare",
+            request_params=cache_params,
+            compute_fn=compute_comparison,
+            ttl_days=7
         )
 
-        # 포트폴리오 이름 추가
-        for i, result in enumerate(comparison_result["comparison"]):
-            result["portfolio_name"] = portfolios[i]["name"]
+        logger.info(f"Backtest compare - hash: {request_hash[:8]}..., cache_hit: {cache_hit}")
 
         return {
             "success": True,
-            "data": comparison_result,
+            "data": result,
+            "request_hash": request_hash,
+            "cache_hit": cache_hit,
             "message": f"{len(compare_request.investment_types)}개 포트폴리오 비교 완료"
         }
 
