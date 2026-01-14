@@ -112,9 +112,9 @@ const Valuation = () => {
         {summary && (
           <div className="summary-section">
             <h4>📊 종합 평가</h4>
-            <div className="recommendation-card">
-              <div className="recommendation-badge" style={{ backgroundColor: getValuationColor(summary.recommendation) }}>
-                {summary.recommendation}
+            <div className="valuation-summary-card">
+              <div className="valuation-note-badge">
+                {summary.valuation_note}
               </div>
               <div className="valuations-list">
                 {summary.valuations.map((val, idx) => (

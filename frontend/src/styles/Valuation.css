@@ -90,19 +90,20 @@
   color: #1a1a1a;
 }
 
-.recommendation-card {
+.valuation-summary-card {
   background: white;
   border-radius: 16px;
   padding: 30px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.recommendation-badge {
+.valuation-note-badge {
   display: inline-block;
   padding: 16px 32px;
-  font-size: 24px;
-  font-weight: 700;
-  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  background: #f5f5f5;
   border-radius: 12px;
   margin-bottom: 24px;
 }
@@ -302,8 +303,8 @@
     font-size: 24px;
   }
 
-  .recommendation-badge {
-    font-size: 20px;
+  .valuation-note-badge {
+    font-size: 16px;
     padding: 12px 24px;
   }
 
