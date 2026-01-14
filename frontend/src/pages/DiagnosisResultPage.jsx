@@ -39,7 +39,7 @@ function DiagnosisResultPage() {
     );
   }
 
-  const { investment_type, score, confidence, description, characteristics, scenario_ratio, expected_annual_return, monthly_investment, ai_analysis } = result;
+  const { investment_type, score, confidence, description, characteristics, scenario_ratio, reference_only, monthly_investment, ai_analysis } = result;
 
   // 학습 성향별 색상 및 아이콘
   const typeConfig = {
@@ -187,16 +187,18 @@ function DiagnosisResultPage() {
           </div>
         </div>
 
-        {/* 과거 평균 수익률 */}
-        <div className="return-section">
-          <h2>과거 평균 수익률 (참고)</h2>
-          <div className="return-value" style={{ color: config.color }}>
-            {expected_annual_return}
+        {/* 과거 평균 수익률 (참고용) */}
+        {reference_only && (
+          <div className="return-section">
+            <h2>과거 평균 수익률 (참고용)</h2>
+            <div className="return-value" style={{ color: config.color }}>
+              {reference_only.historical_avg_return}
+            </div>
+            <p style={{ fontSize: '0.85rem', color: '#888', marginTop: '0.5rem' }}>
+              * {reference_only.disclaimer}
+            </p>
           </div>
-          <p style={{ fontSize: '0.85rem', color: '#888', marginTop: '0.5rem' }}>
-            * 과거 수익률은 미래 성과를 예측하지 않습니다
-          </p>
-        </div>
+        )}
 
         {/* 월 시뮬레이션 금액 */}
         {monthly_investment && (

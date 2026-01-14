@@ -465,13 +465,19 @@ class DiagnosisSubmitRequest(BaseModel):
     monthly_investment: Optional[int] = None  # 월 투자액 (만원)
 
 
+class ReferenceOnlyData(BaseModel):
+    """참고용 데이터 (과거 실적 기반, 미래 보장 아님)"""
+    historical_avg_return: str
+    disclaimer: str
+
+
 class DiagnosisCharacteristics(BaseModel):
     """투자성향 특징"""
     title: str
     description: str
     characteristics: List[str]
     scenario_ratio: dict
-    expected_annual_return: str
+    reference_only: ReferenceOnlyData
 
 
 class DiagnosisResponse(BaseModel):
@@ -484,7 +490,7 @@ class DiagnosisResponse(BaseModel):
     description: str
     characteristics: List[str]
     scenario_ratio: dict
-    expected_annual_return: str
+    reference_only: ReferenceOnlyData
     created_at: datetime
     # AI 분석 필드 (선택)
     ai_analysis: Optional[dict] = None

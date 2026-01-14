@@ -264,16 +264,18 @@ function DiagnosisHistoryPage() {
                 </div>
               </div>
 
-              {/* 과거 평균 수익률 */}
-              <div className="detail-return">
-                <h3>과거 평균 수익률 (참고)</h3>
-                <p className="return-value">
-                  {selectedDiagnosis.expected_annual_return}
-                </p>
-                <p style={{ fontSize: '0.85rem', color: '#888', marginTop: '8px' }}>
-                  * 과거 수익률은 미래 수익을 보장하지 않습니다
-                </p>
-              </div>
+              {/* 과거 평균 수익률 (참고용) */}
+              {selectedDiagnosis.reference_only && (
+                <div className="detail-return">
+                  <h3>과거 평균 수익률 (참고용)</h3>
+                  <p className="return-value">
+                    {selectedDiagnosis.reference_only.historical_avg_return}
+                  </p>
+                  <p style={{ fontSize: '0.85rem', color: '#888', marginTop: '8px' }}>
+                    * {selectedDiagnosis.reference_only.disclaimer}
+                  </p>
+                </div>
+              )}
 
               {/* 월 시뮬레이션 금액 */}
               {selectedDiagnosis.monthly_investment && (

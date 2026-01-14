@@ -24,7 +24,10 @@ DIAGNOSIS_PROFILES = {
             "gold": 10,
             "other": 5
         },
-        "expected_annual_return": "4-5% (과거 평균 참고치)"
+        "reference_only": {
+            "historical_avg_return": "4-5%",
+            "disclaimer": "과거 데이터 기반 참고치이며, 미래 수익을 보장하지 않습니다"
+        }
     },
     "moderate": {
         "title": "균형형 학습 성향",
@@ -43,7 +46,10 @@ DIAGNOSIS_PROFILES = {
             "gold": 10,
             "other": 5
         },
-        "expected_annual_return": "6-8% (과거 평균 참고치)"
+        "reference_only": {
+            "historical_avg_return": "6-8%",
+            "disclaimer": "과거 데이터 기반 참고치이며, 미래 수익을 보장하지 않습니다"
+        }
     },
     "aggressive": {
         "title": "성장성 중심 학습 성향",
@@ -62,7 +68,10 @@ DIAGNOSIS_PROFILES = {
             "gold": 10,
             "other": 5
         },
-        "expected_annual_return": "9-12% (과거 평균 참고치)"
+        "reference_only": {
+            "historical_avg_return": "9-12%",
+            "disclaimer": "과거 데이터 기반 참고치이며, 미래 수익을 보장하지 않습니다"
+        }
     }
 }
 
@@ -155,7 +164,7 @@ def get_diagnosis_profile(investment_type: str) -> DiagnosisCharacteristics:
         description=profile["description"],
         characteristics=profile["characteristics"],
         scenario_ratio=profile["scenario_ratio"],
-        expected_annual_return=profile["expected_annual_return"]
+        reference_only=profile["reference_only"]
     )
 
 
@@ -181,6 +190,6 @@ def build_diagnosis_response(
         "description": profile.description,
         "characteristics": profile.characteristics,
         "scenario_ratio": profile.scenario_ratio,
-        "expected_annual_return": profile.expected_annual_return,
+        "reference_only": profile.reference_only,
         "created_at": created_at
     }
