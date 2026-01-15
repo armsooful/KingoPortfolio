@@ -118,12 +118,16 @@ def save_simulation_result(
     """
     시뮬레이션 결과를 sim_run/sim_path/sim_summary 구조로 저장
 
+    지원 형식:
+    1. BacktestingEngine.run_backtest() 결과 (daily_values 포함)
+    2. scenario_simulation.run_scenario_simulation() 결과 (path 포함)
+
     Args:
         db: DB 세션
         request_hash: 요청 해시
         request_type: 요청 유형
         request_params: 원본 요청 파라미터
-        backtest_result: 백테스트 결과 (BacktestingEngine.run_backtest() 반환값)
+        backtest_result: 시뮬레이션 결과
         engine_version: 엔진 버전
         scenario_id: 시나리오 ID (선택)
         user_id: 사용자 ID (선택)
@@ -140,14 +144,20 @@ def save_simulation_result(
     start_date = _parse_date(backtest_result.get("start_date"))
     end_date = _parse_date(backtest_result.get("end_date"))
 
+    # 시나리오 시뮬레이션에서 scenario_id 추출
+    result_scenario_id = backtest_result.get("scenario_id") or scenario_id
+
+    # 초기 투자금액 (두 가지 키 지원)
+    initial_amount = backtest_result.get("initial_investment") or backtest_result.get("initial_amount", 0)
+
     # 1. SimulationRun 생성
     run = SimulationRun(
         request_hash=request_hash,
-        scenario_id=scenario_id,
+        scenario_id=result_scenario_id,
         user_id=user_id,
         start_date=start_date,
         end_date=end_date,
-        initial_amount=Decimal(str(backtest_result.get("initial_investment", 0))),
+        initial_amount=Decimal(str(initial_amount)),
         rebalance_freq=backtest_result.get("rebalance_frequency", "NONE").upper(),
         request_params=request_params,
         engine_version=engine_version,
@@ -161,66 +171,107 @@ def save_simulation_result(
     risk_metrics = backtest_result.get("risk_metrics", {})
     historical = backtest_result.get("historical_observation", {})
 
+    # 손실/회복 지표 추출 (두 가지 형식 지원)
+    max_drawdown = risk_metrics.get("max_drawdown", 0)
+    max_recovery_days = risk_metrics.get("max_recovery_days")
+    worst_1m = risk_metrics.get("worst_1m_return")
+    worst_3m = risk_metrics.get("worst_3m_return")
+    volatility = risk_metrics.get("volatility")
+
+    # 과거 수익률 추출
+    total_return = historical.get("total_return") or backtest_result.get("total_return", 0)
+    cagr = historical.get("cagr") or backtest_result.get("annualized_return")
+    sharpe = historical.get("sharpe_ratio") or backtest_result.get("sharpe_ratio")
+    sortino = historical.get("sortino_ratio")
+
+    # 거래일 수 (두 가지 형식)
+    trading_days = backtest_result.get("trading_days") or len(backtest_result.get("daily_values", []))
+
     summary = SimulationSummary(
         run_id=run.run_id,
-        # 손실/회복 지표
-        max_drawdown=Decimal(str(risk_metrics.get("max_drawdown", 0))),
-        max_recovery_days=risk_metrics.get("max_recovery_days"),
-        worst_1m_return=_to_decimal(risk_metrics.get("worst_1m_return")),
-        worst_3m_return=_to_decimal(risk_metrics.get("worst_3m_return")),
-        volatility=_to_decimal(risk_metrics.get("volatility")),
-        # 과거 수익률
-        total_return=Decimal(str(historical.get("total_return", backtest_result.get("total_return", 0)))),
-        cagr=_to_decimal(historical.get("cagr", backtest_result.get("annualized_return"))),
-        sharpe_ratio=_to_decimal(historical.get("sharpe_ratio", backtest_result.get("sharpe_ratio"))),
+        # 손실/회복 지표 (Foresto KPI)
+        max_drawdown=Decimal(str(max_drawdown)),
+        max_recovery_days=max_recovery_days,
+        worst_1m_return=_to_decimal(worst_1m),
+        worst_3m_return=_to_decimal(worst_3m),
+        volatility=_to_decimal(volatility),
+        # 과거 수익률 (참고용)
+        total_return=Decimal(str(total_return)),
+        cagr=_to_decimal(cagr),
+        sharpe_ratio=_to_decimal(sharpe),
+        sortino_ratio=_to_decimal(sortino),
         # 기타
         final_value=_to_decimal(backtest_result.get("final_value")),
-        trading_days=len(backtest_result.get("daily_values", [])),
+        trading_days=trading_days,
         rebalance_count=backtest_result.get("number_of_rebalances", 0)
     )
     db.add(summary)
 
     # 3. SimulationPath 생성 (일별 경로)
+    # 두 가지 형식 지원: daily_values (기존) 또는 path (시나리오 시뮬레이션)
     daily_values = backtest_result.get("daily_values", [])
-    initial_value = backtest_result.get("initial_investment", 0)
-    high_water_mark = initial_value
-    prev_value = initial_value
+    scenario_path = backtest_result.get("path", [])
 
     paths = []
-    for i, dv in enumerate(daily_values):
-        nav = dv.get("value", 0)
-        path_date = _parse_date(dv.get("date"))
 
-        # 일간 수익률
-        daily_return = None
-        if i > 0 and prev_value > 0:
-            daily_return = (nav - prev_value) / prev_value
+    if scenario_path:
+        # 시나리오 시뮬레이션 형식 (path 키)
+        for p in scenario_path:
+            path_date = _parse_date(p.get("path_date"))
+            path = SimulationPath(
+                run_id=run.run_id,
+                path_date=path_date,
+                nav=Decimal(str(p.get("nav", 0))),
+                daily_return=_to_decimal(p.get("daily_return")),
+                cumulative_return=_to_decimal(p.get("cumulative_return")),
+                drawdown=_to_decimal(p.get("drawdown")),
+                high_water_mark=_to_decimal(p.get("high_water_mark"))
+            )
+            paths.append(path)
 
-        # 누적 수익률
-        cumulative_return = (nav - initial_value) / initial_value if initial_value > 0 else 0
+    elif daily_values:
+        # 기존 백테스트 형식 (daily_values 키)
+        high_water_mark = initial_amount
+        prev_value = initial_amount
 
-        # 고점 및 낙폭
-        if nav > high_water_mark:
-            high_water_mark = nav
-        drawdown = (nav - high_water_mark) / high_water_mark if high_water_mark > 0 else 0
+        for i, dv in enumerate(daily_values):
+            nav = dv.get("value", 0)
+            path_date = _parse_date(dv.get("date"))
 
-        path = SimulationPath(
-            run_id=run.run_id,
-            path_date=path_date,
-            nav=Decimal(str(nav)),
-            daily_return=_to_decimal(daily_return),
-            cumulative_return=_to_decimal(cumulative_return),
-            drawdown=_to_decimal(drawdown),
-            high_water_mark=Decimal(str(high_water_mark))
-        )
-        paths.append(path)
-        prev_value = nav
+            # 일간 수익률
+            daily_return = None
+            if i > 0 and prev_value > 0:
+                daily_return = (nav - prev_value) / prev_value
 
-    db.bulk_save_objects(paths)
+            # 누적 수익률
+            cumulative_return = (nav - initial_amount) / initial_amount if initial_amount > 0 else 0
+
+            # 고점 및 낙폭
+            if nav > high_water_mark:
+                high_water_mark = nav
+            drawdown = (nav - high_water_mark) / high_water_mark if high_water_mark > 0 else 0
+
+            path = SimulationPath(
+                run_id=run.run_id,
+                path_date=path_date,
+                nav=Decimal(str(nav)),
+                daily_return=_to_decimal(daily_return),
+                cumulative_return=_to_decimal(cumulative_return),
+                drawdown=_to_decimal(drawdown),
+                high_water_mark=Decimal(str(high_water_mark))
+            )
+            paths.append(path)
+            prev_value = nav
+
+    if paths:
+        db.bulk_save_objects(paths)
+
     db.commit()
     db.refresh(run)
 
-    logger.info(f"Saved simulation run={run.run_id} hash={request_hash[:8]}... paths={len(paths)}")
+    logger.info(f"Saved simulation run={run.run_id} hash={request_hash[:8]}... "
+                f"scenario={result_scenario_id} paths={len(paths)} "
+                f"MDD={max_drawdown}% recovery={max_recovery_days}days")
     return run
 
 
@@ -286,27 +337,31 @@ def _reconstruct_result(
     run: SimulationRun,
     summary: SimulationSummary
 ) -> Dict[str, Any]:
-    """DB에 저장된 결과를 기존 API 응답 형식으로 재구성"""
+    """
+    DB에 저장된 결과를 API 응답 형식으로 재구성
+
+    시나리오 시뮬레이션인 경우 path 형식으로,
+    기존 백테스트인 경우 daily_values 형식으로 반환
+    """
 
     # 경로 데이터 조회
     paths = db.query(SimulationPath).filter(
         SimulationPath.run_id == run.run_id
     ).order_by(SimulationPath.path_date).all()
 
-    daily_values = [
-        {
-            "date": p.path_date.isoformat() if p.path_date else None,
-            "value": float(p.nav) if p.nav else 0,
-            "return": float(p.cumulative_return * 100) if p.cumulative_return else 0
-        }
-        for p in paths
-    ]
+    # 시나리오 시뮬레이션 여부 확인
+    is_scenario_simulation = run.scenario_id is not None
 
-    return {
+    initial_amount = float(run.initial_amount) if run.initial_amount else 0
+
+    # 기본 결과 구조
+    result = {
         "start_date": run.start_date.isoformat() if run.start_date else None,
         "end_date": run.end_date.isoformat() if run.end_date else None,
-        "initial_investment": float(run.initial_amount) if run.initial_amount else 0,
+        "initial_investment": initial_amount,  # 레거시 키
+        "initial_amount": initial_amount,  # 시나리오 시뮬레이션 키
         "final_value": float(summary.final_value) if summary.final_value else 0,
+        "trading_days": summary.trading_days or len(paths),
         # B-1: 손실/회복 지표 (최상위)
         "risk_metrics": summary.to_risk_metrics(),
         # 과거 관측치
@@ -317,10 +372,37 @@ def _reconstruct_result(
         "volatility": float(summary.volatility) if summary.volatility else 0,
         "sharpe_ratio": float(summary.sharpe_ratio) if summary.sharpe_ratio else 0,
         "max_drawdown": float(summary.max_drawdown) if summary.max_drawdown else 0,
-        "daily_values": daily_values,
         "rebalance_frequency": run.rebalance_freq.lower() if run.rebalance_freq else "none",
         "number_of_rebalances": summary.rebalance_count or 0
     }
+
+    if is_scenario_simulation:
+        # 시나리오 시뮬레이션: path 형식
+        result["scenario_id"] = run.scenario_id
+        result["path"] = [
+            {
+                "path_date": p.path_date,
+                "nav": float(p.nav) if p.nav else 0,
+                "daily_return": float(p.daily_return) if p.daily_return else 0,
+                "cumulative_return": float(p.cumulative_return) if p.cumulative_return else 0,
+                "drawdown": float(p.drawdown) if p.drawdown else 0,
+                "high_water_mark": float(p.high_water_mark) if p.high_water_mark else 0
+            }
+            for p in paths
+        ]
+        result["allocations"] = []  # 구성비는 별도 조회 필요
+    else:
+        # 기존 백테스트: daily_values 형식
+        result["daily_values"] = [
+            {
+                "date": p.path_date.isoformat() if p.path_date else None,
+                "value": float(p.nav) if p.nav else 0,
+                "return": float(p.cumulative_return * 100) if p.cumulative_return else 0
+            }
+            for p in paths
+        ]
+
+    return result
 
 
 def _parse_date(date_str: Any) -> Optional[date]:
