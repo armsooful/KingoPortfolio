@@ -3,31 +3,44 @@
 
 ⚠️ 교육 목적: 본 API는 투자 전략 학습을 위한 시나리오 정보를 제공합니다.
 투자 권유·추천·자문·일임 서비스를 제공하지 않습니다.
+
+Phase 1: USE_SCENARIO_DB=1 설정 시 PostgreSQL DB에서 시나리오 조회
 """
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
+from sqlalchemy.orm import Session
+from datetime import date
+
+from app.config import settings
+from app.database import get_db
 
 
 router = APIRouter(prefix="/scenarios", tags=["Scenarios"])
 
+# Feature Flag
+USE_SCENARIO_DB = settings.use_scenario_db
 
-# 시나리오 Pydantic 모델
+
+# ============================================================================
+# Pydantic 모델
+# ============================================================================
+
 class ScenarioAllocation(BaseModel):
     """자산 배분 비율"""
-    stocks: float = Field(..., description="주식 비율 (%)")
-    bonds: float = Field(..., description="채권 비율 (%)")
-    money_market: float = Field(..., description="단기금융 비율 (%)")
-    gold: float = Field(..., description="금 비율 (%)")
-    other: float = Field(..., description="기타 비율 (%)")
+    stocks: float = Field(default=0, description="주식 비율 (%)")
+    bonds: float = Field(default=0, description="채권 비율 (%)")
+    money_market: float = Field(default=0, description="단기금융 비율 (%)")
+    gold: float = Field(default=0, description="금 비율 (%)")
+    other: float = Field(default=0, description="기타 비율 (%)")
 
 
 class ScenarioRiskMetrics(BaseModel):
     """시나리오 위험 지표 (과거 데이터 기반 참고치)"""
-    expected_volatility: str = Field(..., description="예상 변동성 범위")
-    historical_max_drawdown: str = Field(..., description="과거 최대 낙폭 범위")
-    recovery_expectation: str = Field(..., description="회복 기간 예상")
+    expected_volatility: str = Field(default="", description="예상 변동성 범위")
+    historical_max_drawdown: str = Field(default="", description="과거 최대 낙폭 범위")
+    recovery_expectation: str = Field(default="", description="회복 기간 예상")
 
 
 class ScenarioSummary(BaseModel):
@@ -52,9 +65,11 @@ class ScenarioDetail(BaseModel):
     learning_points: List[str]
 
 
-# 관리형 시나리오 데이터 (코드 상수)
-# DB 반영은 Phase 2로 미룸
-SCENARIOS: Dict[str, dict] = {
+# ============================================================================
+# 폴백용 하드코딩 데이터 (SQLite 환경 / DB 없을 때)
+# ============================================================================
+
+SCENARIOS_FALLBACK: Dict[str, dict] = {
     "MIN_VOL": {
         "id": "MIN_VOL",
         "name": "Minimum Volatility",
@@ -138,6 +153,130 @@ SCENARIOS: Dict[str, dict] = {
     }
 }
 
+# risk_metrics 및 learning_points 매핑 (DB에 없는 필드)
+SCENARIO_EXTRAS = {
+    "MIN_VOL": {
+        "risk_metrics": {
+            "expected_volatility": "5-8% (연간)",
+            "historical_max_drawdown": "8-12%",
+            "recovery_expectation": "상대적으로 짧은 회복 기간 예상"
+        },
+        "learning_points": [
+            "변동성과 위험의 관계 이해",
+            "방어적 자산 배분의 원리",
+            "안정성 중심 포트폴리오 구성 방법",
+            "낮은 변동성이 장기 성과에 미치는 영향"
+        ]
+    },
+    "DEFENSIVE": {
+        "risk_metrics": {
+            "expected_volatility": "7-10% (연간)",
+            "historical_max_drawdown": "10-15%",
+            "recovery_expectation": "중간 수준의 회복 기간 예상"
+        },
+        "learning_points": [
+            "방어적 투자 전략의 개념",
+            "채권과 안전자산의 역할",
+            "시장 하락기 대응 방법",
+            "분산투자를 통한 위험 관리"
+        ]
+    },
+    "GROWTH": {
+        "risk_metrics": {
+            "expected_volatility": "12-18% (연간)",
+            "historical_max_drawdown": "20-30%",
+            "recovery_expectation": "긴 회복 기간이 필요할 수 있음"
+        },
+        "learning_points": [
+            "성장주 투자의 특성",
+            "장기 투자와 복리 효과",
+            "높은 변동성과 심리적 대응",
+            "시간 분산의 중요성"
+        ]
+    }
+}
+
+
+# ============================================================================
+# DB 조회 함수
+# ============================================================================
+
+def get_scenarios_from_db(db: Session) -> List[dict]:
+    """DB에서 활성 시나리오 목록 조회"""
+    from app.models.scenario import ScenarioDefinition
+
+    scenarios = db.query(ScenarioDefinition).filter(
+        ScenarioDefinition.is_active == True
+    ).order_by(ScenarioDefinition.display_order).all()
+
+    return [s.to_summary() for s in scenarios]
+
+
+def get_scenario_detail_from_db(db: Session, scenario_id: str) -> dict | None:
+    """DB에서 시나리오 상세 정보 조회"""
+    from app.models.scenario import ScenarioDefinition, PortfolioModel
+
+    scenario = db.query(ScenarioDefinition).filter(
+        ScenarioDefinition.scenario_id == scenario_id,
+        ScenarioDefinition.is_active == True
+    ).first()
+
+    if not scenario:
+        return None
+
+    # 현재 적용 중인 포트폴리오 조회
+    today = date.today()
+    portfolio = db.query(PortfolioModel).filter(
+        PortfolioModel.scenario_id == scenario_id,
+        PortfolioModel.effective_date <= today,
+        (PortfolioModel.expiry_date == None) | (PortfolioModel.expiry_date >= today)
+    ).order_by(PortfolioModel.effective_date.desc()).first()
+
+    # 구성비 매핑 (asset_class → allocation key)
+    allocation = {
+        "stocks": 0,
+        "bonds": 0,
+        "money_market": 0,
+        "gold": 0,
+        "other": 0
+    }
+
+    if portfolio:
+        for alloc in portfolio.allocations:
+            asset_class = (alloc.asset_class or "").upper()
+            weight_pct = float(alloc.weight) * 100
+
+            if asset_class == "EQUITY":
+                allocation["stocks"] = weight_pct
+            elif asset_class == "BOND":
+                allocation["bonds"] = weight_pct
+            elif asset_class == "CASH":
+                allocation["money_market"] = weight_pct
+            elif asset_class == "COMMODITY":
+                allocation["gold"] = weight_pct
+            else:
+                allocation["other"] += weight_pct
+
+    # 추가 정보 (risk_metrics, learning_points)
+    extras = SCENARIO_EXTRAS.get(scenario_id, {})
+
+    return {
+        "id": scenario.scenario_id,
+        "name": scenario.name_en or scenario.name_ko,
+        "name_ko": scenario.name_ko,
+        "description": scenario.description or "",
+        "objective": scenario.objective or "",
+        "target_investor": scenario.target_investor or "",
+        "allocation": allocation,
+        "risk_metrics": extras.get("risk_metrics", {}),
+        "disclaimer": scenario.disclaimer,
+        "learning_points": extras.get("learning_points", [])
+    }
+
+
+# ============================================================================
+# API 엔드포인트
+# ============================================================================
 
 @router.get(
     "",
@@ -145,7 +284,7 @@ SCENARIOS: Dict[str, dict] = {
     summary="시나리오 목록 조회",
     description="학습 가능한 관리형 시나리오 목록을 반환합니다."
 )
-async def get_scenarios():
+async def get_scenarios(db: Session = Depends(get_db)):
     """
     관리형 시나리오 목록 조회
 
@@ -156,16 +295,25 @@ async def get_scenarios():
 
     ⚠️ 본 시나리오는 교육 목적이며, 투자 권유가 아닙니다.
     """
-    scenarios_list = [
+    if USE_SCENARIO_DB:
+        try:
+            scenarios_list = get_scenarios_from_db(db)
+            if scenarios_list:
+                return [ScenarioSummary(**s) for s in scenarios_list]
+        except Exception as e:
+            # DB 오류 시 폴백
+            print(f"⚠️  DB 조회 실패, 폴백 사용: {e}")
+
+    # 폴백: 하드코딩 데이터
+    return [
         ScenarioSummary(
             id=scenario["id"],
             name=scenario["name"],
             name_ko=scenario["name_ko"],
             short_description=scenario["objective"]
         )
-        for scenario in SCENARIOS.values()
+        for scenario in SCENARIOS_FALLBACK.values()
     ]
-    return scenarios_list
 
 
 @router.get(
@@ -174,7 +322,7 @@ async def get_scenarios():
     summary="시나리오 상세 조회",
     description="특정 시나리오의 상세 정보를 반환합니다."
 )
-async def get_scenario_detail(scenario_id: str):
+async def get_scenario_detail(scenario_id: str, db: Session = Depends(get_db)):
     """
     시나리오 상세 정보 조회
 
@@ -190,13 +338,34 @@ async def get_scenario_detail(scenario_id: str):
     """
     scenario_id_upper = scenario_id.upper()
 
-    if scenario_id_upper not in SCENARIOS:
+    if USE_SCENARIO_DB:
+        try:
+            scenario = get_scenario_detail_from_db(db, scenario_id_upper)
+            if scenario:
+                return ScenarioDetail(
+                    id=scenario["id"],
+                    name=scenario["name"],
+                    name_ko=scenario["name_ko"],
+                    description=scenario["description"],
+                    objective=scenario["objective"],
+                    target_investor=scenario["target_investor"],
+                    allocation=ScenarioAllocation(**scenario["allocation"]),
+                    risk_metrics=ScenarioRiskMetrics(**scenario["risk_metrics"]),
+                    disclaimer=scenario["disclaimer"],
+                    learning_points=scenario["learning_points"]
+                )
+        except Exception as e:
+            # DB 오류 시 폴백
+            print(f"⚠️  DB 조회 실패, 폴백 사용: {e}")
+
+    # 폴백: 하드코딩 데이터
+    if scenario_id_upper not in SCENARIOS_FALLBACK:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Scenario '{scenario_id}' not found. Available: {list(SCENARIOS.keys())}"
+            detail=f"Scenario '{scenario_id}' not found. Available: {list(SCENARIOS_FALLBACK.keys())}"
         )
 
-    scenario = SCENARIOS[scenario_id_upper]
+    scenario = SCENARIOS_FALLBACK[scenario_id_upper]
 
     return ScenarioDetail(
         id=scenario["id"],

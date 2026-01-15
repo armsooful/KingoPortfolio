@@ -59,6 +59,12 @@ class Settings:
         "0"
     ) in ("1", "true", "True")
 
+    # Phase 1: 시나리오 DB 조회 사용 여부 (PostgreSQL 환경에서 True)
+    use_scenario_db: bool = os.getenv(
+        "USE_SCENARIO_DB",
+        "0"
+    ) in ("1", "true", "True")
+
     # CORS
     allowed_origins: List[str] = []
     
@@ -90,6 +96,7 @@ class Settings:
         print(f"✅ Engine Version: {self.engine_version}")
         print(f"🚩 Feature Flag - Recommendation Engine: {'ENABLED' if self.feature_recommendation_engine else 'DISABLED (Default)'}")
         print(f"🚩 Feature Flag - Sim Store (Phase 1): {'ENABLED' if self.use_sim_store else 'DISABLED (Default)'}")
+        print(f"🚩 Feature Flag - Scenario DB (Phase 1): {'ENABLED' if self.use_scenario_db else 'DISABLED (Default)'}")
 
 
 # 싱글톤 인스턴스
