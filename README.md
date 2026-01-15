@@ -7,19 +7,22 @@
 [![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104-green?logo=fastapi)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://react.dev/)
-[![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite)](https://vitejs.dev/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14-336791?logo=postgresql)](https://www.postgresql.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
+[![Phase](https://img.shields.io/badge/Phase-1%20Completed-success)](docs/phase1/20260115_phase1_completion_report.md)
 
 ---
 
 ## 📋 목차
 
 - [프로젝트 소개](#프로젝트-소개)
+- [현재 상태](#현재-상태)
 - [주요 기능](#주요-기능)
 - [기술 스택](#기술-스택)
 - [프로젝트 구조](#프로젝트-구조)
 - [빠른 시작](#빠른-시작)
 - [개발 가이드](#개발-가이드)
+- [문서](#문서)
 - [배포](#배포)
 - [API 문서](#api-문서)
 - [기여](#기여)
@@ -46,6 +49,30 @@
 | 사용자 수 | 500,000명 | 24개월 |
 | 관리 자산 | 2.5조 원 | 24개월 |
 | 월간 활성사용자(MAU) | 100,000명 | 12개월 |
+
+---
+
+## 📊 현재 상태
+
+### Phase 1 완료 (2026-01-15) ✅
+
+시뮬레이션 인프라 구축이 완료되었습니다.
+
+| 구분 | 상태 | 설명 |
+|------|------|------|
+| PostgreSQL DDL | ✅ | 파티셔닝 포함 스키마 설계 |
+| ORM 모델 | ✅ | simulation_run, simulation_path, simulation_summary |
+| 시나리오 시뮬레이션 | ✅ | MIN_VOL, DEFENSIVE, GROWTH |
+| 캐싱 레이어 | ✅ | request_hash 기반 7일 TTL |
+| 운영 스크립트 | ✅ | 파티션 관리, TTL 정리, 품질 리포트 |
+
+**DoD (Definition of Done)**:
+- ✅ DDL 문서와 실제 코드 스키마 일치
+- ✅ simulation_store가 sim_run/path/summary에 정상 저장
+- ✅ Phase 0 API 응답 형식과 호환
+- ✅ Feature flag(USE_SIM_STORE)로 전환 가능
+
+> 📄 상세 보고서: [Phase 1 완료 보고서](docs/phase1/20260115_phase1_completion_report.md)
 
 ---
 
@@ -78,6 +105,18 @@
 - 진단 이력 조회
 - 성향 변화 추적
 
+### 📊 시나리오 시뮬레이션 (Phase 1)
+- **3가지 시나리오** 지원
+  - MIN_VOL: 변동성 최소화
+  - DEFENSIVE: 방어형
+  - GROWTH: 성장형
+- **손실/회복 지표 중심** 리스크 분석
+  - MDD (최대 낙폭)
+  - 최대 회복 기간
+  - 최악의 1개월/3개월 수익률
+- **캐싱 지원**: 동일 요청 7일 캐시
+- **일별 NAV 경로** 제공
+
 ---
 
 ## 🛠️ 기술 스택
@@ -87,7 +126,7 @@
 |------|------|
 | Framework | FastAPI 0.104.1 |
 | Language | Python 3.11 |
-| Database | SQLite (dev), PostgreSQL (prod) |
+| Database | PostgreSQL 14+ (파티셔닝 지원) |
 | ORM | SQLAlchemy 2.0 |
 | Authentication | JWT + Bcrypt |
 | API | REST + Swagger/OpenAPI |
@@ -178,27 +217,26 @@ KingoPortfolio/
 │   ├── .gitignore
 │   └── README.md
 │
-├── docs/                            # 문서
-│   ├── manuals/                     # 📚 사용 매뉴얼 모음
-│   │   ├── README.md               # 매뉴얼 인덱스
-│   │   ├── QUICK_START.md          # 빠른 시작 가이드
-│   │   ├── DATA_COLLECTION_GUIDE.md     # 데이터 수집 가이드
-│   │   ├── PROGRESS_MONITORING_GUIDE.md # 진행 상황 모니터링
-│   │   ├── DATABASE_GUIDE.md       # 데이터베이스 가이드
-│   │   ├── ADMIN_TROUBLESHOOTING.md    # 관리자 문제 해결
-│   │   ├── LOGIN_DEBUG_GUIDE.md    # 로그인 디버깅
-│   │   ├── TEST_GUIDE.md           # 테스트 가이드
-│   │   └── ... (기타 매뉴얼)
-│   └── 20251217/                    # 날짜별 프로젝트 문서
+├── docs/                            # 📚 문서
+│   ├── README.md                   # 문서 인덱스
+│   ├── architecture/               # 설계 및 아키텍처
+│   ├── changelogs/                 # 변경 이력
+│   ├── compliance/                 # 법적 준수 및 면책
+│   ├── deployment/                 # 배포 가이드
+│   ├── development/                # 개발 가이드
+│   ├── legacy/                     # 과거 문서 아카이브
+│   ├── manuals/                    # 운영 매뉴얼
+│   └── phase1/                     # Phase 1 관련 문서
 │
 ├── scripts/                         # 🛠️ 유틸리티 스크립트
 │   ├── README.md                   # 스크립트 가이드
 │   ├── start_servers.sh            # 서버 시작
 │   ├── view_db.sh                  # DB 조회
 │   ├── check_system.sh             # 시스템 점검
-│   ├── test_api.py                 # API 테스트
-│   ├── test_data_collector.py      # 데이터 수집 테스트
-│   └── test_data_classifier.py     # 분류 테스트
+│   ├── create_partitions.py        # 파티션 생성 (Phase 1)
+│   ├── cleanup_simulations.py      # 시뮬레이션 정리 (Phase 1)
+│   ├── quality_report.py           # 품질 리포트 (Phase 1)
+│   └── test_api.py                 # API 테스트
 │
 ├── .gitignore                       # Git 무시 파일
 ├── README.md                        # 이 파일
@@ -409,6 +447,24 @@ npm run build && git push
 
 ---
 
+## 📚 문서
+
+프로젝트 문서는 [docs/](docs/) 폴더에 카테고리별로 정리되어 있습니다.
+
+| 폴더 | 설명 |
+|------|------|
+| [architecture/](docs/architecture/) | 설계 및 아키텍처 문서 |
+| [changelogs/](docs/changelogs/) | 변경 이력 및 릴리스 노트 |
+| [compliance/](docs/compliance/) | 법적 준수 및 면책 조항 |
+| [deployment/](docs/deployment/) | 배포 및 인프라 가이드 |
+| [development/](docs/development/) | 개발 가이드 및 백로그 |
+| [manuals/](docs/manuals/) | 운영 매뉴얼 |
+| [phase1/](docs/phase1/) | Phase 1 관련 문서 |
+
+> 📄 전체 문서 목록: [docs/README.md](docs/README.md)
+
+---
+
 ## 🌐 배포
 
 ### 백엔드 배포 (Render)
@@ -524,6 +580,15 @@ https://kingo-backend.onrender.com/redoc
 | `GET` | `/diagnosis/{id}` | 특정 진단 결과 |
 | `GET` | `/diagnosis/history/all` | 진단 이력 조회 |
 
+#### 시나리오 시뮬레이션 (Phase 1)
+
+| 메서드 | 엔드포인트 | 설명 |
+|--------|-----------|------|
+| `POST` | `/backtest/scenario` | 시나리오 시뮬레이션 실행 |
+| `GET` | `/backtest/scenario/{id}/path` | NAV 경로 조회 |
+| `GET` | `/scenarios` | 시나리오 목록 조회 |
+| `GET` | `/scenarios/{id}` | 시나리오 상세 정보 |
+
 ---
 
 ## 🤝 기여
@@ -576,41 +641,34 @@ git commit -m "docs: Update API documentation"
 ## 📚 추가 리소스
 
 ### 📖 사용 매뉴얼
-모든 매뉴얼은 [docs/manuals/](docs/manuals/) 폴더에 정리되어 있습니다.
-
-- [빠른 시작 가이드](docs/manuals/QUICK_START.md) - 프로젝트 시작
-- [데이터 수집 가이드](docs/manuals/DATA_COLLECTION_GUIDE.md) - yfinance 데이터 수집
-- [진행 상황 모니터링](docs/manuals/PROGRESS_MONITORING_GUIDE.md) - 실시간 진행률 표시
-- [데이터베이스 가이드](docs/manuals/DATABASE_GUIDE.md) - DB 조회 및 관리
-- [관리자 문제 해결](docs/manuals/ADMIN_TROUBLESHOOTING.md) - 일반적인 문제 해결
-- [로그인 디버깅](docs/manuals/LOGIN_DEBUG_GUIDE.md) - 로그인 문제 해결
-- [테스트 가이드](docs/manuals/TEST_GUIDE.md) - 테스트 방법
+- [빠른 시작 가이드](docs/manuals/QUICK_START.md)
+- [데이터베이스 가이드](docs/manuals/DATABASE_GUIDE.md)
+- [테스트 가이드](docs/manuals/TEST_GUIDE.md)
 
 전체 매뉴얼 목록: [docs/manuals/README.md](docs/manuals/README.md)
 
 ### 🛠️ 유틸리티 스크립트
-모든 스크립트는 [scripts/](scripts/) 폴더에 정리되어 있습니다.
 
 ```bash
 # 서버 시작
 ./scripts/start_servers.sh
 
-# 데이터베이스 조회
-./scripts/view_db.sh all
+# 파티션 생성 (Phase 1)
+python scripts/create_partitions.py --months 6
 
-# 시스템 점검
-./scripts/check_system.sh
+# 시뮬레이션 정리 (Phase 1)
+python scripts/cleanup_simulations.py --dry-run
 
-# API 테스트
-python scripts/test_api.py
+# 품질 리포트 (Phase 1)
+python scripts/quality_report.py --output report.md
 ```
 
 전체 스크립트 가이드: [scripts/README.md](scripts/README.md)
 
 ### 🔗 기타 리소스
-- [개발 일지](./docs/)
+- [문서 인덱스](docs/README.md)
 - [API 명세서](https://kingo-backend.onrender.com/docs)
-- [프로젝트 계획](./docs/FinPortfolio_ProjectPlan.md)
+- [Phase 1 완료 보고서](docs/phase1/20260115_phase1_completion_report.md)
 
 ---
 
@@ -629,21 +687,26 @@ python scripts/test_api.py
 
 ## 🎯 로드맵
 
-### Phase 1 (완료 ✅)
+### Phase 0 (완료 ✅) - 기본 인프라
 - ✅ 백엔드 API 개발
 - ✅ 프론트엔드 기본 UI
 - ✅ 진단 알고리즘 구현
 - ✅ 배포 (Render, Vercel)
 
-### Phase 2 (진행 중 🔄)
-- 🔄 사용자 피드백 수집
-- 🔄 성능 최적화
-- 🔄 모바일 앱 개발
-- 🔄 분석 대시보드
+### Phase 1 (완료 ✅) - 시뮬레이션 인프라
+- ✅ PostgreSQL DDL (파티셔닝)
+- ✅ ORM 모델 (sim_run, sim_path, sim_summary)
+- ✅ 시나리오 시뮬레이션 API
+- ✅ 캐싱 레이어 (request_hash 기반)
+- ✅ 운영 스크립트 (파티션, TTL, 품질)
 
-### Phase 3 (계획 📅)
+### Phase 2 (계획 📅) - 실데이터 연동
+- 📅 일봉가격/일간수익률 적재
+- 📅 실제 DB 기반 시뮬레이션
+- 📅 pykrx/Alpha Vantage 연동
+
+### Phase 3 (계획 📅) - 고도화
 - 📅 B2B 금융기관 파트너십
-- 📅 고급 포트폴리오 시뮬레이션
 - 📅 AI 추천 개선 (머신러닝)
 - 📅 더 많은 자산 클래스 지원
 
@@ -653,12 +716,12 @@ python scripts/test_api.py
 
 | 항목 | 상태 | 비고 |
 |------|------|------|
-| 백엔드 API | ✅ 완성 | 모든 엔드포인트 구현됨 |
+| 백엔드 API | ✅ 완성 | Phase 1 시나리오 시뮬레이션 포함 |
 | 프론트엔드 | ✅ 완성 | Tailwind CSS 적용 |
 | 배포 | ✅ 완성 | Render + Vercel |
-| 테스트 | 🔄 진행 중 | 단위 테스트 추가 중 |
-| 문서화 | ✅ 진행 중 | API 문서 완료 |
-| CI/CD | 📅 예정 | GitHub Actions 설정 예정 |
+| 데이터베이스 | ✅ 완성 | PostgreSQL 파티셔닝 지원 |
+| 문서화 | ✅ 완성 | 카테고리별 정리 완료 |
+| 운영 스크립트 | ✅ 완성 | 파티션/TTL/품질 리포트 |
 
 ---
 
@@ -676,12 +739,18 @@ python scripts/test_api.py
 
 ## 📌 마지막 업데이트
 
-**날짜**: 2025년 12월 21일
-**버전**: 1.0.0
+**날짜**: 2026년 1월 15일
+**버전**: 1.1.0 (Phase 1 완료)
 **상태**: 프로덕션 준비 완료 ✅
 
-### 최근 변경사항
-- ✅ 실시간 진행 상황 모니터링 기능 추가 ([PROGRESS_MONITORING_GUIDE.md](docs/manuals/PROGRESS_MONITORING_GUIDE.md))
-- ✅ yfinance 데이터 수집 오류 수정 (v0.2.32 → v0.2.66)
-- ✅ 로그인 email/username 매핑 문제 해결
-- ✅ 프로젝트 구조 정리 (docs/manuals, scripts 폴더 분리)
+### 최근 변경사항 (2026-01-15)
+- ✅ **Phase 1 완료**: 시뮬레이션 인프라 구축
+- ✅ PostgreSQL DDL 설계 (파티셔닝 포함)
+- ✅ 시나리오 시뮬레이션 API (`POST /backtest/scenario`)
+- ✅ 운영 스크립트 추가 (파티션 생성, TTL 정리, 품질 리포트)
+- ✅ 문서 재구성 (카테고리별 서브폴더, 날짜 prefix)
+
+### 관련 문서
+- [Phase 1 완료 보고서](docs/phase1/20260115_phase1_completion_report.md)
+- [Phase 1 백로그 티켓](docs/phase1/20260115_phase1_backlog_tickets.md)
+- [문서 인덱스](docs/README.md)
