@@ -53,6 +53,12 @@ class Settings:
         "1.0.0"
     )
 
+    # Phase 1: sim_* 구조 사용 여부 (PostgreSQL 환경에서 True)
+    use_sim_store: bool = os.getenv(
+        "USE_SIM_STORE",
+        "0"
+    ) in ("1", "true", "True")
+
     # CORS
     allowed_origins: List[str] = []
     
@@ -83,6 +89,7 @@ class Settings:
         print(f"✅ App Version: {self.app_version}")
         print(f"✅ Engine Version: {self.engine_version}")
         print(f"🚩 Feature Flag - Recommendation Engine: {'ENABLED' if self.feature_recommendation_engine else 'DISABLED (Default)'}")
+        print(f"🚩 Feature Flag - Sim Store (Phase 1): {'ENABLED' if self.use_sim_store else 'DISABLED (Default)'}")
 
 
 # 싱글톤 인스턴스

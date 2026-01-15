@@ -1,9 +1,11 @@
 from .user import User
 from .securities import KrxTimeSeries
 from .portfolio import Portfolio, PortfolioHistory, SimulationCache
+from .simulation import SimulationRun, SimulationPath, SimulationSummary
 # app/models.py의 모델들을 직접 import하지 않고 lazy import 허용
 
-__all__ = ['User', 'KrxTimeSeries', 'Portfolio', 'PortfolioHistory', 'SimulationCache']
+__all__ = ['User', 'KrxTimeSeries', 'Portfolio', 'PortfolioHistory', 'SimulationCache',
+           'SimulationRun', 'SimulationPath', 'SimulationSummary']
 # models.py에서 추가 모델 import
 import sys
 import os

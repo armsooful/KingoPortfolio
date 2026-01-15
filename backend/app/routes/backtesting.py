@@ -15,7 +15,16 @@ from app.models.user import User
 from app.services.backtesting import BacktestingEngine, run_simple_backtest
 from app.services.portfolio_engine import create_default_portfolio
 from app.services.simulation_cache import get_or_compute, generate_request_hash, get_engine_version
+from app.services.simulation_store import (
+    get_or_compute_simulation,
+    generate_request_hash as generate_hash_v2,
+    get_engine_version as get_engine_version_v2
+)
 from app.rate_limiter import limiter, RateLimits
+from app.config import settings
+
+# Feature flag: sim_* 구조 사용 여부 (Phase 1)
+USE_SIM_STORE = settings.use_sim_store
 
 logger = logging.getLogger(__name__)
 
@@ -91,15 +100,27 @@ async def run_backtest(
                     rebalance_frequency=backtest_request.rebalance_frequency
                 )
 
-            result, request_hash, cache_hit, engine_version = get_or_compute(
-                db=db,
-                request_type="backtest_portfolio",
-                request_params=cache_params,
-                compute_fn=compute_portfolio_backtest,
-                ttl_days=7
-            )
+            # Phase 1: sim_* 구조 사용 (PostgreSQL)
+            if USE_SIM_STORE:
+                result, request_hash, cache_hit, engine_version = get_or_compute_simulation(
+                    db=db,
+                    request_type="backtest_portfolio",
+                    request_params=cache_params,
+                    compute_fn=compute_portfolio_backtest,
+                    user_id=current_user.id if current_user else None,
+                    ttl_days=7
+                )
+            else:
+                # Legacy: JSON 캐시 (SQLite)
+                result, request_hash, cache_hit, engine_version = get_or_compute(
+                    db=db,
+                    request_type="backtest_portfolio",
+                    request_params=cache_params,
+                    compute_fn=compute_portfolio_backtest,
+                    ttl_days=7
+                )
 
-            logger.info(f"Backtest portfolio - hash: {request_hash[:8]}..., cache_hit: {cache_hit}, engine: {engine_version}")
+            logger.info(f"Backtest portfolio - hash: {request_hash[:8]}..., cache_hit: {cache_hit}, engine: {engine_version}, store: {'sim' if USE_SIM_STORE else 'json'}")
 
             return {
                 "success": True,
@@ -127,15 +148,27 @@ async def run_backtest(
                     db=db
                 )
 
-            result, request_hash, cache_hit, engine_version = get_or_compute(
-                db=db,
-                request_type="backtest_simple",
-                request_params=cache_params,
-                compute_fn=compute_simple_backtest,
-                ttl_days=7
-            )
+            # Phase 1: sim_* 구조 사용 (PostgreSQL)
+            if USE_SIM_STORE:
+                result, request_hash, cache_hit, engine_version = get_or_compute_simulation(
+                    db=db,
+                    request_type="backtest_simple",
+                    request_params=cache_params,
+                    compute_fn=compute_simple_backtest,
+                    user_id=current_user.id if current_user else None,
+                    ttl_days=7
+                )
+            else:
+                # Legacy: JSON 캐시 (SQLite)
+                result, request_hash, cache_hit, engine_version = get_or_compute(
+                    db=db,
+                    request_type="backtest_simple",
+                    request_params=cache_params,
+                    compute_fn=compute_simple_backtest,
+                    ttl_days=7
+                )
 
-            logger.info(f"Backtest simple - hash: {request_hash[:8]}..., cache_hit: {cache_hit}, engine: {engine_version}")
+            logger.info(f"Backtest simple - hash: {request_hash[:8]}..., cache_hit: {cache_hit}, engine: {engine_version}, store: {'sim' if USE_SIM_STORE else 'json'}")
 
             return {
                 "success": True,
@@ -222,6 +255,8 @@ async def compare_portfolios(
 
             return comparison_result
 
+        # Note: compare는 단일 시뮬레이션이 아니므로 기존 JSON 캐시 사용
+        # Phase 1에서는 개별 백테스트만 sim_* 구조로 저장
         result, request_hash, cache_hit, engine_version = get_or_compute(
             db=db,
             request_type="backtest_compare",
