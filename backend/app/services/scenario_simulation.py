@@ -1,8 +1,13 @@
 """
-Phase 1 시나리오 기반 포트폴리오 시뮬레이션 엔진 (P1-D1)
+Phase 1/2 시나리오 기반 포트폴리오 시뮬레이션 엔진 (P1-D1, P2-Epic B)
 
 DB에 저장된 포트폴리오 구성비와 일간수익률을 사용하여
 NAV 경로를 계산하고 손실/회복 지표를 산출
+
+Phase 2에서 리밸런싱 엔진 통합:
+- PERIODIC (월간/분기) 리밸런싱
+- DRIFT (편차 기반) 리밸런싱
+- 비용 모델 적용
 
 ⚠️ 교육 목적: 과거 데이터 기반 시뮬레이션이며, 미래 수익을 보장하지 않습니다.
 """
@@ -14,6 +19,8 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 from sqlalchemy import text, and_, or_
+
+from app.config import settings
 
 
 # ============================================================================
@@ -410,7 +417,8 @@ def run_scenario_simulation(
     scenario_id: str,
     start_date: date,
     end_date: date,
-    initial_amount: float = 1000000.0
+    initial_amount: float = 1000000.0,
+    rebalancing_rule: Optional[Dict] = None
 ) -> Dict:
     """
     시나리오 기반 포트폴리오 시뮬레이션 실행
@@ -421,6 +429,14 @@ def run_scenario_simulation(
         start_date: 시작일
         end_date: 종료일
         initial_amount: 초기 투자금액
+        rebalancing_rule: 리밸런싱 규칙 (Phase 2, USE_REBALANCING=1 필요)
+            {
+                "rebalance_type": "PERIODIC"|"DRIFT"|"HYBRID",
+                "frequency": "MONTHLY"|"QUARTERLY",
+                "drift_threshold": 0.05,
+                "cost_rate": 0.001,
+                "rule_id": int (optional)
+            }
 
     Returns:
         {
@@ -431,7 +447,10 @@ def run_scenario_simulation(
             "allocations": List[Dict],
             "path": List[Dict],
             "risk_metrics": Dict,
-            "historical_observation": Dict
+            "historical_observation": Dict,
+            "rebalancing_enabled": bool,
+            "rebalancing_events_count": int,
+            "rebalancing_events": List[Dict] (Phase 2)
         }
     """
     # 1. 포트폴리오 구성비 조회
@@ -448,16 +467,58 @@ def run_scenario_simulation(
     instrument_ids = [a["instrument_id"] for a in allocations]
     returns_by_instrument = get_daily_returns(db, instrument_ids, start_date, end_date)
 
-    # 4. NAV 경로 계산
-    nav_path = calculate_portfolio_nav(
-        allocations, returns_by_instrument, trade_dates, initial_amount
-    )
+    # 4. 리밸런싱 처리 (Phase 2)
+    rebalancing_enabled = False
+    rebalancing_events = []
 
-    # 5. 지표 계산
+    if settings.use_rebalancing and rebalancing_rule:
+        # USE_REBALANCING=1 이고 rule이 있을 때만 리밸런싱 적용
+        from app.services.rebalancing_engine import (
+            RebalancingConfig, calculate_nav_with_rebalancing
+        )
+
+        config = RebalancingConfig.from_dict(rebalancing_rule)
+        if config.is_enabled():
+            rebalancing_enabled = True
+            nav_path, events = calculate_nav_with_rebalancing(
+                allocations, returns_by_instrument, trade_dates,
+                initial_amount, config
+            )
+            rebalancing_events = [
+                {
+                    "event_date": e.event_date.isoformat(),
+                    "event_order": e.event_order,
+                    "trigger_type": e.trigger_type,
+                    "trigger_detail": e.trigger_detail,
+                    "before_weights": e.before_weights,
+                    "after_weights": e.after_weights,
+                    "turnover": round(e.turnover, 6),
+                    "cost_rate": e.cost_rate,
+                    "cost_factor": round(e.cost_factor, 8),
+                    "nav_before": round(e.nav_before, 4),
+                    "nav_after": round(e.nav_after, 4),
+                }
+                for e in events
+            ]
+
+    elif rebalancing_rule and not settings.use_rebalancing:
+        # USE_REBALANCING=0 인데 rule 파라미터가 왔으면 에러 (상세 설계 섹션 13)
+        raise ValueError(
+            "리밸런싱 기능이 비활성화 상태입니다. "
+            "USE_REBALANCING=1로 설정하거나 rebalancing_rule 파라미터를 제거하세요."
+        )
+
+    # 5. 리밸런싱 OFF 또는 미적용 시 기존 로직
+    if not rebalancing_enabled:
+        nav_path = calculate_portfolio_nav(
+            allocations, returns_by_instrument, trade_dates, initial_amount
+        )
+
+    # 6. 지표 계산
     metrics = calculate_risk_metrics(nav_path, initial_amount)
 
-    # 6. 결과 조합
-    return {
+    # 7. 결과 조합
+    result = {
         "scenario_id": scenario_id,
         "start_date": start_date,
         "end_date": end_date,
@@ -479,7 +540,16 @@ def run_scenario_simulation(
         },
         "final_value": metrics["final_value"],
         "trading_days": metrics["trading_days"],
+        # Phase 2 리밸런싱 정보
+        "rebalancing_enabled": rebalancing_enabled,
+        "rebalancing_events_count": len(rebalancing_events),
     }
+
+    # 리밸런싱 이벤트 상세 (활성화 시에만)
+    if rebalancing_enabled:
+        result["rebalancing_events"] = rebalancing_events
+
+    return result
 
 
 # ============================================================================
@@ -576,3 +646,87 @@ def run_scenario_simulation_fallback(
         "trading_days": metrics["trading_days"],
         "_fallback": True,  # 더미 데이터 표시
     }
+
+
+# ============================================================================
+# P2-B7: 리밸런싱 이벤트 DB 저장
+# ============================================================================
+
+def save_rebalancing_events(
+    db: Session,
+    simulation_run_id: int,
+    rule_id: int,
+    events: List[Dict]
+) -> int:
+    """
+    리밸런싱 이벤트를 DB에 저장 (P2-B7)
+
+    Args:
+        db: DB 세션
+        simulation_run_id: 시뮬레이션 실행 ID (simulation_run.run_id)
+        rule_id: 리밸런싱 규칙 ID
+        events: 이벤트 목록 (scenario_simulation에서 생성된 dict 형태)
+
+    Returns:
+        저장된 이벤트 수
+    """
+    if not events:
+        return 0
+
+    from app.models.rebalancing import RebalancingEvent
+    from datetime import datetime
+
+    saved_count = 0
+    for event_dict in events:
+        # event_date 파싱 (ISO format string -> date)
+        event_date_str = event_dict.get("event_date")
+        if isinstance(event_date_str, str):
+            event_date = date.fromisoformat(event_date_str)
+        else:
+            event_date = event_date_str
+
+        # nav_before/after로 cost_amount 계산
+        nav_before = event_dict.get("nav_before", 0)
+        nav_after = event_dict.get("nav_after", 0)
+        cost_amount = nav_before - nav_after if nav_before and nav_after else None
+
+        event = RebalancingEvent(
+            simulation_run_id=simulation_run_id,
+            rule_id=rule_id,
+            event_date=event_date,
+            trigger_type=event_dict.get("trigger_type"),
+            trigger_detail=event_dict.get("trigger_detail"),
+            before_weights=event_dict.get("before_weights", {}),
+            after_weights=event_dict.get("after_weights", {}),
+            turnover=event_dict.get("turnover", 0),
+            cost_rate=event_dict.get("cost_rate", 0),
+            cost_amount=cost_amount,
+        )
+        db.add(event)
+        saved_count += 1
+
+    db.flush()  # ID 할당을 위해 flush
+    return saved_count
+
+
+def get_rebalancing_events_by_run(
+    db: Session,
+    simulation_run_id: int
+) -> List[Dict]:
+    """
+    시뮬레이션 실행에 대한 리밸런싱 이벤트 조회 (P2-B10)
+
+    Args:
+        db: DB 세션
+        simulation_run_id: 시뮬레이션 실행 ID
+
+    Returns:
+        이벤트 목록 (dict 형태)
+    """
+    from app.models.rebalancing import RebalancingEvent
+
+    events = db.query(RebalancingEvent).filter(
+        RebalancingEvent.simulation_run_id == simulation_run_id
+    ).order_by(RebalancingEvent.event_date).all()
+
+    return [e.to_dict() for e in events]

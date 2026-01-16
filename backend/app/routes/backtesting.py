@@ -343,12 +343,26 @@ async def get_backtest_metrics(
 # Phase 1: 시나리오 기반 시뮬레이션 (P1-D1)
 # ============================================================================
 
+class RebalancingRuleRequest(BaseModel):
+    """리밸런싱 규칙 요청 (Phase 2)"""
+    rule_type: str = Field(..., description="리밸런싱 타입 (PERIODIC, DRIFT)")
+    frequency: Optional[str] = Field(None, description="정기 주기 (MONTHLY, QUARTERLY)")
+    base_day_policy: str = Field("FIRST_TRADING_DAY", description="기준일 정책 (FIRST_TRADING_DAY, LAST_TRADING_DAY)")
+    drift_threshold: Optional[float] = Field(None, gt=0, lt=1, description="Drift 임계치 (0 < x < 1)")
+    cost_rate: float = Field(0.001, ge=0, le=0.02, description="거래비용률 (기본 10bp)")
+    rule_id: Optional[int] = Field(None, description="DB 규칙 ID (optional)")
+
+
 class ScenarioSimulationRequest(BaseModel):
     """시나리오 시뮬레이션 요청"""
     scenario_id: str = Field(..., description="시나리오 ID (MIN_VOL, DEFENSIVE, GROWTH)")
     start_date: str = Field(..., description="시작일 (YYYY-MM-DD)")
     end_date: str = Field(..., description="종료일 (YYYY-MM-DD)")
     initial_amount: float = Field(1000000.0, ge=100000, description="초기 투자금액 (최소 10만원)")
+    rebalancing_rule: Optional[RebalancingRuleRequest] = Field(
+        None,
+        description="리밸런싱 규칙 (Phase 2, USE_REBALANCING=1 필요)"
+    )
 
 
 class ScenarioSimulationResponse(BaseModel):
@@ -368,6 +382,10 @@ class ScenarioSimulationResponse(BaseModel):
     cache_hit: bool
     request_hash: str
     message: str
+    # Phase 2 리밸런싱 정보
+    rebalancing_enabled: bool = Field(False, description="리밸런싱 활성화 여부")
+    rebalancing_events_count: int = Field(0, description="리밸런싱 이벤트 수")
+    rebalancing_events: Optional[List[dict]] = Field(None, description="리밸런싱 이벤트 상세 (활성화 시)")
 
 
 @router.post("/scenario", response_model=ScenarioSimulationResponse)
@@ -420,12 +438,28 @@ async def run_scenario_backtest(
                 detail=f"유효하지 않은 시나리오입니다. 가능한 값: {valid_scenarios}"
             )
 
+        # 리밸런싱 규칙 변환 (Phase 2)
+        rebalancing_rule_dict = None
+        if sim_request.rebalancing_rule:
+            # base_day_policy를 엔진의 periodic_timing으로 변환
+            timing = "START" if sim_request.rebalancing_rule.base_day_policy == "FIRST_TRADING_DAY" else "END"
+            rebalancing_rule_dict = {
+                "rebalance_type": sim_request.rebalancing_rule.rule_type,
+                "frequency": sim_request.rebalancing_rule.frequency,
+                "periodic_timing": timing,
+                "drift_threshold": sim_request.rebalancing_rule.drift_threshold,
+                "cost_rate": sim_request.rebalancing_rule.cost_rate,
+                "rule_id": sim_request.rebalancing_rule.rule_id,
+            }
+
         # 캐시 파라미터
         cache_params = {
             "scenario_id": scenario_id,
             "start_date": sim_request.start_date,
             "end_date": sim_request.end_date,
-            "initial_amount": sim_request.initial_amount
+            "initial_amount": sim_request.initial_amount,
+            # Phase 2: 리밸런싱 파라미터 포함 (request_hash에 반영)
+            "rebalancing_rule": rebalancing_rule_dict,
         }
 
         def compute_scenario_simulation():
@@ -437,7 +471,8 @@ async def run_scenario_backtest(
                         scenario_id=scenario_id,
                         start_date=start_date,
                         end_date=end_date,
-                        initial_amount=sim_request.initial_amount
+                        initial_amount=sim_request.initial_amount,
+                        rebalancing_rule=rebalancing_rule_dict  # Phase 2
                     )
                 except Exception as e:
                     logger.warning(f"DB 시뮬레이션 실패, 폴백 사용: {e}")
@@ -487,6 +522,11 @@ async def run_scenario_backtest(
             "last_nav": path[-1]["nav"] if path else None,
         }
 
+        # Phase 2: 리밸런싱 정보 추출
+        rebalancing_enabled = result.get("rebalancing_enabled", False)
+        rebalancing_events_count = result.get("rebalancing_events_count", 0)
+        rebalancing_events = result.get("rebalancing_events") if rebalancing_enabled else None
+
         return ScenarioSimulationResponse(
             success=True,
             scenario_id=scenario_id,
@@ -502,7 +542,11 @@ async def run_scenario_backtest(
             engine_version=engine_version,
             cache_hit=cache_hit,
             request_hash=request_hash,
-            message=f"{scenario_id} 시나리오 시뮬레이션 완료"
+            message=f"{scenario_id} 시나리오 시뮬레이션 완료" + (f" (리밸런싱 {rebalancing_events_count}회)" if rebalancing_enabled else ""),
+            # Phase 2 리밸런싱
+            rebalancing_enabled=rebalancing_enabled,
+            rebalancing_events_count=rebalancing_events_count,
+            rebalancing_events=rebalancing_events
         )
 
     except HTTPException:
@@ -598,4 +642,285 @@ async def get_scenario_path(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"경로 조회 실패: {str(e)}"
+        )
+
+
+# ============================================================================
+# Phase 2: 리밸런싱 관련 API (P2-Epic B)
+# ============================================================================
+
+@router.get("/rebalancing/rules")
+async def get_rebalancing_rules(
+    db: Session = Depends(get_db)
+):
+    """
+    사용 가능한 리밸런싱 규칙 목록 조회 (Phase 2)
+
+    시스템에 정의된 리밸런싱 프리셋 규칙을 조회합니다.
+
+    **규칙 타입:**
+    - PERIODIC: 정기 리밸런싱 (월간/분기)
+    - DRIFT: 편차 기반 리밸런싱
+
+    ⚠️ USE_REBALANCING=1 설정 시에만 실제 적용됩니다.
+    """
+    if not settings.use_rebalancing:
+        return {
+            "success": True,
+            "rebalancing_enabled": False,
+            "rules": [],
+            "message": "리밸런싱 기능이 비활성화 상태입니다 (USE_REBALANCING=0)"
+        }
+
+    try:
+        from app.models.rebalancing import RebalancingRule
+
+        rules = db.query(RebalancingRule).filter(
+            RebalancingRule.is_active == True
+        ).all()
+
+        return {
+            "success": True,
+            "rebalancing_enabled": True,
+            "rules": [r.to_dict() for r in rules],
+            "message": f"{len(rules)}개의 리밸런싱 규칙이 있습니다"
+        }
+    except Exception as e:
+        logger.warning(f"리밸런싱 규칙 조회 실패: {e}")
+        # 테이블이 없는 경우 하드코딩된 프리셋 반환
+        preset_rules = [
+            {
+                "rule_id": None,
+                "rule_name": "MONTHLY_FIRST",
+                "rule_type": "PERIODIC",
+                "frequency": "MONTHLY",
+                "base_day_policy": "FIRST_TRADING_DAY",
+                "drift_threshold": None,
+                "cost_rate": 0.001,
+            },
+            {
+                "rule_id": None,
+                "rule_name": "QUARTERLY_FIRST",
+                "rule_type": "PERIODIC",
+                "frequency": "QUARTERLY",
+                "base_day_policy": "FIRST_TRADING_DAY",
+                "drift_threshold": None,
+                "cost_rate": 0.001,
+            },
+            {
+                "rule_id": None,
+                "rule_name": "DRIFT_5PCT",
+                "rule_type": "DRIFT",
+                "frequency": None,
+                "base_day_policy": "FIRST_TRADING_DAY",
+                "drift_threshold": 0.05,
+                "cost_rate": 0.001,
+            },
+            {
+                "rule_id": None,
+                "rule_name": "DRIFT_10PCT",
+                "rule_type": "DRIFT",
+                "frequency": None,
+                "base_day_policy": "FIRST_TRADING_DAY",
+                "drift_threshold": 0.10,
+                "cost_rate": 0.001,
+            },
+        ]
+        return {
+            "success": True,
+            "rebalancing_enabled": True,
+            "rules": preset_rules,
+            "message": "프리셋 리밸런싱 규칙 (DB 미연결)"
+        }
+
+
+@router.get("/rebalancing/rules/{rule_id}")
+async def get_rebalancing_rule(
+    rule_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    특정 리밸런싱 규칙 상세 조회 (Phase 2)
+    """
+    if not settings.use_rebalancing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="리밸런싱 기능이 비활성화 상태입니다 (USE_REBALANCING=0)"
+        )
+
+    try:
+        from app.models.rebalancing import RebalancingRule
+
+        rule = db.query(RebalancingRule).filter(
+            RebalancingRule.rule_id == rule_id,
+            RebalancingRule.is_active == True
+        ).first()
+
+        if not rule:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"리밸런싱 규칙 ID {rule_id}를 찾을 수 없습니다"
+            )
+
+        return {
+            "success": True,
+            "rule": rule.to_dict()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"규칙 조회 실패: {str(e)}"
+        )
+
+
+@router.get("/scenario/{run_id}/rebalancing-events")
+async def get_rebalancing_events(
+    run_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    시뮬레이션 실행에 대한 리밸런싱 이벤트 조회 (Phase 2 - P2-B10)
+
+    **Parameters:**
+    - run_id: 시뮬레이션 실행 ID (simulation_run.run_id)
+
+    **Returns:**
+    - events: 리밸런싱 이벤트 목록 (event_date asc 정렬)
+
+    ⚠️ USE_REBALANCING=1 설정 시에만 사용 가능합니다.
+    """
+    if not settings.use_rebalancing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="리밸런싱 기능이 비활성화 상태입니다 (USE_REBALANCING=0)"
+        )
+
+    try:
+        from app.services.scenario_simulation import get_rebalancing_events_by_run
+
+        events = get_rebalancing_events_by_run(db, run_id)
+
+        return {
+            "success": True,
+            "simulation_run_id": run_id,
+            "events_count": len(events),
+            "events": events,
+            "message": f"{len(events)}개의 리밸런싱 이벤트가 있습니다"
+        }
+    except Exception as e:
+        logger.error(f"리밸런싱 이벤트 조회 실패: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"이벤트 조회 실패: {str(e)}"
+        )
+
+
+# ============================================================================
+# Phase 2: 성과 분석 API (P2-Epic D)
+# ============================================================================
+
+@router.get("/analysis/run/{run_id}")
+async def get_analysis_by_run_id(
+    run_id: int,
+    rf_annual: float = 0.0,
+    annualization_factor: int = 252,
+    db: Session = Depends(get_db)
+):
+    """
+    시뮬레이션 실행에 대한 성과 KPI 조회 (Phase 2 - P2-D4)
+
+    **Parameters:**
+    - run_id: 시뮬레이션 실행 ID (simulation_run.run_id)
+    - rf_annual: 무위험 수익률 (연율, 기본 0)
+    - annualization_factor: 연율화 계수 (기본 252)
+
+    **Returns:**
+    - metrics: KPI 결과 (CAGR, Volatility, Sharpe, MDD 등)
+    - rebalancing: 리밸런싱 요약 (USE_REBALANCING=1 시)
+
+    **KPI 설명:**
+    - cagr: 연복리수익률
+    - volatility: 연율화 변동성
+    - sharpe: Sharpe Ratio (변동성 0이면 null)
+    - mdd: 최대 낙폭 (음수)
+    - total_return: 총 수익률
+
+    ⚠️ 과거 데이터 기반 분석이며, 미래 수익을 보장하지 않습니다.
+    """
+    try:
+        from app.services.analysis_store import get_analysis_with_rebalancing
+
+        result = get_analysis_with_rebalancing(
+            db, run_id, rf_annual, annualization_factor
+        )
+
+        return {
+            "success": True,
+            **result,
+            "message": "성과 분석 완료",
+            "note": "과거 데이터 기반 분석이며, 미래 수익을 보장하지 않습니다.",
+        }
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"성과 분석 조회 실패: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"분석 조회 실패: {str(e)}"
+        )
+
+
+@router.get("/analysis/compare")
+async def compare_runs_analysis(
+    run_id_1: int,
+    run_id_2: int,
+    rf_annual: float = 0.0,
+    annualization_factor: int = 252,
+    db: Session = Depends(get_db)
+):
+    """
+    두 시뮬레이션 실행 결과 비교 (Phase 2 - P2-D5)
+
+    **Parameters:**
+    - run_id_1: 첫 번째 시뮬레이션 실행 ID
+    - run_id_2: 두 번째 시뮬레이션 실행 ID
+    - rf_annual: 무위험 수익률 (연율, 기본 0)
+    - annualization_factor: 연율화 계수 (기본 252)
+
+    **Returns:**
+    - comparison: 두 결과의 KPI 차이 (delta)
+    - analysis_1, analysis_2: 각각의 KPI 결과
+
+    ⚠️ 단순 수치 비교만 제공하며, 어느 쪽이 "더 좋다"는 판단을 하지 않습니다.
+    ⚠️ 과거 성과가 미래 수익을 보장하지 않습니다.
+    """
+    try:
+        from app.services.analysis_store import compare_runs
+
+        result = compare_runs(
+            db, run_id_1, run_id_2, rf_annual, annualization_factor
+        )
+
+        return {
+            "success": True,
+            **result,
+            "message": "성과 비교 완료",
+        }
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"성과 비교 실패: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"비교 실패: {str(e)}"
         )

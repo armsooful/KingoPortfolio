@@ -65,6 +65,24 @@ class Settings:
         "0"
     ) in ("1", "true", "True")
 
+    # Phase 2: 리밸런싱 엔진 사용 여부
+    use_rebalancing: bool = os.getenv(
+        "USE_REBALANCING",
+        "0"
+    ) in ("1", "true", "True")
+
+    # Phase 2: 기본 비용률 (10bp = 0.001)
+    default_cost_rate: float = float(os.getenv(
+        "DEFAULT_COST_RATE",
+        "0.001"
+    ))
+
+    # Phase 2: 결측 데이터 처리 정책 ('SKIP' 또는 'ZERO_RETURN')
+    missing_data_policy: str = os.getenv(
+        "MISSING_DATA_POLICY",
+        "SKIP"
+    )
+
     # CORS
     allowed_origins: List[str] = []
     
@@ -97,6 +115,7 @@ class Settings:
         print(f"🚩 Feature Flag - Recommendation Engine: {'ENABLED' if self.feature_recommendation_engine else 'DISABLED (Default)'}")
         print(f"🚩 Feature Flag - Sim Store (Phase 1): {'ENABLED' if self.use_sim_store else 'DISABLED (Default)'}")
         print(f"🚩 Feature Flag - Scenario DB (Phase 1): {'ENABLED' if self.use_scenario_db else 'DISABLED (Default)'}")
+        print(f"🚩 Feature Flag - Rebalancing (Phase 2): {'ENABLED' if self.use_rebalancing else 'DISABLED (Default)'}")
 
 
 # 싱글톤 인스턴스
