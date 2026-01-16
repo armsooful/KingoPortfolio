@@ -9,7 +9,7 @@
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://react.dev/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14-336791?logo=postgresql)](https://www.postgresql.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
-[![Phase](https://img.shields.io/badge/Phase-1%20Completed-success)](docs/phase1/20260115_phase1_completion_report.md)
+[![Phase](https://img.shields.io/badge/Phase-2%20Completed-success)](docs/phase2/20260116_phase2_completion_report.md)
 
 ---
 
@@ -54,6 +54,23 @@
 
 ## 📊 현재 상태
 
+### Phase 2 완료 (2026-01-16) ✅
+
+고급 시뮬레이션 기능 (리밸런싱, 성과분석, 커스텀 포트폴리오)이 완료되었습니다.
+
+| Epic | 기능 | 상태 | 설명 |
+|------|------|------|------|
+| Epic B | 리밸런싱 엔진 | ✅ | PERIODIC/DRIFT 규칙, Feature Flag 제어 |
+| Epic C | 커스텀 포트폴리오 | ✅ | 사용자 정의 자산군 비중, CRUD + 시뮬레이션 |
+| Epic D | 성과 분석 | ✅ | CAGR, Volatility, Sharpe, MDD 계산 |
+
+**Feature Flags** (기본 OFF):
+- `USE_REBALANCING`: 리밸런싱 엔진 활성화
+- `USE_SIM_STORE`: 시뮬레이션 캐싱 레이어
+- `USE_SCENARIO_DB`: DB 기반 시나리오 조회
+
+> 📄 상세 보고서: [Phase 2 완료 보고서](docs/phase2/20260116_phase2_completion_report.md)
+
 ### Phase 1 완료 (2026-01-15) ✅
 
 시뮬레이션 인프라 구축이 완료되었습니다.
@@ -64,13 +81,6 @@
 | ORM 모델 | ✅ | simulation_run, simulation_path, simulation_summary |
 | 시나리오 시뮬레이션 | ✅ | MIN_VOL, DEFENSIVE, GROWTH |
 | 캐싱 레이어 | ✅ | request_hash 기반 7일 TTL |
-| 운영 스크립트 | ✅ | 파티션 관리, TTL 정리, 품질 리포트 |
-
-**DoD (Definition of Done)**:
-- ✅ DDL 문서와 실제 코드 스키마 일치
-- ✅ simulation_store가 sim_run/path/summary에 정상 저장
-- ✅ Phase 0 API 응답 형식과 호환
-- ✅ Feature flag(USE_SIM_STORE)로 전환 가능
 
 > 📄 상세 보고서: [Phase 1 완료 보고서](docs/phase1/20260115_phase1_completion_report.md)
 
@@ -116,6 +126,23 @@
   - 최악의 1개월/3개월 수익률
 - **캐싱 지원**: 동일 요청 7일 캐시
 - **일별 NAV 경로** 제공
+
+### 🔄 리밸런싱 엔진 (Phase 2 - Epic B)
+- **PERIODIC**: 주기적 리밸런싱 (월간/분기/연간)
+- **DRIFT**: 드리프트 기반 리밸런싱 (허용 편차 초과 시)
+- Feature Flag로 ON/OFF 제어
+
+### 🎨 커스텀 포트폴리오 (Phase 2 - Epic C)
+- **사용자 정의 비중**: 자산군별 비중 직접 설정
+- **5개 자산군**: EQUITY, BOND, CASH, GOLD, ALT
+- **비중 검증**: 합계=1, 범위 0~1, 허용 코드 확인
+- **시뮬레이션 연동**: 커스텀 비중으로 NAV 계산
+
+### 📈 성과 분석 (Phase 2 - Epic D)
+- **CAGR**: 연평균 복합 수익률
+- **Volatility**: 연환산 변동성
+- **Sharpe Ratio**: 위험 조정 수익률
+- **MDD**: 최대 낙폭
 
 ---
 
@@ -460,6 +487,7 @@ npm run build && git push
 | [development/](docs/development/) | 개발 가이드 및 백로그 |
 | [manuals/](docs/manuals/) | 운영 매뉴얼 |
 | [phase1/](docs/phase1/) | Phase 1 관련 문서 |
+| [phase2/](docs/phase2/) | Phase 2 관련 문서 |
 
 > 📄 전체 문서 목록: [docs/README.md](docs/README.md)
 
@@ -589,6 +617,26 @@ https://kingo-backend.onrender.com/redoc
 | `GET` | `/scenarios` | 시나리오 목록 조회 |
 | `GET` | `/scenarios/{id}` | 시나리오 상세 정보 |
 
+#### 커스텀 포트폴리오 (Phase 2 - Epic C)
+
+| 메서드 | 엔드포인트 | 설명 |
+|--------|-----------|------|
+| `GET` | `/portfolio/asset-classes` | 허용된 자산군 목록 |
+| `POST` | `/portfolio/custom` | 포트폴리오 생성 |
+| `GET` | `/portfolio/custom` | 목록 조회 |
+| `GET` | `/portfolio/custom/{id}` | 상세 조회 |
+| `PUT` | `/portfolio/custom/{id}` | 수정 |
+| `DELETE` | `/portfolio/custom/{id}` | 삭제 |
+| `POST` | `/portfolio/custom/simulate` | 시뮬레이션 실행 |
+| `GET` | `/portfolio/custom/{id}/simulate/path` | NAV 경로 조회 |
+
+#### 리밸런싱 (Phase 2 - Epic B)
+
+| 메서드 | 엔드포인트 | 설명 |
+|--------|-----------|------|
+| `GET` | `/rebalancing/rules` | 리밸런싱 규칙 목록 |
+| `GET` | `/rebalancing/rules/{id}` | 규칙 상세 |
+
 ---
 
 ## 🤝 기여
@@ -700,15 +748,21 @@ python scripts/quality_report.py --output report.md
 - ✅ 캐싱 레이어 (request_hash 기반)
 - ✅ 운영 스크립트 (파티션, TTL, 품질)
 
-### Phase 2 (계획 📅) - 실데이터 연동
+### Phase 2 (완료 ✅) - 고급 시뮬레이션
+- ✅ **Epic B**: 리밸런싱 엔진 (PERIODIC/DRIFT)
+- ✅ **Epic C**: 커스텀 포트폴리오 (사용자 정의 비중)
+- ✅ **Epic D**: 성과 분석 (CAGR, Sharpe, MDD)
+- ✅ Feature Flag 기반 점진적 활성화
+
+### Phase 3 (계획 📅) - 실데이터 연동
 - 📅 일봉가격/일간수익률 적재
 - 📅 실제 DB 기반 시뮬레이션
 - 📅 pykrx/Alpha Vantage 연동
 
-### Phase 3 (계획 📅) - 고도화
+### Phase 4 (계획 📅) - 고도화
+- 📅 Epic E: 고급 비용 모델 (슬리피지, 마켓 임팩트)
+- 📅 Epic F: HYBRID 리밸런싱 (PERIODIC + DRIFT)
 - 📅 B2B 금융기관 파트너십
-- 📅 AI 추천 개선 (머신러닝)
-- 📅 더 많은 자산 클래스 지원
 
 ---
 
@@ -716,12 +770,14 @@ python scripts/quality_report.py --output report.md
 
 | 항목 | 상태 | 비고 |
 |------|------|------|
-| 백엔드 API | ✅ 완성 | Phase 1 시나리오 시뮬레이션 포함 |
+| 백엔드 API | ✅ 완성 | Phase 2 고급 시뮬레이션 포함 |
 | 프론트엔드 | ✅ 완성 | Tailwind CSS 적용 |
 | 배포 | ✅ 완성 | Render + Vercel |
 | 데이터베이스 | ✅ 완성 | PostgreSQL 파티셔닝 지원 |
 | 문서화 | ✅ 완성 | 카테고리별 정리 완료 |
-| 운영 스크립트 | ✅ 완성 | 파티션/TTL/품질 리포트 |
+| 리밸런싱 엔진 | ✅ 완성 | Feature Flag 제어 |
+| 커스텀 포트폴리오 | ✅ 완성 | CRUD + 시뮬레이션 |
+| 성과 분석 | ✅ 완성 | CAGR, Sharpe, MDD |
 
 ---
 
@@ -739,18 +795,20 @@ python scripts/quality_report.py --output report.md
 
 ## 📌 마지막 업데이트
 
-**날짜**: 2026년 1월 15일
-**버전**: 1.1.0 (Phase 1 완료)
+**날짜**: 2026년 1월 16일
+**버전**: 2.0.0 (Phase 2 완료)
 **상태**: 프로덕션 준비 완료 ✅
 
-### 최근 변경사항 (2026-01-15)
-- ✅ **Phase 1 완료**: 시뮬레이션 인프라 구축
-- ✅ PostgreSQL DDL 설계 (파티셔닝 포함)
-- ✅ 시나리오 시뮬레이션 API (`POST /backtest/scenario`)
-- ✅ 운영 스크립트 추가 (파티션 생성, TTL 정리, 품질 리포트)
-- ✅ 문서 재구성 (카테고리별 서브폴더, 날짜 prefix)
+### 최근 변경사항 (2026-01-16)
+- ✅ **Phase 2 완료**: 고급 시뮬레이션 기능
+- ✅ **Epic B**: 리밸런싱 엔진 (PERIODIC/DRIFT 규칙)
+- ✅ **Epic C**: 커스텀 포트폴리오 (사용자 정의 비중)
+- ✅ **Epic D**: 성과 분석 (CAGR, Volatility, Sharpe, MDD)
+- ✅ Feature Flag 기반 점진적 활성화
+- ✅ 아키텍처 문서 패키지 (사업/규제 설명용)
 
 ### 관련 문서
+- [Phase 2 완료 보고서](docs/phase2/20260116_phase2_completion_report.md)
 - [Phase 1 완료 보고서](docs/phase1/20260115_phase1_completion_report.md)
-- [Phase 1 백로그 티켓](docs/phase1/20260115_phase1_backlog_tickets.md)
+- [아키텍처 패키지](docs/architecture/)
 - [문서 인덱스](docs/README.md)
