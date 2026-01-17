@@ -910,9 +910,9 @@ python scripts/quality_report.py --output report.md
 - ✅ **Epic D**: 성과 분석 (CAGR, Volatility, Sharpe, MDD)
 
 ### 관련 문서
-- [Phase 3-B 가격·상품 구조](docs/Phase3B_Pricing_Product_Structure.md)
-- [Phase 3-A 기능 정의서](Phase3A_Feature_Definition.md)
-- [Phase 3-A API 명세서](Phase3A_API_Specification.md)
+- [Phase 3 문서](docs/phase3/)
+- [Phase 3-B 가격·상품 구조](docs/phase3/phase3b_pricing_product_structure.md)
+- [Phase 3-A 기능 정의서](docs/phase3/phase3a_feature_definition.md)
 - [Phase 2 완료 보고서](docs/phase2/20260116_phase2_completion_report.md)
 - [Phase 1 완료 보고서](docs/phase1/20260115_phase1_completion_report.md)
 - [아키텍처 패키지](docs/architecture/)

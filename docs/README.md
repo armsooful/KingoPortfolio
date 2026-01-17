@@ -1,6 +1,6 @@
 # Foresto Compass 문서 목록
 
-**최종 업데이트**: 2026-01-15
+**최종 업데이트**: 2026-01-17
 
 ---
 
@@ -15,8 +15,33 @@ docs/
 ├── development/      # 개발 가이드 및 백로그
 ├── legacy/           # 과거 문서 아카이브
 ├── manuals/          # 운영 매뉴얼
-└── phase1/           # Phase 1 관련 문서
+├── phase1/           # Phase 1 관련 문서
+├── phase2/           # Phase 2 관련 문서
+└── phase3/           # Phase 3 관련 문서 (현재)
 ```
+
+---
+
+## Phase 3 (설명·안심 중심 해석 서비스) - 현재
+
+| 파일명 | 설명 |
+|--------|------|
+| [README.md](phase3/README.md) | Phase 3 개요 |
+| [phase3a_feature_definition.md](phase3/phase3a_feature_definition.md) | Phase 3-A 기능 정의서 |
+| [phase3a_api_specification.md](phase3/phase3a_api_specification.md) | Phase 3-A API 명세서 |
+| [phase3a_explanation_templates.md](phase3/phase3a_explanation_templates.md) | Phase 3-A 해석 템플릿 |
+| [phase3a_ui_wireframe.md](phase3/phase3a_ui_wireframe.md) | Phase 3-A UI 와이어프레임 |
+| [phase3b_feature_definition.md](phase3/phase3b_feature_definition.md) | Phase 3-B 기능 정의서 |
+| [phase3b_premium_report_outline.md](phase3/phase3b_premium_report_outline.md) | Phase 3-B 프리미엄 리포트 구성안 |
+| [phase3b_pricing_product_structure.md](phase3/phase3b_pricing_product_structure.md) | Phase 3-B 가격·상품 구조 정의서 |
+
+---
+
+## Phase 2 (고급 시뮬레이션)
+
+| 파일명 | 설명 |
+|--------|------|
+| [20260116_phase2_completion_report.md](phase2/20260116_phase2_completion_report.md) | Phase 2 완료 보고서 |
 
 ---
 
