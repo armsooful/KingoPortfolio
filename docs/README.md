@@ -27,13 +27,13 @@ docs/
 | 파일명 | 설명 |
 |--------|------|
 | [README.md](phase3/README.md) | Phase 3 개요 |
-| [phase3a_feature_definition.md](phase3/phase3a_feature_definition.md) | Phase 3-A 기능 정의서 |
-| [phase3a_api_specification.md](phase3/phase3a_api_specification.md) | Phase 3-A API 명세서 |
-| [phase3a_explanation_templates.md](phase3/phase3a_explanation_templates.md) | Phase 3-A 해석 템플릿 |
-| [phase3a_ui_wireframe.md](phase3/phase3a_ui_wireframe.md) | Phase 3-A UI 와이어프레임 |
-| [phase3b_feature_definition.md](phase3/phase3b_feature_definition.md) | Phase 3-B 기능 정의서 |
-| [phase3b_premium_report_outline.md](phase3/phase3b_premium_report_outline.md) | Phase 3-B 프리미엄 리포트 구성안 |
-| [phase3b_pricing_product_structure.md](phase3/phase3b_pricing_product_structure.md) | Phase 3-B 가격·상품 구조 정의서 |
+| [20260116_phase3a_feature_definition.md](phase3/20260116_phase3a_feature_definition.md) | Phase 3-A 기능 정의서 |
+| [20260116_phase3a_api_specification.md](phase3/20260116_phase3a_api_specification.md) | Phase 3-A API 명세서 |
+| [20260116_phase3a_explanation_templates.md](phase3/20260116_phase3a_explanation_templates.md) | Phase 3-A 해석 템플릿 |
+| [20260116_phase3a_ui_wireframe.md](phase3/20260116_phase3a_ui_wireframe.md) | Phase 3-A UI 와이어프레임 |
+| [20260117_phase3b_feature_definition.md](phase3/20260117_phase3b_feature_definition.md) | Phase 3-B 기능 정의서 |
+| [20260117_phase3b_premium_report_outline.md](phase3/20260117_phase3b_premium_report_outline.md) | Phase 3-B 프리미엄 리포트 구성안 |
+| [20260117_phase3b_pricing_product_structure.md](phase3/20260117_phase3b_pricing_product_structure.md) | Phase 3-B 가격·상품 구조 정의서 |
 
 ---
 
@@ -153,8 +153,19 @@ docs/
 YYYYMMDD_descriptive_name.md
 ```
 
-- **YYYYMMDD**: 작성일 또는 최종 수정일
+- **YYYYMMDD**: 최초 생성일자 (파일명에 포함)
 - **descriptive_name**: 문서 내용을 유추할 수 있는 영문 소문자 이름 (단어는 underscore로 구분)
+
+### 파일 내용 메타데이터
+
+모든 문서 파일은 상단에 다음 메타데이터를 포함합니다:
+
+```markdown
+---
+생성일자: YYYY-MM-DD
+최종수정일자: YYYY-MM-DD
+---
+```
 
 ---
 

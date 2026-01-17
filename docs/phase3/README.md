@@ -1,3 +1,8 @@
+---
+생성일자: 2026-01-17
+최종수정일자: 2026-01-17
+---
+
 # Phase 3: 설명·안심 중심 포트폴리오 해석 서비스
 
 ## 개요
@@ -14,10 +19,10 @@ Phase 3은 투자자에게 포트폴리오 성과를 **이해하기 쉽게 설�
 
 | 문서 | 설명 |
 |------|------|
-| [phase3a_feature_definition.md](phase3a_feature_definition.md) | 기능 정의서 |
-| [phase3a_api_specification.md](phase3a_api_specification.md) | API 명세서 |
-| [phase3a_explanation_templates.md](phase3a_explanation_templates.md) | 해석 템플릿 |
-| [phase3a_ui_wireframe.md](phase3a_ui_wireframe.md) | UI 와이어프레임 |
+| [20260116_phase3a_feature_definition.md](20260116_phase3a_feature_definition.md) | 기능 정의서 |
+| [20260116_phase3a_api_specification.md](20260116_phase3a_api_specification.md) | API 명세서 |
+| [20260116_phase3a_explanation_templates.md](20260116_phase3a_explanation_templates.md) | 해석 템플릿 |
+| [20260116_phase3a_ui_wireframe.md](20260116_phase3a_ui_wireframe.md) | UI 와이어프레임 |
 
 **구현 내용**:
 - 성과 해석 엔진 (`explanation_engine.py`)
@@ -31,9 +36,9 @@ PDF 리포트 생성 및 히스토리 관리
 
 | 문서 | 설명 |
 |------|------|
-| [phase3b_feature_definition.md](phase3b_feature_definition.md) | 기능 정의서 |
-| [phase3b_premium_report_outline.md](phase3b_premium_report_outline.md) | 프리미엄 리포트 구성안 |
-| [phase3b_pricing_product_structure.md](phase3b_pricing_product_structure.md) | 가격·상품 구조 정의서 |
+| [20260117_phase3b_feature_definition.md](20260117_phase3b_feature_definition.md) | 기능 정의서 |
+| [20260117_phase3b_premium_report_outline.md](20260117_phase3b_premium_report_outline.md) | 프리미엄 리포트 구성안 |
+| [20260117_phase3b_pricing_product_structure.md](20260117_phase3b_pricing_product_structure.md) | 가격·상품 구조 정의서 |
 
 **구현 내용**:
 - 프리미엄 PDF 리포트 (7페이지)
