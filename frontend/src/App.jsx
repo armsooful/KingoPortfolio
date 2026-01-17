@@ -26,6 +26,7 @@ import PortfolioRecommendationPage from './pages/PortfolioRecommendationPage';
 import BacktestPage from './pages/BacktestPage';
 import ScenarioSimulationPage from './pages/ScenarioSimulationPage';
 import PortfolioExplanationPage from './pages/PortfolioExplanationPage';
+import ReportHistoryPage from './pages/ReportHistoryPage';
 import './styles/App.css';
 
 // ============================================================
@@ -214,6 +215,14 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <PortfolioExplanationPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/report-history"
+            element={
+              <ProtectedRoute>
+                <ReportHistoryPage />
               </ProtectedRoute>
             }
           />

@@ -139,9 +139,11 @@ def explain_cagr(cagr: float, period_years: float) -> MetricExplanation:
             f"높은 수익률은 일반적으로 높은 위험을 동반합니다."
         )
 
+    # 템플릿 라이브러리 기반 맥락 설명
     context = (
-        f"CAGR(연복리수익률)은 {period_years:.1f}년 동안의 복리 기준 연평균 수익률입니다. "
-        f"과거 성과이며, 미래 수익을 보장하지 않습니다."
+        f"장기적으로 자산이 어떤 속도로 변화했는지를 보여주는 지표입니다. "
+        f"단기 변동을 평균화한 결과이므로, 중간 과정의 굴곡은 반영되지 않습니다. "
+        f"({period_years:.1f}년 기준, 과거 성과이며 미래 수익을 보장하지 않습니다.)"
     )
 
     return MetricExplanation(
@@ -203,9 +205,10 @@ def explain_volatility(volatility: float) -> MetricExplanation:
             f"레버리지 상품에서 흔히 볼 수 있는 특성입니다."
         )
 
+    # 템플릿 라이브러리 기반 맥락 설명
     context = (
-        f"변동성은 가격이 평균에서 얼마나 벗어나는지를 나타냅니다. "
-        f"높은 변동성은 큰 수익 가능성과 함께 큰 손실 가능성도 의미합니다."
+        f"가격이 오르내린 폭이 얼마나 컸는지를 나타냅니다. "
+        f"변동성이 크다는 것은 수익 가능성과 함께 심리적 부담도 컸을 수 있음을 의미합니다."
     )
 
     return MetricExplanation(
@@ -274,9 +277,10 @@ def explain_mdd(
             f"이는 금융위기 수준의 하락폭으로, 회복에 상당한 시간이 필요했을 수 있습니다."
         )
 
-    # 추가 맥락: 기간 및 회복 정보
+    # 템플릿 라이브러리 기반 맥락 설명
     context_parts = [
-        f"MDD(최대 낙폭)는 특정 기간 동안 고점에서 저점까지의 최대 하락률입니다."
+        f"과거 기간 중 가장 크게 하락했던 구간을 의미합니다. "
+        f"이 구간은 많은 투자자들이 가장 불안함을 느끼는 시점입니다."
     ]
 
     if peak_date and trough_date:
@@ -522,10 +526,19 @@ def generate_summary(
     else:
         risk_desc = "높은 변동성 또는 큰 낙폭"
 
+    # 템플릿 라이브러리 기반 종합 요약
+    # "이 포트폴리오는 안정성과 변동성 사이의 균형을 중시한 결과로 해석할 수 있습니다."
+    if volatility < 0.10 and mdd > -0.10:
+        balance_desc = "안정성을 중시한 결과"
+    elif volatility < 0.20 and mdd > -0.20:
+        balance_desc = "안정성과 변동성 사이의 균형을 추구한 결과"
+    else:
+        balance_desc = "성장 가능성을 추구하되 변동성을 감수한 결과"
+
     summary = (
-        f"지난 {period_years:.1f}년간 이 포트폴리오는 {return_desc}을 기록했으며, "
-        f"{risk_desc}을 보였습니다. "
-        f"변동성 {vol_pct:.1f}%, 최대 낙폭 {mdd_pct:.1f}%를 경험했습니다."
+        f"지난 {period_years:.1f}년간 이 포트폴리오는 {return_desc}을 기록했습니다. "
+        f"이 포트폴리오는 {balance_desc}로 해석할 수 있습니다. "
+        f"(변동성 {vol_pct:.1f}%, 최대 낙폭 {mdd_pct:.1f}%)"
     )
 
     return summary

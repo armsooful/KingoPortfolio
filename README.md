@@ -9,7 +9,7 @@
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://react.dev/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14-336791?logo=postgresql)](https://www.postgresql.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
-[![Phase](https://img.shields.io/badge/Phase-3A%20In%20Progress-blue)](docs/phase3/)
+[![Phase](https://img.shields.io/badge/Phase-3B%20Complete-green)](docs/phase3/)
 
 ---
 
@@ -54,7 +54,28 @@
 
 ## 📊 현재 상태
 
-### Phase 3-A 진행 중 (2026-01-16) 🚧
+### Phase 3-B 완료 (2026-01-17) ✅
+
+프리미엄 리포트 및 히스토리 관리 기능이 완료되었습니다.
+
+| 기능 | 상태 | 설명 |
+|------|------|------|
+| 프리미엄 PDF 리포트 | ✅ | 7페이지 구성 (표지~면책조항) |
+| 기본 PDF 리포트 | ✅ | 간략 요약 리포트 |
+| 히스토리 관리 | ✅ | 저장/조회/삭제 CRUD |
+| 기간별 비교 | ✅ | 2~10개 기간 비교 분석 |
+| 가격·상품 구조 | ✅ | 티어별 서비스 정의 |
+
+**프리미엄 리포트 구성**:
+1. 표지 (제목, 기간, 고지문구)
+2. Executive Summary (요약, 지표 테이블)
+3. 성과 해석 (지표별 상세)
+4. 위험 구간 분석 (MDD, 회복 과정)
+5. 맥락 비교 (벤치마크 대비)
+6. 종합 해석 (포트폴리오 특성)
+7. 참고 및 고지 (면책 조항)
+
+### Phase 3-A 완료 (2026-01-16) ✅
 
 설명·안심 중심 포트폴리오 해석 서비스가 구현되었습니다.
 
@@ -168,6 +189,13 @@
 - **위험 구간 분석**: MDD 발생 구간 및 회복 정보
 - **벤치마크 비교**: 시장 지수 대비 상대 성과 맥락
 - **면책 조항**: 투자 권유 아님 명시
+
+### 📄 프리미엄 리포트 (Phase 3-B)
+- **프리미엄 PDF**: 7페이지 전문 리포트 (표지~면책조항)
+- **기본 PDF**: 간략 요약 리포트
+- **히스토리 관리**: 과거 분석 결과 저장 및 관리
+- **기간별 비교**: 여러 기간 성과 비교 분석
+- **서비스 티어**: Basic/Standard/Premium 구조
 
 ---
 
@@ -670,6 +698,18 @@ https://kingo-backend.onrender.com/redoc
 | `POST` | `/api/v1/analysis/explain/direct` | 직접 지표 입력 해석 |
 | `GET` | `/api/v1/analysis/disclaimer` | 면책 조항 조회 |
 
+#### 프리미엄 리포트 (Phase 3-B)
+
+| 메서드 | 엔드포인트 | 설명 |
+|--------|-----------|------|
+| `POST` | `/api/v1/analysis/explain/pdf` | 기본 PDF 리포트 다운로드 |
+| `POST` | `/api/v1/analysis/premium-report/pdf` | 프리미엄 PDF 리포트 |
+| `POST` | `/api/v1/analysis/history` | 히스토리 저장 |
+| `GET` | `/api/v1/analysis/history` | 히스토리 목록 조회 |
+| `GET` | `/api/v1/analysis/history/{id}` | 히스토리 상세 조회 |
+| `DELETE` | `/api/v1/analysis/history/{id}` | 히스토리 삭제 |
+| `POST` | `/api/v1/analysis/compare-periods` | 기간별 비교 분석 |
+
 ---
 
 ## 🤝 기여
@@ -787,13 +827,20 @@ python scripts/quality_report.py --output report.md
 - ✅ **Epic D**: 성과 분석 (CAGR, Sharpe, MDD)
 - ✅ Feature Flag 기반 점진적 활성화
 
-### Phase 3-A (진행 중 🚧) - 설명 서비스
+### Phase 3-A (완료 ✅) - 설명 서비스
 - ✅ 성과 해석 엔진 (자연어 변환)
 - ✅ 해석 API (`/api/v1/analysis/explain`)
 - ✅ 해석 UI (요약 카드, 지표 해석, 위험 구간)
 - ✅ 벤치마크 비교 맥락 제공
 
-### Phase 3-B (계획 📅) - 실데이터 연동
+### Phase 3-B (완료 ✅) - 프리미엄 리포트
+- ✅ 프리미엄 PDF 리포트 (7페이지 구성)
+- ✅ 기본 PDF 리포트
+- ✅ 히스토리 CRUD (저장/조회/삭제)
+- ✅ 기간별 비교 분석
+- ✅ 가격·상품 구조 정의서
+
+### Phase 3-C (계획 📅) - 실데이터 연동
 - 📅 일봉가격/일간수익률 적재
 - 📅 실제 DB 기반 시뮬레이션
 - 📅 pykrx/Alpha Vantage 연동
@@ -818,6 +865,8 @@ python scripts/quality_report.py --output report.md
 | 커스텀 포트폴리오 | ✅ 완성 | CRUD + 시뮬레이션 |
 | 성과 분석 | ✅ 완성 | CAGR, Sharpe, MDD |
 | 성과 해석 서비스 | ✅ 완성 | Phase 3-A 자연어 해석 |
+| 프리미엄 리포트 | ✅ 완성 | Phase 3-B PDF 리포트 |
+| 히스토리 관리 | ✅ 완성 | Phase 3-B 저장/조회/삭제 |
 
 ---
 
@@ -835,11 +884,20 @@ python scripts/quality_report.py --output report.md
 
 ## 📌 마지막 업데이트
 
-**날짜**: 2026년 1월 16일
-**버전**: 3.0.0-alpha (Phase 3-A 진행 중)
-**상태**: 개발 진행 중 🚧
+**날짜**: 2026년 1월 17일
+**버전**: 3.1.0 (Phase 3-B 완료)
+**상태**: Phase 3-B 완료 ✅
 
-### 최근 변경사항 (2026-01-16)
+### 최근 변경사항 (2026-01-17)
+- ✅ **Phase 3-B**: 프리미엄 리포트 및 히스토리 관리
+  - 프리미엄 PDF 리포트 (7페이지 구성)
+  - 기본 PDF 리포트
+  - 히스토리 CRUD API (`/api/v1/analysis/history`)
+  - 기간별 비교 API (`/api/v1/analysis/compare-periods`)
+  - 가격·상품 구조 정의서 (`Phase3B_Pricing_Product_Structure.md`)
+  - 샘플 PDF 생성 스크립트 (`generate_sample_premium_report.py`)
+
+### 이전 변경사항 (2026-01-16)
 - ✅ **Phase 3-A**: 설명·안심 중심 포트폴리오 해석 서비스
   - 성과 해석 엔진 (`explanation_engine.py`)
   - 해석 API (`/api/v1/analysis/explain`)
@@ -852,6 +910,7 @@ python scripts/quality_report.py --output report.md
 - ✅ **Epic D**: 성과 분석 (CAGR, Volatility, Sharpe, MDD)
 
 ### 관련 문서
+- [Phase 3-B 가격·상품 구조](docs/Phase3B_Pricing_Product_Structure.md)
 - [Phase 3-A 기능 정의서](Phase3A_Feature_Definition.md)
 - [Phase 3-A API 명세서](Phase3A_API_Specification.md)
 - [Phase 2 완료 보고서](docs/phase2/20260116_phase2_completion_report.md)

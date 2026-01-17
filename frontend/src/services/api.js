@@ -627,3 +627,130 @@ export const explainDirect = (data) => {
 export const getAnalysisDisclaimer = () => {
   return api.get('/api/v1/analysis/disclaimer');
 };
+
+/**
+ * 성과 해석 PDF 다운로드 (직접 지표 입력)
+ */
+export const downloadExplanationPDF = async (data) => {
+  const token = localStorage.getItem('access_token');
+  const response = await fetch(`${API_BASE_URL}/api/v1/analysis/explain/pdf`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to download PDF report');
+  }
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `performance_report_${new Date().toISOString().split('T')[0]}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+};
+
+/**
+ * 포트폴리오 성과 해석 PDF 다운로드
+ */
+export const downloadPortfolioExplanationPDF = async (data) => {
+  const token = localStorage.getItem('access_token');
+  const response = await fetch(`${API_BASE_URL}/api/v1/analysis/explain/portfolio/pdf`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to download PDF report');
+  }
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `portfolio_report_${data.portfolio_id}_${new Date().toISOString().split('T')[0]}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+};
+
+// ============================================================
+// Phase 3-B: 리포트 히스토리 API
+// ============================================================
+
+/**
+ * 성과 해석 히스토리 저장
+ */
+export const saveExplanationHistory = (data) => {
+  return api.post('/api/v1/analysis/history', data);
+};
+
+/**
+ * 성과 해석 히스토리 목록 조회
+ */
+export const getExplanationHistory = (skip = 0, limit = 20) => {
+  return api.get(`/api/v1/analysis/history?skip=${skip}&limit=${limit}`);
+};
+
+/**
+ * 성과 해석 히스토리 상세 조회
+ */
+export const getExplanationHistoryDetail = (historyId) => {
+  return api.get(`/api/v1/analysis/history/${historyId}`);
+};
+
+/**
+ * 성과 해석 히스토리 삭제
+ */
+export const deleteExplanationHistory = (historyId) => {
+  return api.delete(`/api/v1/analysis/history/${historyId}`);
+};
+
+/**
+ * 기간별 비교 리포트
+ */
+export const comparePeriods = (data) => {
+  return api.post('/api/v1/analysis/compare-periods', data);
+};
+
+/**
+ * 프리미엄 성과 해석 리포트 PDF 다운로드
+ */
+export const downloadPremiumReportPDF = async (data) => {
+  const token = localStorage.getItem('access_token');
+  const response = await fetch(`${API_BASE_URL}/api/v1/analysis/premium-report/pdf`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to download premium PDF report');
+  }
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const title = (data.report_title || 'premium_report').replace(/\s+/g, '_').slice(0, 30);
+  a.download = `${title}_${new Date().toISOString().split('T')[0]}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+};

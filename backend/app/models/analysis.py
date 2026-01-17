@@ -7,7 +7,7 @@ DDL 기준: Foresto_Phase2_EpicD_Analysis_DDL.sql
 """
 
 from sqlalchemy import (
-    Column, Integer, BigInteger, Numeric, DateTime, Index, ForeignKey
+    Column, Integer, BigInteger, Numeric, DateTime, Index, ForeignKey, String
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
@@ -103,3 +103,81 @@ class AnalysisResult(Base):
     def total_return(self) -> Optional[float]:
         """총 수익률 값"""
         return self.get_metric("total_return")
+
+
+class ExplanationHistory(Base):
+    """
+    Phase 3-B: 성과 해석 리포트 히스토리
+
+    사용자가 생성한 성과 해석 리포트를 저장하여
+    과거 리포트 조회 및 기간별 비교를 지원합니다.
+
+    **주요 기능:**
+    - 과거 리포트 히스토리 저장
+    - PDF 다운로드 이력 추적
+    - 기간별 비교 지원
+
+    ⚠️ 이 테이블은 정보 제공 목적이며, 투자 추천 정보를 포함하지 않습니다.
+    """
+    __tablename__ = "explanation_history"
+
+    history_id = Column(BigInteger, primary_key=True, autoincrement=True)
+
+    # FK to users
+    user_id = Column(
+        BigInteger,
+        ForeignKey("users.user_id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    # 포트폴리오 식별 (선택사항 - 직접 입력 시 null)
+    portfolio_id = Column(BigInteger, nullable=True)
+    portfolio_type = Column(String(50), nullable=True)  # 'custom', 'generated', etc.
+
+    # 분석 기간
+    period_start = Column(DateTime, nullable=False)
+    period_end = Column(DateTime, nullable=False)
+
+    # 입력 지표
+    input_metrics = Column(JSONB, nullable=False)
+    # 포함 키: cagr, volatility, mdd, sharpe, rf_annual,
+    #         benchmark_name, benchmark_return
+
+    # 해석 결과
+    explanation_result = Column(JSONB, nullable=False)
+    # 포함 키: summary, performance_explanation, risk_explanation,
+    #         risk_periods, comparison, disclaimer
+
+    # 리포트 메타데이터
+    report_title = Column(String(200), nullable=True)
+    pdf_downloaded = Column(Integer, default=0)  # PDF 다운로드 횟수
+
+    # 생성/수정 시간
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        Index('idx_explanation_history_user', 'user_id'),
+        Index('idx_explanation_history_created', 'user_id', 'created_at'),
+        Index('idx_explanation_history_period', 'user_id', 'period_start', 'period_end'),
+    )
+
+    def __repr__(self):
+        return f"<ExplanationHistory {self.history_id} user={self.user_id}>"
+
+    def to_dict(self) -> dict:
+        """dict 변환 (API 응답용)"""
+        return {
+            "history_id": self.history_id,
+            "user_id": self.user_id,
+            "portfolio_id": self.portfolio_id,
+            "portfolio_type": self.portfolio_type,
+            "period_start": self.period_start.isoformat() if self.period_start else None,
+            "period_end": self.period_end.isoformat() if self.period_end else None,
+            "input_metrics": self.input_metrics,
+            "explanation_result": self.explanation_result,
+            "report_title": self.report_title,
+            "pdf_downloaded": self.pdf_downloaded,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }

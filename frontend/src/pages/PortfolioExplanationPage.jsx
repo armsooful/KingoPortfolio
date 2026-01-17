@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { explainDirect, explainPortfolio } from '../services/api';
+import {
+  explainDirect,
+  explainPortfolio,
+  downloadExplanationPDF,
+  downloadPremiumReportPDF,
+  saveExplanationHistory
+} from '../services/api';
 
 /**
  * Phase 3-A: 포트폴리오 성과 해석 페이지
@@ -294,6 +300,7 @@ function PortfolioExplanationPage() {
         <ExplanationResult
           data={explanation}
           onReset={() => setExplanation(null)}
+          formData={formData}
         />
       )}
     </div>
@@ -303,7 +310,7 @@ function PortfolioExplanationPage() {
 /**
  * 해석 결과 컴포넌트
  */
-function ExplanationResult({ data, onReset }) {
+function ExplanationResult({ data, onReset, formData }) {
   const {
     summary,
     performance_explanation,
@@ -312,6 +319,84 @@ function ExplanationResult({ data, onReset }) {
     comparison,
     disclaimer
   } = data;
+
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isPremiumDownloading, setIsPremiumDownloading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [downloadError, setDownloadError] = useState(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // 요청 데이터 생성 헬퍼
+  const getRequestData = () => ({
+    cagr: parseFloat(formData.cagr),
+    volatility: parseFloat(formData.volatility),
+    mdd: parseFloat(formData.mdd),
+    sharpe: formData.sharpe ? parseFloat(formData.sharpe) : null,
+    start_date: formData.start_date,
+    end_date: formData.end_date,
+    rf_annual: parseFloat(formData.rf_annual) || 0,
+    benchmark_name: formData.benchmark_name || null,
+    benchmark_return: formData.benchmark_return ? parseFloat(formData.benchmark_return) : null,
+  });
+
+  // 기본 PDF 다운로드 핸들러
+  const handleDownloadPDF = async () => {
+    setIsDownloading(true);
+    setDownloadError(null);
+
+    try {
+      await downloadExplanationPDF(getRequestData());
+    } catch (err) {
+      console.error('PDF download error:', err);
+      setDownloadError('PDF 다운로드 중 오류가 발생했습니다.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // 프리미엄 PDF 다운로드 핸들러
+  const handleDownloadPremiumPDF = async () => {
+    setIsPremiumDownloading(true);
+    setDownloadError(null);
+
+    try {
+      const requestData = {
+        ...getRequestData(),
+        report_title: '나의 포트폴리오 해석 리포트',
+        total_return: null, // 누적 수익률 (선택)
+      };
+
+      await downloadPremiumReportPDF(requestData);
+    } catch (err) {
+      console.error('Premium PDF download error:', err);
+      setDownloadError('프리미엄 PDF 다운로드 중 오류가 발생했습니다.');
+    } finally {
+      setIsPremiumDownloading(false);
+    }
+  };
+
+  // 히스토리 저장 핸들러
+  const handleSaveToHistory = async () => {
+    setIsSaving(true);
+    setDownloadError(null);
+    setSaveSuccess(false);
+
+    try {
+      const requestData = {
+        ...getRequestData(),
+        report_title: `분석 리포트 (${formData.start_date} ~ ${formData.end_date})`,
+      };
+
+      await saveExplanationHistory(requestData);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {
+      console.error('Save history error:', err);
+      setDownloadError('히스토리 저장 중 오류가 발생했습니다.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="result-section" style={styles.resultSection}>
@@ -390,18 +475,72 @@ function ExplanationResult({ data, onReset }) {
         <p style={styles.disclaimerText}>{disclaimer}</p>
       </div>
 
-      {/* 버튼 */}
+      {/* 버튼 섹션 */}
       <div style={styles.buttonSection}>
         <button onClick={onReset} style={styles.resetButton}>
           새로운 분석
         </button>
+        <button
+          onClick={handleSaveToHistory}
+          disabled={isSaving}
+          style={{
+            ...styles.saveButton,
+            opacity: isSaving ? 0.7 : 1,
+          }}
+        >
+          {isSaving ? '저장 중...' : '히스토리 저장'}
+        </button>
       </div>
+
+      {/* PDF 다운로드 섹션 */}
+      <div style={styles.pdfSection}>
+        <h3 style={styles.pdfSectionTitle}>PDF 리포트 다운로드</h3>
+        <div style={styles.pdfButtonGroup}>
+          <button
+            onClick={handleDownloadPDF}
+            disabled={isDownloading}
+            style={{
+              ...styles.downloadButton,
+              opacity: isDownloading ? 0.7 : 1,
+            }}
+          >
+            {isDownloading ? '생성 중...' : '기본 PDF'}
+          </button>
+          <button
+            onClick={handleDownloadPremiumPDF}
+            disabled={isPremiumDownloading}
+            style={{
+              ...styles.premiumButton,
+              opacity: isPremiumDownloading ? 0.7 : 1,
+            }}
+          >
+            {isPremiumDownloading ? '생성 중...' : '프리미엄 PDF'}
+          </button>
+        </div>
+        <p style={styles.pdfHint}>
+          프리미엄 PDF: 표지, 요약, 종합해석 포함
+        </p>
+      </div>
+
+      {/* 알림 메시지 */}
+      {saveSuccess && (
+        <div style={styles.successMessage}>
+          히스토리에 저장되었습니다.
+        </div>
+      )}
+
+      {downloadError && (
+        <div style={styles.downloadError}>
+          {downloadError}
+        </div>
+      )}
     </div>
   );
 }
 
 /**
  * 개별 지표 카드 컴포넌트
+ * UI 원칙: 숫자보다 설명 우선 - 사용자의 불안을 낮추는 정보 구조
  */
 function MetricCard({ metric }) {
   const { metric: name, formatted_value, description, context, level } = metric;
@@ -409,20 +548,29 @@ function MetricCard({ metric }) {
   return (
     <div style={{
       ...styles.metricCard,
-      borderTop: `4px solid ${getLevelColor(level)}`
+      borderLeft: `4px solid ${getLevelColor(level)}`,
+      borderTop: 'none'
     }}>
-      <div style={styles.metricHeader}>
-        <span style={styles.metricName}>{getMetricLabel(name)}</span>
+      {/* 지표 이름 - 작게 */}
+      <div style={styles.metricLabelRow}>
+        <span style={styles.metricLabel}>{getMetricLabel(name)}</span>
         <span style={{
-          ...styles.metricValue,
+          ...styles.metricValueSmall,
           color: getLevelColor(level)
         }}>
           {formatted_value}
         </span>
       </div>
-      <p style={styles.metricDescription}>{description}</p>
+
+      {/* 설명 - 가장 크고 눈에 띄게 (숫자보다 설명 우선) */}
+      <p style={styles.metricDescriptionMain}>{description}</p>
+
+      {/* 맥락 설명 - 이해를 돕는 추가 정보 */}
       {context && (
-        <p style={styles.metricContext}>{context}</p>
+        <div style={styles.metricContextBox}>
+          <span style={styles.contextIcon}>💡</span>
+          <p style={styles.metricContextText}>{context}</p>
+        </div>
       )}
     </div>
   );
@@ -619,10 +767,62 @@ const styles = {
     marginTop: '1rem',
   },
   metricCard: {
+    background: '#fff',
+    borderRadius: '12px',
+    padding: '1.5rem',
+    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+  },
+  // 숫자보다 설명 우선 - 새로운 레이아웃
+  metricLabelRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '1rem',
+    paddingBottom: '0.75rem',
+    borderBottom: '1px solid #eee',
+  },
+  metricLabel: {
+    fontSize: '0.85rem',
+    color: '#888',
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  metricValueSmall: {
+    fontSize: '0.9rem',
+    fontWeight: '600',
+    padding: '0.25rem 0.5rem',
+    borderRadius: '4px',
+    background: '#f5f5f5',
+  },
+  // 설명을 가장 크고 눈에 띄게
+  metricDescriptionMain: {
+    fontSize: '1.05rem',
+    color: '#333',
+    lineHeight: '1.7',
+    margin: '0 0 1rem 0',
+    fontWeight: '400',
+  },
+  // 맥락 설명 박스
+  metricContextBox: {
+    display: 'flex',
+    gap: '0.5rem',
+    padding: '1rem',
     background: '#f8f9fa',
     borderRadius: '8px',
-    padding: '1.25rem',
+    alignItems: 'flex-start',
   },
+  contextIcon: {
+    fontSize: '1rem',
+    flexShrink: 0,
+  },
+  metricContextText: {
+    fontSize: '0.85rem',
+    color: '#666',
+    lineHeight: '1.5',
+    margin: 0,
+  },
+  // 레거시 스타일 유지 (하위 호환)
   metricHeader: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -762,6 +962,81 @@ const styles = {
     fontSize: '1rem',
     cursor: 'pointer',
     transition: 'background 0.2s',
+  },
+  downloadButton: {
+    padding: '0.75rem 1.5rem',
+    background: '#667eea',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '0.95rem',
+    cursor: 'pointer',
+    transition: 'background 0.2s',
+  },
+  premiumButton: {
+    padding: '0.75rem 1.5rem',
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '0.95rem',
+    cursor: 'pointer',
+    transition: 'transform 0.2s',
+    fontWeight: '500',
+  },
+  saveButton: {
+    padding: '0.75rem 2rem',
+    background: '#4caf50',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '1rem',
+    cursor: 'pointer',
+    transition: 'background 0.2s',
+  },
+  pdfSection: {
+    marginTop: '1.5rem',
+    padding: '1.25rem',
+    background: '#f8f9fa',
+    borderRadius: '12px',
+    textAlign: 'center',
+  },
+  pdfSectionTitle: {
+    fontSize: '1rem',
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: '1rem',
+    margin: '0 0 1rem 0',
+  },
+  pdfButtonGroup: {
+    display: 'flex',
+    justifyContent: 'center',
+    gap: '1rem',
+    flexWrap: 'wrap',
+  },
+  pdfHint: {
+    marginTop: '0.75rem',
+    fontSize: '0.8rem',
+    color: '#888',
+    margin: '0.75rem 0 0 0',
+  },
+  successMessage: {
+    marginTop: '1rem',
+    padding: '0.75rem',
+    background: '#e8f5e9',
+    color: '#2e7d32',
+    borderRadius: '6px',
+    fontSize: '0.9rem',
+    textAlign: 'center',
+  },
+  downloadError: {
+    marginTop: '1rem',
+    padding: '0.75rem',
+    background: '#ffebee',
+    color: '#c62828',
+    borderRadius: '6px',
+    fontSize: '0.9rem',
+    textAlign: 'center',
   },
 };
 
