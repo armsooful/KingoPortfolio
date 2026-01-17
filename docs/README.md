@@ -31,6 +31,7 @@ docs/
 | [20260116_phase3a_api_specification.md](phase3/20260116_phase3a_api_specification.md) | Phase 3-A API 명세서 |
 | [20260116_phase3a_explanation_templates.md](phase3/20260116_phase3a_explanation_templates.md) | Phase 3-A 해석 템플릿 |
 | [20260116_phase3a_ui_wireframe.md](phase3/20260116_phase3a_ui_wireframe.md) | Phase 3-A UI 와이어프레임 |
+| [20260117_phase3b_completion_report.md](phase3/20260117_phase3b_completion_report.md) | **Phase 3-B 완료 보고서** |
 | [20260117_phase3b_feature_definition.md](phase3/20260117_phase3b_feature_definition.md) | Phase 3-B 기능 정의서 |
 | [20260117_phase3b_premium_report_outline.md](phase3/20260117_phase3b_premium_report_outline.md) | Phase 3-B 프리미엄 리포트 구성안 |
 | [20260117_phase3b_pricing_product_structure.md](phase3/20260117_phase3b_pricing_product_structure.md) | Phase 3-B 가격·상품 구조 정의서 |

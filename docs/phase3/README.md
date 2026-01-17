@@ -36,6 +36,7 @@ PDF 리포트 생성 및 히스토리 관리
 
 | 문서 | 설명 |
 |------|------|
+| [20260117_phase3b_completion_report.md](20260117_phase3b_completion_report.md) | **완료 보고서** |
 | [20260117_phase3b_feature_definition.md](20260117_phase3b_feature_definition.md) | 기능 정의서 |
 | [20260117_phase3b_premium_report_outline.md](20260117_phase3b_premium_report_outline.md) | 프리미엄 리포트 구성안 |
 | [20260117_phase3b_pricing_product_structure.md](20260117_phase3b_pricing_product_structure.md) | 가격·상품 구조 정의서 |
