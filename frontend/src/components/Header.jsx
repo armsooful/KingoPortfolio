@@ -79,6 +79,13 @@ function Header() {
             백테스팅
           </button>
           <button
+            className={`nav-link ${isActive('/analysis') ? 'active' : ''}`}
+            onClick={() => navigate('/analysis')}
+            title="포트폴리오 성과 해석"
+          >
+            성과해석
+          </button>
+          <button
             className={`nav-link ${isActive('/profile') ? 'active' : ''}`}
             onClick={() => navigate('/profile')}
             title="내 프로필"

@@ -602,3 +602,28 @@ export const getScenarios = () => {
 export const getScenarioDetail = (scenarioId) => {
   return api.get(`/scenarios/${scenarioId}`);
 };
+
+// ============================================================
+// Analysis API (Phase 3-A)
+// ============================================================
+
+/**
+ * 포트폴리오 성과 해석
+ */
+export const explainPortfolio = (data) => {
+  return api.post('/api/v1/analysis/explain', data);
+};
+
+/**
+ * 직접 지표 해석 (포트폴리오 ID 없이)
+ */
+export const explainDirect = (data) => {
+  return api.post('/api/v1/analysis/explain/direct', data);
+};
+
+/**
+ * 면책 조항 조회
+ */
+export const getAnalysisDisclaimer = () => {
+  return api.get('/api/v1/analysis/disclaimer');
+};

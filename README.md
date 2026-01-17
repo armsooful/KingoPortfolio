@@ -9,7 +9,7 @@
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://react.dev/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14-336791?logo=postgresql)](https://www.postgresql.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
-[![Phase](https://img.shields.io/badge/Phase-2%20Completed-success)](docs/phase2/20260116_phase2_completion_report.md)
+[![Phase](https://img.shields.io/badge/Phase-3A%20In%20Progress-blue)](docs/phase3/)
 
 ---
 
@@ -53,6 +53,24 @@
 ---
 
 ## 📊 현재 상태
+
+### Phase 3-A 진행 중 (2026-01-16) 🚧
+
+설명·안심 중심 포트폴리오 해석 서비스가 구현되었습니다.
+
+| 기능 | 상태 | 설명 |
+|------|------|------|
+| 성과 해석 엔진 | ✅ | CAGR, 변동성, MDD, 샤프 비율 자연어 변환 |
+| 해석 API | ✅ | `/api/v1/analysis/explain` 엔드포인트 |
+| 해석 UI | ✅ | 요약 카드, 지표별 해석, 위험 구간 표시 |
+| 벤치마크 비교 | ✅ | 시장 지수 대비 맥락 제공 |
+
+**핵심 컨셉**: 정답을 주지 않는다. 대신 이해를 준다.
+
+**규제 준수**:
+- 종목 추천 금지
+- 투자 판단 유도 금지
+- 과거 데이터 기반 고지 필수
 
 ### Phase 2 완료 (2026-01-16) ✅
 
@@ -143,6 +161,13 @@
 - **Volatility**: 연환산 변동성
 - **Sharpe Ratio**: 위험 조정 수익률
 - **MDD**: 최대 낙폭
+
+### 📖 성과 해석 서비스 (Phase 3-A)
+- **자연어 해석**: 성과 지표를 이해하기 쉬운 문장으로 변환
+- **수준 분류**: 각 지표의 상대적 수준 제공 (참고용)
+- **위험 구간 분석**: MDD 발생 구간 및 회복 정보
+- **벤치마크 비교**: 시장 지수 대비 상대 성과 맥락
+- **면책 조항**: 투자 권유 아님 명시
 
 ---
 
@@ -637,6 +662,14 @@ https://kingo-backend.onrender.com/redoc
 | `GET` | `/rebalancing/rules` | 리밸런싱 규칙 목록 |
 | `GET` | `/rebalancing/rules/{id}` | 규칙 상세 |
 
+#### 성과 해석 (Phase 3-A)
+
+| 메서드 | 엔드포인트 | 설명 |
+|--------|-----------|------|
+| `POST` | `/api/v1/analysis/explain` | 포트폴리오 성과 해석 |
+| `POST` | `/api/v1/analysis/explain/direct` | 직접 지표 입력 해석 |
+| `GET` | `/api/v1/analysis/disclaimer` | 면책 조항 조회 |
+
 ---
 
 ## 🤝 기여
@@ -754,7 +787,13 @@ python scripts/quality_report.py --output report.md
 - ✅ **Epic D**: 성과 분석 (CAGR, Sharpe, MDD)
 - ✅ Feature Flag 기반 점진적 활성화
 
-### Phase 3 (계획 📅) - 실데이터 연동
+### Phase 3-A (진행 중 🚧) - 설명 서비스
+- ✅ 성과 해석 엔진 (자연어 변환)
+- ✅ 해석 API (`/api/v1/analysis/explain`)
+- ✅ 해석 UI (요약 카드, 지표 해석, 위험 구간)
+- ✅ 벤치마크 비교 맥락 제공
+
+### Phase 3-B (계획 📅) - 실데이터 연동
 - 📅 일봉가격/일간수익률 적재
 - 📅 실제 DB 기반 시뮬레이션
 - 📅 pykrx/Alpha Vantage 연동
@@ -778,6 +817,7 @@ python scripts/quality_report.py --output report.md
 | 리밸런싱 엔진 | ✅ 완성 | Feature Flag 제어 |
 | 커스텀 포트폴리오 | ✅ 완성 | CRUD + 시뮬레이션 |
 | 성과 분석 | ✅ 완성 | CAGR, Sharpe, MDD |
+| 성과 해석 서비스 | ✅ 완성 | Phase 3-A 자연어 해석 |
 
 ---
 
@@ -796,18 +836,24 @@ python scripts/quality_report.py --output report.md
 ## 📌 마지막 업데이트
 
 **날짜**: 2026년 1월 16일
-**버전**: 2.0.0 (Phase 2 완료)
-**상태**: 프로덕션 준비 완료 ✅
+**버전**: 3.0.0-alpha (Phase 3-A 진행 중)
+**상태**: 개발 진행 중 🚧
 
 ### 최근 변경사항 (2026-01-16)
+- ✅ **Phase 3-A**: 설명·안심 중심 포트폴리오 해석 서비스
+  - 성과 해석 엔진 (`explanation_engine.py`)
+  - 해석 API (`/api/v1/analysis/explain`)
+  - 해석 UI 페이지 (`PortfolioExplanationPage.jsx`)
+  - 벤치마크 비교 맥락 제공
+  - 규제 준수 면책 조항 포함
 - ✅ **Phase 2 완료**: 고급 시뮬레이션 기능
 - ✅ **Epic B**: 리밸런싱 엔진 (PERIODIC/DRIFT 규칙)
 - ✅ **Epic C**: 커스텀 포트폴리오 (사용자 정의 비중)
 - ✅ **Epic D**: 성과 분석 (CAGR, Volatility, Sharpe, MDD)
-- ✅ Feature Flag 기반 점진적 활성화
-- ✅ 아키텍처 문서 패키지 (사업/규제 설명용)
 
 ### 관련 문서
+- [Phase 3-A 기능 정의서](Phase3A_Feature_Definition.md)
+- [Phase 3-A API 명세서](Phase3A_API_Specification.md)
 - [Phase 2 완료 보고서](docs/phase2/20260116_phase2_completion_report.md)
 - [Phase 1 완료 보고서](docs/phase1/20260115_phase1_completion_report.md)
 - [아키텍처 패키지](docs/architecture/)

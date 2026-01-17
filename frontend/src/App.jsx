@@ -25,6 +25,7 @@ import MarketDashboardPage from './pages/MarketDashboardPage';
 import PortfolioRecommendationPage from './pages/PortfolioRecommendationPage';
 import BacktestPage from './pages/BacktestPage';
 import ScenarioSimulationPage from './pages/ScenarioSimulationPage';
+import PortfolioExplanationPage from './pages/PortfolioExplanationPage';
 import './styles/App.css';
 
 // ============================================================
@@ -205,6 +206,14 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <ScenarioSimulationPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analysis"
+            element={
+              <ProtectedRoute>
+                <PortfolioExplanationPage />
               </ProtectedRoute>
             }
           />
