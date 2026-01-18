@@ -65,6 +65,14 @@ docs/
 | [20260118_c6_release_management_design.md](phase3/20260118_c6_release_management_design.md) | Phase 3-C / Epic C-6 상세 설계 |
 | [20260118_phase3c_user_epic_u1_readonly_user_features_detailed_design.md](phase3/20260118_phase3c_user_epic_u1_readonly_user_features_detailed_design.md) | Phase 3-C / 사용자 기능 Epic (U-1) 상세 설계 |
 | [20260118_u1_implementation_tickets.md](phase3/20260118_u1_implementation_tickets.md) | Phase 3-C / Epic U-1 구현 티켓 |
+| [20260118_u1_preconditions_checklist.md](phase3/20260118_u1_preconditions_checklist.md) | Phase 3-C / Epic U-1 전제 조건 검증 체크리스트 |
+| [20260118_u1_api_scope_spec.md](phase3/20260118_u1_api_scope_spec.md) | Phase 3-C / Epic U-1 API 범위 및 제약 명세 |
+| [20260118_u1_user_feature_api_design.md](phase3/20260118_u1_user_feature_api_design.md) | Phase 3-C / Epic U-1 사용자 기능 API 설계 |
+| [20260118_u1_why_panel_content_spec.md](phase3/20260118_u1_why_panel_content_spec.md) | Phase 3-C / Epic U-1 Why Panel 콘텐츠 설계 |
+| [20260118_u1_ux_copy_guidelines.md](phase3/20260118_u1_ux_copy_guidelines.md) | Phase 3-C / Epic U-1 UX 문구 가이드 |
+| [20260118_u1_error_and_delay_handling.md](phase3/20260118_u1_error_and_delay_handling.md) | Phase 3-C / Epic U-1 오류·지연 처리 가이드 |
+| [20260118_u1_test_checklist.md](phase3/20260118_u1_test_checklist.md) | Phase 3-C / Epic U-1 검증 체크리스트 |
+| [20260118_u1_deliverables.md](phase3/20260118_u1_deliverables.md) | Phase 3-C / Epic U-1 산출물 목록 |
 
 ---
 

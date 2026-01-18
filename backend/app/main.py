@@ -201,6 +201,8 @@ app.include_router(analysis.router)
 app.include_router(performance_internal.router)
 app.include_router(performance_public.router)
 app.include_router(admin_controls.router)
+from app.routes import portfolio_public
+app.include_router(portfolio_public.router)
 
 # Portfolio router
 from app.routes import portfolio
