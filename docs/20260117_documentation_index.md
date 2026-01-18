@@ -37,6 +37,34 @@ docs/
 | [20260117_phase3b_feature_definition.md](phase3/20260117_phase3b_feature_definition.md) | Phase 3-B 기능 정의서 |
 | [20260117_phase3b_premium_report_outline.md](phase3/20260117_phase3b_premium_report_outline.md) | Phase 3-B 프리미엄 리포트 구성안 |
 | [20260117_phase3b_pricing_product_structure.md](phase3/20260117_phase3b_pricing_product_structure.md) | Phase 3-B 가격·상품 구조 정의서 |
+| [20260117_phase_a_completion_report.md](phase3/20260117_phase_a_completion_report.md) | Phase A 완료 보고서 |
+| [20260117_phasea_application_checklist_and_implementation_guide.md](phase3/20260117_phasea_application_checklist_and_implementation_guide.md) | Phase A 적용 체크리스트 & 구현 가이드 |
+| [20260118_phase3c_completion_report.md](phase3/20260118_phase3c_completion_report.md) | Phase 3-C / Epic C-1 완료 보고서 |
+| [20260118_phase3c_epic_c1_operations_stability_detailed_design.md](phase3/20260118_phase3c_epic_c1_operations_stability_detailed_design.md) | Phase 3-C / Epic C-1 상세 설계 |
+| [20260118_phase3c_epic_c2_data_quality_lineage_reproducibility_detailed_design.md](phase3/20260118_phase3c_epic_c2_data_quality_lineage_reproducibility_detailed_design.md) | Phase 3-C / Epic C-2 상세 설계 |
+| [20260118_phase3c_epic_c3_performance_analysis_advanced_detailed_design.md](phase3/20260118_phase3c_epic_c3_performance_analysis_advanced_detailed_design.md) | Phase 3-C / Epic C-3 상세 설계 |
+| [20260118_phase3c_epic_c4_completion_report.md](phase3/20260118_phase3c_epic_c4_completion_report.md) | Phase 3-C / Epic C-4 완료 보고서 |
+| [20260118_phase_3_c_epic_c_4_admin_controls.md](phase3/20260118_phase_3_c_epic_c_4_admin_controls.md) | Phase 3-C / Epic C-4 상세 설계 |
+| [20260118_phase3c_final_completion_report.md](phase3/20260118_phase3c_final_completion_report.md) | Phase 3-C 완료 보고서 |
+| [20260118_phase3c_go_live_readiness_checklist.md](phase3/20260118_phase3c_go_live_readiness_checklist.md) | Phase 3-C Go-Live Readiness 체크리스트 |
+| [20260118_c1_c2_boundary.md](phase3/20260118_c1_c2_boundary.md) | 운영 장애 vs 데이터 품질 경계 정리 |
+| [20260118_c1_c2_integration_checklist.md](phase3/20260118_c1_c2_integration_checklist.md) | C-1 + C-2 통합 관점 점검표 |
+| [20260118_c1_c3_go_live_checklist.md](phase3/20260118_c1_c3_go_live_checklist.md) | C-1 ~ C-3 통합 Go-Live 점검표 |
+| [20260118_c1_implementation_tickets.md](phase3/20260118_c1_implementation_tickets.md) | Epic C-1 구현 티켓 |
+| [20260118_c1_risk_control_checklist.md](phase3/20260118_c1_risk_control_checklist.md) | Epic C-1 리스크 통제 체크리스트 |
+| [20260118_c2_ddl_schema.md](phase3/20260118_c2_ddl_schema.md) | Phase 3-C / Epic C-2 DDL 설계 요약 |
+| [20260118_c2_implementation_tickets.md](phase3/20260118_c2_implementation_tickets.md) | Phase 3-C / Epic C-2 구현 작업 티켓 |
+| [20260118_c2_pipeline_flow.md](phase3/20260118_c2_pipeline_flow.md) | C-2 파이프라인 흐름 (수집 → 검증 → 계보 → 리포트) |
+| [20260118_c2_validation_rule_model.md](phase3/20260118_c2_validation_rule_model.md) | C-2 Validation Rule 메타 모델 상세화 |
+| [20260118_c3_ddl_schema.md](phase3/20260118_c3_ddl_schema.md) | C-3 DDL 설계 (성과 분석) |
+| [20260118_c3_implementation_tickets.md](phase3/20260118_c3_implementation_tickets.md) | Phase 3-C / Epic C-3 구현 작업 티켓 |
+| [20260118_c3_performance_engine_spec.md](phase3/20260118_c3_performance_engine_spec.md) | C-3 성과 계산 엔진 상세 설계 |
+| [20260118_c4_ddl_schema.md](phase3/20260118_c4_ddl_schema.md) | C-4 DDL 설계 (관리자 통제) |
+| [20260118_c4_implementation_tickets.md](phase3/20260118_c4_implementation_tickets.md) | Phase 3-C / Epic C-4 구현 작업 티켓 |
+| [20260118_c4_validation_checklist.md](phase3/20260118_c4_validation_checklist.md) | C-4 검증 체크리스트 (Admin Controls) |
+| [20260118_c6_release_management_design.md](phase3/20260118_c6_release_management_design.md) | Phase 3-C / Epic C-6 상세 설계 |
+| [20260118_phase3c_user_epic_u1_readonly_user_features_detailed_design.md](phase3/20260118_phase3c_user_epic_u1_readonly_user_features_detailed_design.md) | Phase 3-C / 사용자 기능 Epic (U-1) 상세 설계 |
+| [20260118_u1_implementation_tickets.md](phase3/20260118_u1_implementation_tickets.md) | Phase 3-C / Epic U-1 구현 티켓 |
 
 ---
 
