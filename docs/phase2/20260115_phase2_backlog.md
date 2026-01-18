@@ -1,4 +1,6 @@
 # Foresto Phase 2 전체 백로그
+최초작성일자: 2026-01-15
+최종수정일자: 2026-01-18
 
 **문서명**: Foresto Phase 2 Product Backlog  
 **작성일**: 2026-01-15  

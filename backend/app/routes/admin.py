@@ -9,20 +9,25 @@ from app.services.alpha_vantage_loader import AlphaVantageDataLoader
 from app.services.pykrx_loader import PyKrxDataLoader
 from app.services.financial_analyzer import FinancialAnalyzer
 from app.models import User
-from app.auth import get_current_user, require_admin
+from app.auth import get_current_user, require_admin_permission
 from app.progress_tracker import progress_tracker
 from typing import List
 import logging
 import uuid
+from app.utils.request_meta import require_idempotency
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/admin", tags=["Admin"])
+router = APIRouter(
+    prefix="/admin",
+    tags=["Admin"],
+    dependencies=[Depends(require_idempotency)],
+)
 
 @router.post("/load-data")
 async def load_all_data(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
 ):
     """모든 종목 데이터 적재 (관리자용)"""
     try:
@@ -42,7 +47,7 @@ async def load_all_data(
 @router.post("/load-stocks")
 async def load_stocks(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
 ):
     """주식 데이터만 적재"""
     try:
@@ -64,7 +69,7 @@ async def load_stocks(
 @router.post("/load-etfs")
 async def load_etfs(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
 ):
     """ETF 데이터만 적재"""
     try:
@@ -86,7 +91,7 @@ async def load_etfs(
 @router.get("/data-status")
 async def get_data_status(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_VIEW"))
 ):
     """DB 종목 통계"""
     from sqlalchemy import func
@@ -108,7 +113,7 @@ async def get_data_status(
 @router.get("/progress/{task_id}")
 async def get_progress(
     task_id: str,
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_VIEW"))
 ):
     """특정 작업의 진행 상황 조회"""
     progress = progress_tracker.get_progress(task_id)
@@ -123,7 +128,7 @@ async def get_progress(
 
 @router.get("/progress")
 async def get_all_progress(
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_VIEW"))
 ):
     """모든 작업의 진행 상황 조회"""
     return progress_tracker.get_all_progress()
@@ -131,7 +136,7 @@ async def get_all_progress(
 @router.delete("/progress/{task_id}")
 async def clear_progress(
     task_id: str,
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
 ):
     """진행 상황 제거"""
     progress_tracker.clear_task(task_id)
@@ -142,7 +147,7 @@ async def get_stocks(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_VIEW"))
 ):
     """적재된 주식 데이터 조회"""
     from app.models.securities import Stock
@@ -171,7 +176,7 @@ async def get_etfs(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_VIEW"))
 ):
     """적재된 ETF 데이터 조회"""
     from app.models.securities import ETF
@@ -200,7 +205,7 @@ async def get_bonds(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_VIEW"))
 ):
     """적재된 채권 데이터 조회"""
     from app.models.securities import Bond
@@ -229,7 +234,7 @@ async def get_deposits(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_VIEW"))
 ):
     """적재된 예적금 데이터 조회"""
     from app.models.securities import DepositProduct
@@ -260,7 +265,7 @@ async def get_deposits(
 async def load_all_alpha_vantage_stocks(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
 ):
     """Alpha Vantage: 인기 미국 주식 전체 적재"""
     try:
@@ -302,7 +307,7 @@ async def load_alpha_vantage_stock(
     symbol: str,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
 ):
     """Alpha Vantage: 특정 주식 적재"""
     try:
@@ -379,7 +384,7 @@ async def load_alpha_vantage_financials(
     symbol: str,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
 ):
     """Alpha Vantage: 특정 주식의 재무제표 적재"""
     try:
@@ -455,7 +460,7 @@ async def load_alpha_vantage_financials(
 async def load_all_alpha_vantage_etfs(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
 ):
     """Alpha Vantage: 인기 미국 ETF 전체 적재"""
     try:
@@ -497,7 +502,7 @@ async def get_alpha_vantage_stocks(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_VIEW"))
 ):
     """Alpha Vantage: 적재된 미국 주식 데이터 조회"""
     from app.models.alpha_vantage import AlphaVantageStock
@@ -530,7 +535,7 @@ async def get_alpha_vantage_stocks(
 async def get_alpha_vantage_financials(
     symbol: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_VIEW"))
 ):
     """Alpha Vantage: 특정 주식의 재무제표 조회"""
     from app.models.alpha_vantage import AlphaVantageFinancials
@@ -564,7 +569,7 @@ async def get_alpha_vantage_financials(
 async def load_all_alpha_vantage_timeseries(
     background_tasks: BackgroundTasks,
     outputsize: str = 'compact',  # 'compact' (최근 100일) or 'full' (20년)
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
 ):
     """Alpha Vantage: 모든 인기 주식/ETF 시계열 데이터 수집 (Background)
 
@@ -613,7 +618,7 @@ async def load_alpha_vantage_timeseries(
     symbol: str,
     background_tasks: BackgroundTasks,
     outputsize: str = 'compact',
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
 ):
     """Alpha Vantage: 특정 종목의 시계열 데이터 수집 (Background)"""
     import uuid
@@ -676,7 +681,7 @@ async def load_alpha_vantage_timeseries(
 @router.get("/alpha-vantage/data-status")
 async def get_alpha_vantage_data_status(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_VIEW"))
 ):
     """Alpha Vantage: DB 통계"""
     from sqlalchemy import func
@@ -706,7 +711,7 @@ async def get_alpha_vantage_data_status(
 async def load_all_pykrx_stocks(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
 ):
     """pykrx: 인기 한국 주식 전체 적재"""
     try:
@@ -745,7 +750,7 @@ async def load_pykrx_stock(
     ticker: str,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
 ):
     """pykrx: 특정 한국 주식 적재"""
     try:
@@ -820,7 +825,7 @@ async def load_pykrx_stock(
 async def load_all_pykrx_etfs(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
 ):
     """pykrx: 인기 한국 ETF 전체 적재"""
     try:
@@ -859,7 +864,7 @@ async def load_pykrx_etf(
     ticker: str,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
 ):
     """pykrx: 특정 한국 ETF 적재"""
     try:
@@ -934,7 +939,7 @@ async def load_pykrx_etf(
 async def load_all_pykrx_financials(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
 ):
     """pykrx: 인기 한국 주식 전체 재무제표 적재"""
     try:
@@ -975,7 +980,7 @@ async def load_pykrx_financials(
     ticker: str,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
 ):
     """pykrx: 특정 한국 주식 재무제표 적재"""
     try:
@@ -1052,7 +1057,7 @@ async def load_pykrx_financials(
 async def analyze_stock_financials(
     symbol: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_VIEW"))
 ):
     """
     종목 재무 분석
@@ -1077,7 +1082,7 @@ async def analyze_stock_financials(
 async def compare_stocks_financials(
     symbols: List[str],
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
 ):
     """
     여러 종목 재무 비교 분석
@@ -1107,7 +1112,7 @@ async def compare_stocks_financials(
 async def get_stock_financial_score(
     symbol: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_VIEW"))
 ):
     """
     종목 재무 건전성 점수 (100점 만점)
@@ -1132,7 +1137,7 @@ async def get_stock_financial_score(
 async def get_stock_financial_score_v2(
     symbol: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_VIEW"))
 ):
     """
     개선된 재무 건전성 점수 V2 (성숙한 대형주/성장주 적합)
@@ -1474,7 +1479,7 @@ async def get_all_users(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_VIEW"))
 ):
     """
     모든 사용자 목록 조회 (관리자 전용)
@@ -1527,7 +1532,7 @@ async def update_user_role(
     user_id: str,
     role: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_ROLE_MANAGE"))
 ):
     """
     사용자 역할 변경 (관리자 전용)
@@ -1594,7 +1599,7 @@ async def update_user_role(
 async def delete_user(
     user_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
 ):
     """
     사용자 삭제 (관리자 전용)

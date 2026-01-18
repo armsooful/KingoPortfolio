@@ -90,8 +90,7 @@ SMTP_FROM_NAME=KingoPortfolio             # 발신자 이름
 # 프론트엔드 URL (인증 링크에 사용)
 FRONTEND_URL=http://localhost:5173        # 프론트엔드 URL
 ```
-
-### 3. 설정 확인
+11### 3. 설정 확인
 
 모든 설정이 완료되면 서버를 재시작합니다:
 

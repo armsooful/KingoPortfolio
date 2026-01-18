@@ -80,7 +80,7 @@ class CustomPortfolio(Base):
     # 템플릿 기반 확장 (선택)
     base_template_id = Column(
         String(20),
-        ForeignKey("scenario.scenario_id", ondelete="SET NULL"),
+        ForeignKey("scenario_definition.scenario_id", ondelete="SET NULL"),
         nullable=True
     )
 

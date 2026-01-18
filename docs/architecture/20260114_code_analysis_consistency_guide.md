@@ -1,4 +1,7 @@
 # ForestoCompass 현행 코드 분석 및 Foresto 목표 정합성 가이드
+최초작성일자: 2026-01-14
+최종수정일자: 2026-01-18
+
 작성일: 2026-01-14
 
 본 문서는 사용자가 제공한 코드 베이스(`ForestoCompass.zip` → `KingoPortfolio-main/`)를 분석하여,

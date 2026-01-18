@@ -1,10 +1,11 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.templating import Jinja2Templates
 from contextlib import asynccontextmanager
 from datetime import timedelta
+import uuid
 from dotenv import load_dotenv
 from pathlib import Path
 
@@ -13,7 +14,7 @@ load_dotenv()
 
 from app.config import settings
 from app.database import engine, Base, get_db
-from app.routes import auth, diagnosis, admin, market, backtesting, krx_timeseries, admin_portfolio, batch_jobs, stock_detail, portfolio_comparison, pdf_report, scenarios, analysis
+from app.routes import auth, diagnosis, admin, admin_batch, admin_lineage, admin_data_quality, market, backtesting, krx_timeseries, admin_portfolio, batch_jobs, stock_detail, portfolio_comparison, pdf_report, scenarios, analysis, performance_internal, performance_public, admin_controls
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.error_handlers import setup_exception_handlers
@@ -23,6 +24,7 @@ from slowapi.errors import RateLimitExceeded
 
 # Import models to register them with Base.metadata
 from app.models import securities  # noqa
+from app.models import admin_controls as admin_controls_models  # noqa
 from app.models.user import User  # noqa
 
 def init_db():
@@ -168,6 +170,14 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
+
+@app.middleware("http")
+async def add_request_id_header(request: Request, call_next):
+    request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
+    response = await call_next(request)
+    response.headers["x-request-id"] = request_id
+    return response
+
 # Templates 설정
 templates_path = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(templates_path))
@@ -175,6 +185,9 @@ templates = Jinja2Templates(directory=str(templates_path))
 app.include_router(auth.router)
 app.include_router(diagnosis.router)
 app.include_router(admin.router)
+app.include_router(admin_batch.router)
+app.include_router(admin_lineage.router)
+app.include_router(admin_data_quality.router)
 app.include_router(market.router)
 app.include_router(backtesting.router)
 app.include_router(krx_timeseries.router)
@@ -185,6 +198,9 @@ app.include_router(portfolio_comparison.router)
 app.include_router(pdf_report.router)
 app.include_router(scenarios.router)
 app.include_router(analysis.router)
+app.include_router(performance_internal.router)
+app.include_router(performance_public.router)
+app.include_router(admin_controls.router)
 
 # Portfolio router
 from app.routes import portfolio

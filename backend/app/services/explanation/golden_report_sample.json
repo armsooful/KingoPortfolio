@@ -1,0 +1,94 @@
+{
+  "_meta": {
+    "version": "v1",
+    "created_at": "2026-01-17",
+    "description": "Phase A Golden Test 기준 샘플 - B-3 프리미엄 리포트 기반",
+    "source": "samples/KingoPortfolio_Premium_Sample_Report.pdf"
+  },
+  "input": {
+    "portfolio_id": "sample_portfolio_001",
+    "start_date": "2022-01-01",
+    "end_date": "2024-12-31",
+    "metrics": {
+      "cagr": 0.082,
+      "volatility": 0.145,
+      "mdd": -0.123,
+      "sharpe": 0.56,
+      "total_return": 0.268,
+      "period_days": 1095
+    },
+    "rebalance_enabled": false,
+    "benchmark": {
+      "name": "KOSPI",
+      "total_return": 0.045
+    }
+  },
+  "expected_output": {
+    "summary": "지난 3.0년간 이 포트폴리오는 연평균 8.2%의 수익을 기록했습니다. 이 포트폴리오는 안정성과 변동성 사이의 균형을 추구한 결과로 해석할 수 있습니다. (변동성 14.5%, 최대 낙폭 12.3%)",
+    "performance_explanations": [
+      {
+        "metric": "CAGR",
+        "value": 0.082,
+        "formatted_value": "+8.20%",
+        "template_id": "cagr_high",
+        "description": "연평균 8.2%의 수익률을 기록했습니다. 이는 과거 주식시장 장기 평균 수익률과 유사한 수준입니다.",
+        "context": "장기적으로 자산이 어떤 속도로 변화했는지를 보여주는 지표입니다. 단기 변동을 평균화한 결과이므로, 중간 과정의 굴곡은 반영되지 않습니다. (3.0년 기준, 과거 성과이며 미래 수익을 보장하지 않습니다.)",
+        "level": "high"
+      },
+      {
+        "metric": "Volatility",
+        "value": 0.145,
+        "formatted_value": "14.5%",
+        "template_id": "vol_medium",
+        "description": "연간 변동성이 14.5%로, 일반적인 주식시장과 유사한 수준입니다. 단기적으로 상당한 가격 변동이 있을 수 있습니다.",
+        "context": "가격이 오르내린 폭이 얼마나 컸는지를 나타냅니다. 변동성이 크다는 것은 수익 가능성과 함께 심리적 부담도 컸을 수 있음을 의미합니다.",
+        "level": "moderate"
+      },
+      {
+        "metric": "MDD",
+        "value": -0.123,
+        "formatted_value": "-12.3%",
+        "template_id": "mdd_caution",
+        "description": "최대 낙폭이 12.3%로, 상당한 하락을 경험했습니다. 이 정도 하락은 주식시장에서 종종 발생하는 조정 수준입니다.",
+        "context": "과거 기간 중 가장 크게 하락했던 구간을 의미합니다. 이 구간은 많은 투자자들이 가장 불안함을 느끼는 시점입니다.",
+        "level": "moderate"
+      },
+      {
+        "metric": "Sharpe Ratio",
+        "value": 0.56,
+        "formatted_value": "0.56",
+        "template_id": "sharpe_medium",
+        "description": "샤프 비율이 0.56로, 일반적인 수준입니다. 위험에 대한 적정 수준의 보상을 받았습니다.",
+        "context": "샤프 비율은 (수익률 - 무위험수익률) / 변동성으로 계산됩니다. 무위험수익률 0.0%를 기준으로 계산되었습니다. 높을수록 위험 대비 효율적인 수익을 의미하지만, 과거 지표입니다.",
+        "level": "moderate"
+      }
+    ],
+    "risk_explanation": "이 포트폴리오는 연간 14.5%의 가격 변동성을 보였으며, 최대 12.3%까지 가치가 하락한 적이 있습니다. 이러한 변동은 투자 과정에서 자연스럽게 발생할 수 있으나, 개인의 위험 감수 성향에 따라 체감되는 불안감은 다를 수 있습니다.",
+    "risk_periods": [],
+    "comparison": {
+      "benchmark_name": "KOSPI",
+      "benchmark_return": 0.045,
+      "template_id": "compare_higher",
+      "relative_performance": "KOSPI 대비 연평균 3.7%p 높은 수익률을 기록했습니다.",
+      "note": "비교 수치는 동일 기간 기준입니다. 과거 상대 성과가 미래에도 지속된다는 보장은 없습니다."
+    },
+    "disclaimer": "본 분석은 과거 데이터에 기반한 정보 제공 목적으로만 작성되었습니다. 과거 성과는 미래 수익을 보장하지 않으며, 투자 권유나 추천이 아닙니다. 모든 투자 결정은 본인의 판단과 책임 하에 이루어져야 합니다. 본 서비스는 투자자문업에 해당하지 않습니다."
+  },
+  "state_classification": {
+    "cagr_state": "high",
+    "volatility_state": "medium",
+    "mdd_state": "caution",
+    "sharpe_state": "medium",
+    "summary_balance": "balanced"
+  },
+  "template_mapping": {
+    "cagr": "cagr_high",
+    "volatility": "vol_medium",
+    "mdd": "mdd_caution",
+    "sharpe": "sharpe_medium",
+    "comparison": "compare_higher",
+    "summary_return": "summary_return_gain",
+    "summary_risk": "summary_risk_medium",
+    "summary_balance": "summary_balance_balanced"
+  }
+}

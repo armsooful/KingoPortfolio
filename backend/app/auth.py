@@ -16,6 +16,7 @@ from app.exceptions import (
     PremiumOnlyError,
     ValidationError as KingoValidationError
 )
+from app.services.admin_rbac_service import AdminRBACService
 
 # 비밀번호 암호화 컨텍스트
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -212,3 +213,18 @@ async def require_premium(
     if current_user.role not in ['premium', 'admin']:
         raise PremiumOnlyError()
     return current_user
+
+
+def require_admin_permission(permission_key: str):
+    """관리자 권한 키 기반 접근 제어"""
+
+    async def _require_permission(
+        current_user: User = Depends(get_current_user),
+        db: Session = Depends(get_db),
+    ) -> User:
+        rbac_service = AdminRBACService(db)
+        if not rbac_service.has_permission(current_user.id, permission_key):
+            raise AdminOnlyError()
+        return current_user
+
+    return _require_permission

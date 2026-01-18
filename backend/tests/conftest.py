@@ -6,12 +6,20 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.dialects.postgresql import JSONB
 
 from app.main import app
 from app.database import Base, get_db
 from app.models.user import User
 from app.auth import hash_password
 from app.rate_limiter import limiter
+
+
+@compiles(JSONB, "sqlite")
+def _compile_jsonb_sqlite(element, compiler, **kwargs):
+    """SQLite에서 JSONB를 JSON으로 처리"""
+    return "JSON"
 
 
 # 테스트용 인메모리 데이터베이스

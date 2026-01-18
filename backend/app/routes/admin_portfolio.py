@@ -7,18 +7,23 @@ from sqlalchemy.orm import Session
 from typing import List, Dict
 
 from app.database import get_db
-from app.auth import require_admin
+from app.auth import require_admin_permission
 from app.models.user import User
 from app.services.portfolio_engine import PortfolioEngine, create_default_portfolio
 from app.models.securities import Stock, ETF, Bond, DepositProduct
+from app.utils.request_meta import require_idempotency
 
 
-router = APIRouter(prefix="/admin/portfolio", tags=["Admin Portfolio"])
+router = APIRouter(
+    prefix="/admin/portfolio",
+    tags=["Admin Portfolio"],
+    dependencies=[Depends(require_idempotency)],
+)
 
 
 @router.get("/strategies")
 async def get_portfolio_strategies(
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_admin_permission("ADMIN_VIEW")),
     db: Session = Depends(get_db)
 ):
     """
@@ -81,7 +86,7 @@ async def get_portfolio_strategies(
 async def get_portfolio_composition(
     investment_type: str,
     investment_amount: int = 10000000,
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_admin_permission("ADMIN_VIEW")),
     db: Session = Depends(get_db)
 ):
     """
@@ -119,7 +124,7 @@ async def get_portfolio_composition(
 
 @router.get("/available-securities")
 async def get_available_securities(
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_admin_permission("ADMIN_VIEW")),
     db: Session = Depends(get_db)
 ):
     """
@@ -195,7 +200,7 @@ async def get_available_securities(
 async def get_top_securities(
     investment_type: str,
     limit: int = 10,
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_admin_permission("ADMIN_VIEW")),
     db: Session = Depends(get_db)
 ):
     """

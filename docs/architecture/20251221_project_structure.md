@@ -1,4 +1,6 @@
 # 📂 KingoPortfolio 프로젝트 구조 정리
+최초작성일자: 2025-12-21
+최종수정일자: 2026-01-18
 
 ## ✅ 정리 완료 (2025-12-21)
 
@@ -86,7 +88,7 @@ KingoPortfolio/
 ## 📝 생성된 파일
 
 ### 인덱스/가이드 파일
-1. ✅ `docs/manuals/README.md` - 매뉴얼 인덱스 및 사용 가이드
+1. ✅ `docs/manuals/20251221_manuals_index.md` - 매뉴얼 인덱스 및 사용 가이드
 2. ✅ `scripts/README.md` - 스크립트 사용 가이드
 3. ✅ `PROJECT_STRUCTURE.md` - 이 파일
 
@@ -107,13 +109,13 @@ KingoPortfolio/
 
 ```bash
 # 인덱스 확인
-cat docs/manuals/README.md
+cat docs/manuals/20251221_manuals_index.md
 
 # 빠른 시작 가이드
-cat docs/manuals/QUICK_START.md
+cat docs/manuals/20251220_quick_start.md
 
 # 데이터 수집 가이드
-cat docs/manuals/DATA_COLLECTION_GUIDE.md
+cat docs/manuals/20251219_data_collection_guide.md
 ```
 
 ### 2. 스크립트 실행
@@ -180,13 +182,13 @@ cat docs/manuals/DATA_COLLECTION_GUIDE.md
 
 | 상황 | 매뉴얼 |
 |------|--------|
-| 프로젝트를 처음 시작할 때 | [QUICK_START.md](docs/manuals/QUICK_START.md) |
-| 데이터를 수집하고 싶을 때 | [DATA_COLLECTION_GUIDE.md](docs/manuals/DATA_COLLECTION_GUIDE.md) |
-| 진행 상황을 모니터링하고 싶을 때 | [PROGRESS_MONITORING_GUIDE.md](docs/manuals/PROGRESS_MONITORING_GUIDE.md) |
-| DB를 확인하고 싶을 때 | [DATABASE_GUIDE.md](docs/manuals/DATABASE_GUIDE.md) |
-| 관리자 페이지 문제 | [ADMIN_TROUBLESHOOTING.md](docs/manuals/ADMIN_TROUBLESHOOTING.md) |
-| 로그인 문제 | [LOGIN_DEBUG_GUIDE.md](docs/manuals/LOGIN_DEBUG_GUIDE.md) |
-| 테스트를 실행하고 싶을 때 | [TEST_GUIDE.md](docs/manuals/TEST_GUIDE.md) |
+| 프로젝트를 처음 시작할 때 | [QUICK_START.md](docs/manuals/20251220_quick_start.md) |
+| 데이터를 수집하고 싶을 때 | [DATA_COLLECTION_GUIDE.md](docs/manuals/20251219_data_collection_guide.md) |
+| 진행 상황을 모니터링하고 싶을 때 | [PROGRESS_MONITORING_GUIDE.md](docs/manuals/20251221_progress_monitoring_guide.md) |
+| DB를 확인하고 싶을 때 | [DATABASE_GUIDE.md](docs/manuals/20251220_database_guide.md) |
+| 관리자 페이지 문제 | [ADMIN_TROUBLESHOOTING.md](docs/manuals/20251219_admin_troubleshooting.md) |
+| 로그인 문제 | [LOGIN_DEBUG_GUIDE.md](docs/manuals/20251220_login_debug_guide.md) |
+| 테스트를 실행하고 싶을 때 | [TEST_GUIDE.md](docs/manuals/20251219_test_guide.md) |
 
 ### 자주 사용하는 스크립트
 
@@ -206,7 +208,7 @@ cat docs/manuals/DATA_COLLECTION_GUIDE.md
 - ✅ 모든 스크립트가 한 곳에 모임
 
 ### 2. 찾기 쉬움
-- ✅ 매뉴얼 인덱스 파일 제공 (docs/manuals/README.md)
+- ✅ 매뉴얼 인덱스 파일 제공 (docs/manuals/20251221_manuals_index.md)
 - ✅ 스크립트 가이드 제공 (scripts/README.md)
 - ✅ 업데이트된 프로젝트 README
 
@@ -246,13 +248,13 @@ git push
 
 ```
 Before: ./QUICK_START.md
-After:  ./docs/manuals/QUICK_START.md
+After:  ./docs/manuals/20251220_quick_start.md
 ```
 
 ## 🔗 관련 문서
 
 - [메인 README](README.md)
-- [매뉴얼 인덱스](docs/manuals/README.md)
+- [매뉴얼 인덱스](docs/manuals/20251221_manuals_index.md)
 - [스크립트 가이드](scripts/README.md)
 
 ---

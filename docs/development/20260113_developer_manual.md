@@ -1,5 +1,7 @@
-
 # Foresto 프로젝트 개발 매뉴얼
+최초작성일자: 2026-01-13
+최종수정일자: 2026-01-18
+
 ## 의사결정 보조형 투자 인프라 (Decision Support Investment Infrastructure)
 
 본 문서는 Foresto 프로젝트를 실제로 개발·운영하기 위해  
