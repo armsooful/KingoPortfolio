@@ -1,0 +1,17 @@
+alerts:
+  - name: api_5xx_rate_critical
+    severity: critical
+    condition: "5xx_rate > 0.01 for 5m"
+    action: ["slack:#ops-alerts", "email:ops@company.local"]
+  - name: api_p99_latency_critical
+    severity: critical
+    condition: "p99_latency_ms > 2000 for 5m"
+    action: ["slack:#ops-alerts"]
+  - name: api_p95_latency_warning
+    severity: warning
+    condition: "p95_latency_ms > 800 for 10m"
+    action: ["slack:#ops-alerts"]
+  - name: guard_5xx_any
+    severity: critical
+    condition: "guard_5xx_rate > 0.0 for 1m"
+    action: ["slack:#ops-alerts"]

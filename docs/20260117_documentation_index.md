@@ -20,7 +20,8 @@ docs/
 ├── phase1/           # Phase 1 관련 문서
 ├── phase2/           # Phase 2 관련 문서
 ├── phase3/           # Phase 3 관련 문서 (현재)
-└── phase4/           # Phase 4 관련 문서
+├── phase4/           # Phase 4 관련 문서
+└── phase5/           # Phase 5 관련 문서
 ```
 
 ---
@@ -118,6 +119,17 @@ docs/
 | [20260119_phase4_deployment_checklist.md](phase4/20260119_phase4_deployment_checklist.md) | Phase 4 배포 체크리스트 |
 | [20260119_phase4_runbook.md](phase4/20260119_phase4_runbook.md) | Phase 4 장애 대응 Runbook |
 | [20260119_phase4_operator_guide.md](phase4/20260119_phase4_operator_guide.md) | Phase 4 운영자 가이드 |
+| [phase_4_완료검증_체크리스트.md](phase4/phase_4_완료검증_체크리스트.md) | Phase 4 완료 검증 체크리스트 |
+
+---
+
+## Phase 5 (외부 노출·운영 단계)
+
+| 파일명 | 설명 |
+|--------|------|
+| [20260119_phase5_implementation_tickets.md](phase5/20260119_phase5_implementation_tickets.md) | Phase 5 상세 작업 티켓 |
+| [phase5_runbook.md](phase5/phase5_runbook.md) | Phase 5 운영 Runbook v1 |
+| [ops_alerting.yaml](phase5/ops_alerting.yaml) | Phase 5 알림/모니터링 설정안 |
 
 ---
 
