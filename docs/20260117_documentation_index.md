@@ -130,6 +130,7 @@ docs/
 | [20260119_phase5_implementation_tickets.md](phase5/20260119_phase5_implementation_tickets.md) | Phase 5 상세 작업 티켓 |
 | [phase5_runbook.md](phase5/phase5_runbook.md) | Phase 5 운영 Runbook v1 |
 | [ops_alerting.yaml](phase5/ops_alerting.yaml) | Phase 5 알림/모니터링 설정안 |
+| [phase5_exit_criteria.md](phase5/phase5_exit_criteria.md) | Phase 5 완료 조건 (Exit Criteria) |
 
 ---
 

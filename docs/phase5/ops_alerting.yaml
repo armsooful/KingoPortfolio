@@ -3,15 +3,24 @@ alerts:
     severity: critical
     condition: "5xx_rate > 0.01 for 5m"
     action: ["slack:#ops-alerts", "email:ops@company.local"]
+    noise_control: ["dedupe:5m", "silence:30m"]
   - name: api_p99_latency_critical
     severity: critical
     condition: "p99_latency_ms > 2000 for 5m"
     action: ["slack:#ops-alerts"]
+    noise_control: ["dedupe:5m", "silence:30m"]
   - name: api_p95_latency_warning
     severity: warning
     condition: "p95_latency_ms > 800 for 10m"
     action: ["slack:#ops-alerts"]
+    noise_control: ["dedupe:10m", "silence:60m"]
+  - name: batch_success_rate_warning
+    severity: warning
+    condition: "batch_success_rate < 0.98 for 30m"
+    action: ["slack:#ops-alerts", "email:ops@company.local"]
+    noise_control: ["dedupe:30m", "silence:120m"]
   - name: guard_5xx_any
     severity: critical
     condition: "guard_5xx_rate > 0.0 for 1m"
     action: ["slack:#ops-alerts"]
+    noise_control: ["dedupe:1m", "silence:10m"]
