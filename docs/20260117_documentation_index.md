@@ -208,6 +208,9 @@ docs/
 | [foresto_compass_u3_verification_report_20260119.md](reports/foresto_compass_u3_verification_report_20260119.md) | U-3 종합 검증 보고서 |
 | [foresto_compass_phase3_completion_statement_20260119.md](reports/foresto_compass_phase3_completion_statement_20260119.md) | Phase 3 완료 상태 선언(내부용) |
 | [foresto_compass_phase3_completion_report_20260119.md](reports/foresto_compass_phase3_completion_report_20260119.md) | Phase 3 전체 완료 보고서(내부용) |
+| [prod_environment_baseline.md](reports/prod_environment_baseline.md) | 운영 환경 기준선 확정 |
+| [security_access_policy.md](reports/security_access_policy.md) | 보안·권한 정책 확정 |
+| [environment_separation_evidence.md](reports/environment_separation_evidence.md) | 환경 분리 증빙 (prod/stg/local) |
 
 ---
 
