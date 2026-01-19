@@ -10,6 +10,7 @@ from app.main import app
 from app.database import get_db
 from app.models import User
 from app.auth import hash_password
+from app.rate_limiter import limiter
 import time
 
 
@@ -23,8 +24,10 @@ def client(db):
             pass
 
     app.dependency_overrides[get_db] = get_test_db
+    limiter.enabled = False
     with TestClient(app) as test_client:
         yield test_client
+    limiter.enabled = True
     app.dependency_overrides.clear()
 
 

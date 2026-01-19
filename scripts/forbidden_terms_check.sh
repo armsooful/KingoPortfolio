@@ -84,6 +84,9 @@ EXCEPTION_PATTERNS=(
     # 바이너리 파일
     "Binary file"
     ".pyc"
+
+    # 부정문 추가 예외
+    "보장은 없습니다"
 )
 
 # 제외할 파일/디렉토리 패턴
@@ -97,6 +100,9 @@ EXCLUDE_PATTERNS=(
     "build"
     "*.md"
     "forbidden_terms_check.sh"
+    "banned_words_v1.txt"
+    "guard.py"
+    "golden_report_sample.json"
 )
 
 echo -e "${YELLOW}=== Foresto Compass 금지어 검사 ===${NC}"
@@ -128,6 +134,14 @@ for term in "${FORBIDDEN_TERMS[@]}"; do
                     break
                 fi
             done
+            if [ "$SKIP" = false ]; then
+                content="${line#*:}"
+                content="${content#*:}"
+                content="$(echo "$content" | sed -e 's/^[[:space:]]*//')"
+                if [[ "$content" =~ ^(#|//|\\*|-) ]]; then
+                    SKIP=true
+                fi
+            fi
             if [ "$SKIP" = false ]; then
                 FILTERED_MATCHES="$FILTERED_MATCHES$line"$'\n'
             fi

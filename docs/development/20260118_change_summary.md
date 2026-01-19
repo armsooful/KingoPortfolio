@@ -1,0 +1,25 @@
+# 변경 요약
+
+- U-2 공개 성과 API 및 북마크 API 구현으로 읽기/즐겨찾기 기능 확장.
+  - `backend/app/routes/portfolio_public.py`
+  - `backend/app/routes/bookmarks.py`
+  - `backend/app/main.py`
+- 북마크 모델/스키마 추가 및 라우팅 연결.
+  - `backend/app/models/bookmark.py`
+  - `backend/app/models/__init__.py`
+- 프로필 업데이트 스키마에 `email` 필드 추가.
+  - `backend/app/schemas.py`
+- 테스트 보강 및 기대값 정합화(성과 API, 북마크, 포트폴리오/내보내기/레이트리밋).
+  - `backend/tests/unit/test_u2_public_endpoints.py`
+  - `backend/tests/unit/test_bookmarks.py`
+  - `backend/tests/unit/test_portfolio.py`
+  - `backend/tests/unit/test_export.py`
+  - `backend/tests/unit/test_rate_limiting.py`
+- U-1 완료 및 U-2 설계/티켓/릴리즈 노트 등 문서 확정.
+  - `docs/phase3/20260118_u1_post_completion_checklist_and_tickets.md`
+  - `docs/phase3/20260118_u2_*`
+  - `docs/changelogs/20260118_u1_release_notes.md`
+  - `docs/20260117_documentation_index.md`
+- 금지어 검사 스크립트 개선 및 로그 업데이트.
+  - `scripts/forbidden_terms_check.sh`
+  - `docs/compliance/20260115_forbidden_terms_scan_log.md`

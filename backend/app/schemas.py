@@ -194,6 +194,12 @@ class UpdateProfileRequest(BaseModel):
         description="사용자 이름 (선택사항)",
         example="홍길동"
     )
+    email: Optional[str] = Field(
+        None,
+        max_length=255,
+        description="이메일 주소 (선택사항)",
+        example="newemail@example.com"
+    )
     phone: Optional[str] = Field(None, max_length=20, description="전화번호")
     birth_date: Optional[date] = Field(None, description="생년월일")
     occupation: Optional[str] = Field(None, max_length=100, description="직업")

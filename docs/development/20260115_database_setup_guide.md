@@ -61,6 +61,13 @@ export DATABASE_URL="postgresql://foresto:password@localhost:5432/foresto_dev"
 psql $DATABASE_URL -f db/ddl/foresto_phase1.sql
 ```
 
+### U-2 북마크 DDL 추가 적용 (Phase 3-C)
+
+```bash
+# U-2 북마크 테이블 생성
+psql $DATABASE_URL -f docs/phase3/20260118_u2_bookmark_ddl.md
+```
+
 ### Docker 환경
 
 ```bash

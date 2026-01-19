@@ -126,7 +126,7 @@ class TestExportEndpoints:
         # 시트 확인
         assert "기본 정보" in wb.sheetnames
         assert "투자 성향 특징" in wb.sheetnames
-        assert "추천 자산 배분" in wb.sheetnames
+        assert "학습 시나리오 자산 배분" in wb.sheetnames
 
         # 첫 번째 시트 데이터 확인
         ws = wb["기본 정보"]
@@ -370,7 +370,7 @@ class TestExportUtils:
             "created_at": "2025-12-29T10:00:00Z",
             "description": "안정적인 투자 성향",
             "characteristics": ["위험 회피 성향", "장기 투자 선호"],
-            "recommended_ratio": {"주식": 50, "채권": 30, "현금": 20},
+            "scenario_ratio": {"주식": 50, "채권": 30, "현금": 20},
             "expected_annual_return": "5-7%"
         }
 
@@ -380,7 +380,7 @@ class TestExportUtils:
         assert "투자 성향" in csv_content
         assert "moderate" in csv_content
         assert "85.0%" in csv_content
-        assert "추천 자산 배분" in csv_content
+        assert "시나리오 자산 배분" in csv_content
 
     def test_generate_diagnosis_excel(self):
         """진단 결과 Excel 생성 테스트"""
@@ -395,7 +395,7 @@ class TestExportUtils:
             "created_at": "2025-12-29T10:00:00Z",
             "description": "공격적인 투자 성향",
             "characteristics": ["고위험 감수", "단기 투자 선호", "높은 수익 추구"],
-            "recommended_ratio": {"주식": 70, "채권": 20, "현금": 10},
+            "scenario_ratio": {"주식": 70, "채권": 20, "현금": 10},
             "expected_annual_return": "8-12%"
         }
 
@@ -407,7 +407,7 @@ class TestExportUtils:
         # 시트 확인
         assert "기본 정보" in wb.sheetnames
         assert "투자 성향 특징" in wb.sheetnames
-        assert "추천 자산 배분" in wb.sheetnames
+        assert "학습 시나리오 자산 배분" in wb.sheetnames
 
         # 기본 정보 시트 확인
         ws1 = wb["기본 정보"]
@@ -420,7 +420,7 @@ class TestExportUtils:
         assert ws2['A3'].value == "고위험 감수"
 
         # 자산 배분 시트 확인
-        ws3 = wb["추천 자산 배분"]
-        assert ws3['A1'].value == "추천 자산 배분"
+        ws3 = wb["학습 시나리오 자산 배분"]
+        assert ws3['A1'].value == "학습 시나리오 자산 배분"
         assert ws3['A3'].value == "자산"
         assert ws3['B3'].value == "비율"

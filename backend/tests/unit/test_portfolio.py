@@ -21,25 +21,25 @@ class TestPortfolioEngine:
         """보수형 자산 배분 확인"""
         strategy = PortfolioEngine.ASSET_ALLOCATION_STRATEGIES["conservative"]
 
-        assert strategy["stocks"]["target"] == 20
-        assert strategy["bonds"]["target"] == 35
-        assert strategy["deposits"]["target"] == 30
+        assert strategy["stocks"]["target"] == 40
+        assert strategy["bonds"]["target"] == 30
+        assert strategy["deposits"]["target"] == 15
 
     def test_moderate_allocation(self):
         """중도형 자산 배분 확인"""
         strategy = PortfolioEngine.ASSET_ALLOCATION_STRATEGIES["moderate"]
 
-        assert strategy["stocks"]["target"] == 40
-        assert strategy["bonds"]["target"] == 25
-        assert strategy["deposits"]["target"] == 15
+        assert strategy["stocks"]["target"] == 60
+        assert strategy["bonds"]["target"] == 20
+        assert strategy["deposits"]["target"] == 5
 
     def test_aggressive_allocation(self):
         """적극형 자산 배분 확인"""
         strategy = PortfolioEngine.ASSET_ALLOCATION_STRATEGIES["aggressive"]
 
-        assert strategy["stocks"]["target"] == 60
-        assert strategy["bonds"]["target"] == 15
-        assert strategy["deposits"]["target"] == 5
+        assert strategy["stocks"]["target"] == 80
+        assert strategy["bonds"]["target"] == 10
+        assert strategy["deposits"]["target"] == 0
 
     def test_risk_scores(self):
         """리스크 점수 확인"""
@@ -60,17 +60,21 @@ class TestPortfolioCalculations:
 
         allocation = engine._calculate_allocation(strategy, total_amount)
 
-        # 주식 40%
-        assert allocation["stocks"]["ratio"] == 40
-        assert allocation["stocks"]["amount"] == 4000000
+        # 주식 60%
+        assert allocation["stocks"]["ratio"] == 60
+        assert allocation["stocks"]["amount"] == 6000000
 
-        # 채권 25%
-        assert allocation["bonds"]["ratio"] == 25
-        assert allocation["bonds"]["amount"] == 2500000
+        # 채권 20%
+        assert allocation["bonds"]["ratio"] == 20
+        assert allocation["bonds"]["amount"] == 2000000
 
-        # 예금 15%
-        assert allocation["deposits"]["ratio"] == 15
-        assert allocation["deposits"]["amount"] == 1500000
+        # 예금 5%
+        assert allocation["deposits"]["ratio"] == 5
+        assert allocation["deposits"]["amount"] == 500000
+
+        # ETF 15%
+        assert allocation["etfs"]["ratio"] == 15
+        assert allocation["etfs"]["amount"] == 1500000
 
     def test_stock_score_calculation(self, db):
         """주식 점수 계산 테스트"""
@@ -195,7 +199,7 @@ class TestPortfolioRecommendations:
             "asset_breakdown": {}
         }
 
-        recommendations = engine._generate_recommendations("moderate", stats)
+        recommendations = engine._generate_simulation_notes("moderate", stats)
 
         # 다각화 추천이 포함되어야 함
         assert any("다각화" in rec for rec in recommendations)
@@ -215,7 +219,7 @@ class TestPortfolioRecommendations:
             "asset_breakdown": {}
         }
 
-        recommendations = engine._generate_recommendations("moderate", stats)
+        recommendations = engine._generate_simulation_notes("moderate", stats)
 
         # 유휴 자금 관련 추천이 포함되어야 함
         assert any("유휴 자금" in rec or "현금" in rec for rec in recommendations)

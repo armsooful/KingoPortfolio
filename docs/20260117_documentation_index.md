@@ -1,8 +1,8 @@
 # Foresto Compass 문서 목록
 최초작성일자: 2026-01-17
-최종수정일자: 2026-01-18
+최종수정일자: 2026-01-19
 
-**최종 업데이트**: 2026-01-18
+**최종 업데이트**: 2026-01-19
 
 ---
 
@@ -73,6 +73,30 @@ docs/
 | [20260118_u1_error_and_delay_handling.md](phase3/20260118_u1_error_and_delay_handling.md) | Phase 3-C / Epic U-1 오류·지연 처리 가이드 |
 | [20260118_u1_test_checklist.md](phase3/20260118_u1_test_checklist.md) | Phase 3-C / Epic U-1 검증 체크리스트 |
 | [20260118_u1_deliverables.md](phase3/20260118_u1_deliverables.md) | Phase 3-C / Epic U-1 산출물 목록 |
+| [20260118_u1_post_completion_checklist_and_tickets.md](phase3/20260118_u1_post_completion_checklist_and_tickets.md) | U-1 완료 후속 체크리스트 & 티켓 |
+| [20260118_u1_feature_spec_final.md](phase3/20260118_u1_feature_spec_final.md) | Phase 3-C / U-1 기능 명세 최종본 |
+| [20260118_u2_scope_and_tickets.md](phase3/20260118_u2_scope_and_tickets.md) | Phase 3-C / U-2 범위 정의 및 티켓 |
+| [20260118_u2_feature_spec_final.md](phase3/20260118_u2_feature_spec_final.md) | Phase 3-C / U-2 기능 명세 최종본 |
+| [20260118_u1_u2_ops_stabilization_plan.md](phase3/20260118_u1_u2_ops_stabilization_plan.md) | U-1/U-2 운영 안정화 계획 |
+| [20260118_u2_implementation_tickets.md](phase3/20260118_u2_implementation_tickets.md) | Phase 3-C / U-2 구현 티켓 |
+| [20260118_u2_performance_history_api_design.md](phase3/20260118_u2_performance_history_api_design.md) | Phase 3-C / U-2 성과 히스토리 API 설계 |
+| [20260118_u2_period_comparison_api_design.md](phase3/20260118_u2_period_comparison_api_design.md) | Phase 3-C / U-2 기간 비교 API 설계 |
+| [20260118_u2_metric_detail_api_design.md](phase3/20260118_u2_metric_detail_api_design.md) | Phase 3-C / U-2 지표 상세 API 설계 |
+| [20260118_u2_bookmark_design.md](phase3/20260118_u2_bookmark_design.md) | Phase 3-C / U-2 북마크 설계 |
+| [20260118_u2_bookmark_ddl.md](phase3/20260118_u2_bookmark_ddl.md) | Phase 3-C / U-2 북마크 DDL |
+| [20260118_u2_implementation_plan.md](phase3/20260118_u2_implementation_plan.md) | Phase 3-C / U-2 구현 계획 |
+| [20260118_u3_implementation_tickets.md](phase3/20260118_u3_implementation_tickets.md) | Phase 3-C / U-3 구현 티켓 및 일정 |
+| [20260118_u3_detailed_design.md](phase3/20260118_u3_detailed_design.md) | Phase 3-C / U-3 상세 설계 |
+| [20260118_u3_schema_and_api.md](phase3/20260118_u3_schema_and_api.md) | Phase 3-C / U-3 DDL/API 스키마 |
+| [20260118_u3_verification_report.md](phase3/20260118_u3_verification_report.md) | Phase 3-C / U-3 검증 결과 보고서 |
+| [20260118_u3_ux_wireframe.md](phase3/20260118_u3_ux_wireframe.md) | Phase 3-C / U-3 UX 와이어(초안) |
+| [20260118_u3_metrics_and_alerts.md](phase3/20260118_u3_metrics_and_alerts.md) | Phase 3-C / U-3 메트릭·알림 연계 정의서 |
+| [20260118_phase3d_design_kickoff.md](phase3/20260118_phase3d_design_kickoff.md) | Phase 3-D 설계 착수 문서 |
+| [20260119_phase3d_detailed_design.md](phase3/20260119_phase3d_detailed_design.md) | Phase 3-D 성과·피드백 루프 상세 설계 |
+| [20260119_phase3d_event_metric_ddl.md](phase3/20260119_phase3d_event_metric_ddl.md) | Phase 3-D 이벤트·메트릭 DDL 설계 |
+| [20260119_phase3d_implementation_tickets.md](phase3/20260119_phase3d_implementation_tickets.md) | Phase 3-D 구현 티켓 |
+| [20260119_phase3d_feedback_templates_and_guard.md](phase3/20260119_phase3d_feedback_templates_and_guard.md) | Phase 3-D 피드백 문구 템플릿 + 금지 가드 세트 |
+| [20260118_phase3d_performance_feedback_loop_detailed_design.md](phase3/20260118_phase3d_performance_feedback_loop_detailed_design.md) | Phase 3-D 성과·피드백 루프 상세 설계 |
 
 ---
 
@@ -138,6 +162,7 @@ docs/
 | [20260113_developer_manual.md](development/20260113_developer_manual.md) | 개발자 매뉴얼 |
 | [20260118_project_status_report.md](development/20260118_project_status_report.md) | 프로젝트 진행상황 보고서 |
 | [20251229_future_roadmap.md](development/20251229_future_roadmap.md) | 향후 로드맵 |
+| [20260118_u1_release_notes.md](changelogs/20260118_u1_release_notes.md) | U-1 릴리즈 노트 |
 
 ---
 
@@ -145,11 +170,22 @@ docs/
 
 | 파일명 | 설명 |
 |--------|------|
+| [20260118_u3_release_notes.md](changelogs/20260118_u3_release_notes.md) | U-3 릴리즈 노트 |
+| [20260118_u2_release_notes.md](changelogs/20260118_u2_release_notes.md) | U-2 릴리즈 노트 |
 | [20260115_changelog_phase0.md](changelogs/20260115_changelog_phase0.md) | Phase 0 변경 이력 |
 | [20260112_changelog.md](changelogs/20260112_changelog.md) | 2026-01-12 변경 이력 |
 | [20260107_development_progress.md](changelogs/20260107_development_progress.md) | 개발 진행 상황 |
 | [20260105_implementation_summary.md](changelogs/20260105_implementation_summary.md) | 구현 요약 |
 | [20260105_pdf_report_implementation.md](changelogs/20260105_pdf_report_implementation.md) | PDF 리포트 구현 요약 |
+
+---
+
+## Reports (검증/운영 리포트)
+
+| 파일명 | 설명 |
+|--------|------|
+| [foresto_compass_u3_verification_report_20260119.md](reports/foresto_compass_u3_verification_report_20260119.md) | U-3 종합 검증 보고서 |
+| [foresto_compass_phase3_completion_statement_20260119.md](reports/foresto_compass_phase3_completion_statement_20260119.md) | Phase 3 완료 상태 선언(내부용) |
 
 ---
 

@@ -1,6 +1,9 @@
 from .user import User
 from .securities import KrxTimeSeries
 from .portfolio import Portfolio, PortfolioHistory, SimulationCache
+from .bookmark import Bookmark
+from .user_preferences import UserPreset, UserNotificationSetting, UserActivityEvent
+from .event_log import UserEventLog
 from .simulation import SimulationRun, SimulationPath, SimulationSummary
 from .scenario import ScenarioDefinition, PortfolioModel, PortfolioAllocation
 from .rebalancing import RebalancingRule, RebalancingEvent, RebalancingCostModel
@@ -22,7 +25,8 @@ from .admin_controls import (
 )
 # app/models.py의 모델들을 직접 import하지 않고 lazy import 허용
 
-__all__ = ['User', 'KrxTimeSeries', 'Portfolio', 'PortfolioHistory', 'SimulationCache',
+__all__ = ['User', 'KrxTimeSeries', 'Portfolio', 'PortfolioHistory', 'SimulationCache', 'Bookmark',
+           'UserPreset', 'UserNotificationSetting', 'UserActivityEvent', 'UserEventLog',
            'SimulationRun', 'SimulationPath', 'SimulationSummary',
            'ScenarioDefinition', 'PortfolioModel', 'PortfolioAllocation',
            'RebalancingRule', 'RebalancingEvent', 'RebalancingCostModel',
