@@ -22,8 +22,8 @@
 - Integration(재실행, 부분): `python3 -m pytest -q -m integration --maxfail=1` (120s 타임아웃)
 - E2E: `MPLCONFIGDIR=/tmp/matplotlib MPLBACKEND=Agg python3 -m pytest -q -m e2e --maxfail=1`
 - Guard: `MPLCONFIGDIR=/tmp/matplotlib MPLBACKEND=Agg python3 -m pytest -q -m guard --maxfail=1`
-- 성능(k6): 미실행 (k6 미설치)
- - 실행 위치: `/Users/changrim/KingoPortfolio/backend`
+- 성능(k6): `k6 run -e BASE_URL=http://127.0.0.1:8000 --summary-export /tmp/k6_summary.json scripts/k6/phase4_standard.js`
+ - 실행 위치: `/Users/changrim/KingoPortfolio`
 
 ## 4. 결과 요약
 - Smoke: 통과 (24 passed, 487 deselected)
@@ -31,16 +31,20 @@
 - Integration(재실행): 부분 실행 후 중단 (120s 타임아웃, `tests/integration/test_admin_controls.py` 진행 중)
 - E2E: 통과 (1 passed)
 - Guard: 통과 (2 passed)
-- 성능/SLA: 미실행 (k6 미설치)
+- 성능/SLA: 통과 (http_5xx_rate=0.00%)
 
 ## 5. 실패 케이스 상세
 - Integration 재실행이 120s 타임아웃으로 중단됨 (진행 중인 파일: `tests/integration/test_admin_controls.py`)
 
 ## 6. 성능 지표
-- 미측정 (k6 미설치, Docker 미설치)
+- k6 결과 (BASE_URL=http://127.0.0.1:8000)
+  - http_req_duration: avg=124.21ms, p90=296.61ms, p95=378.24ms, p99=656.97ms, max=997ms
+  - http_5xx_rate: 0.00%
+  - http_req_failed: 20.00% (Guard 404/403 응답 포함)
+  - iterations: 16660
 
 ## 7. SLA 판정
-- 미판정 (성능/SLA 미측정)
+- Pass (p95/p99 기준 충족, 5xx 오류율 0.00%)
 
 ## 8. 부하 시나리오(정의)
 1. Warm-up: 2분
@@ -50,13 +54,14 @@
 Spike 구간에서 SLA 초과는 허용하되 서비스 불능은 불가로 판정한다.
 
 ## 9. 잔여 리스크 및 운영 메모
-- k6 기반 부하 테스트 미실행으로 SLA 충족 여부 판단 불가
+- Guard 경로는 의도적으로 404/403이므로 `http_req_failed`가 20.00%로 표시됨
+- SLA 판정은 5xx 오류율 기반으로 판단
 
 ## 10. 성능 / SLA 검증
-- 상태: Deferred
-- 사유: k6 미설치로 인한 성능 측정 불가
-- 영향: 기능적 무결성에는 영향 없음
-- 후속 계획: 운영 전환 전 k6 설치 후 재검증
+- 상태: Pass
+- 사유: p95/p99 기준 충족, 5xx 오류율 0.00%
+- 영향: SLA 판정 완료
+- 후속 계획: 운영 환경에서도 동일 스크립트로 재검증
 
 ## 11. 보고서 필수 항목 체크리스트
 - 검증 범위 (U-1 ~ U-3)

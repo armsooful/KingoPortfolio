@@ -109,6 +109,15 @@ docs/
 | [20260119_phase4_k6_standard_script.md](phase4/20260119_phase4_k6_standard_script.md) | Phase 4 k6 성능 테스트 표준 스크립트 |
 | [20260119_phase4_runbook_template.md](phase4/20260119_phase4_runbook_template.md) | Phase 4 운영 Runbook 템플릿 |
 | [20260119_phase4_sprint_schedule.md](phase4/20260119_phase4_sprint_schedule.md) | Phase 4 스프린트 일정(2~4주) |
+| [20260119_phase4_correlation_id_standard.md](phase4/20260119_phase4_correlation_id_standard.md) | Phase 4 Correlation ID 전파 표준 |
+| [20260119_phase4_error_classification_standard.md](phase4/20260119_phase4_error_classification_standard.md) | Phase 4 에러 분류 체계 |
+| [20260119_phase4_metrics_alert_rules.md](phase4/20260119_phase4_metrics_alert_rules.md) | Phase 4 메트릭/알림 룰 |
+| [20260119_phase4_timeout_retry_policy.md](phase4/20260119_phase4_timeout_retry_policy.md) | Phase 4 타임아웃/재시도 정책 |
+| [20260119_phase4_fail_safe_policy.md](phase4/20260119_phase4_fail_safe_policy.md) | Phase 4 Fail-safe 응답 정책 |
+| [20260119_phase4_rollback_procedure.md](phase4/20260119_phase4_rollback_procedure.md) | Phase 4 롤백 시나리오 및 절차 |
+| [20260119_phase4_deployment_checklist.md](phase4/20260119_phase4_deployment_checklist.md) | Phase 4 배포 체크리스트 |
+| [20260119_phase4_runbook.md](phase4/20260119_phase4_runbook.md) | Phase 4 장애 대응 Runbook |
+| [20260119_phase4_operator_guide.md](phase4/20260119_phase4_operator_guide.md) | Phase 4 운영자 가이드 |
 
 ---
 

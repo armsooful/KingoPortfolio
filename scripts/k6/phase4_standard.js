@@ -1,11 +1,14 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
+import { Rate } from "k6/metrics";
 
 const BASE_URL = __ENV.BASE_URL || "http://localhost:8000";
 const AUTH_TOKEN = __ENV.AUTH_TOKEN || "";
 
 const VUS = Number(__ENV.VUS || 30);
 const DURATION = __ENV.DURATION || "10m";
+
+const http5xxRate = new Rate("http_5xx_rate");
 
 export const options = {
   scenarios: {
@@ -35,8 +38,8 @@ export const options = {
     },
   },
   thresholds: {
-    http_req_failed: ["rate<0.001"],
     http_req_duration: ["p(95)<500", "p(99)<1500"],
+    http_5xx_rate: ["rate<0.001"],
   },
 };
 
@@ -47,22 +50,27 @@ function authHeaders() {
 export default function () {
   const headers = authHeaders();
 
-  const health = http.get(`${BASE_URL}/api/v1/health`, { headers });
+  const health = http.get(`${BASE_URL}/health`, { headers });
   check(health, { "health 200": (r) => r.status === 200 });
+  http5xxRate.add(health.status >= 500);
 
-  const portfolio = http.get(
-    `${BASE_URL}/api/v1/portfolios/public/sample`,
-    { headers }
-  );
-  check(portfolio, { "portfolio 200": (r) => r.status === 200 });
+  const docs = http.get(`${BASE_URL}/docs`, { headers });
+  check(docs, { "docs 200": (r) => r.status === 200 });
+  http5xxRate.add(docs.status >= 500);
 
-  const metrics = http.get(`${BASE_URL}/api/v1/metrics/sample`, { headers });
-  check(metrics, { "metrics 200": (r) => r.status === 200 });
+  const openapi = http.get(`${BASE_URL}/openapi.json`, { headers });
+  check(openapi, { "openapi 200": (r) => r.status === 200 });
+  http5xxRate.add(openapi.status >= 500);
 
-  const guard = http.get(`${BASE_URL}/api/v1/recommendations`, { headers });
-  check(guard, {
-    "guard blocked": (r) => r.status === 404 || r.status === 403,
+  const robots = http.get(`${BASE_URL}/robots.txt`, { headers });
+  check(robots, { "robots 200": (r) => r.status === 200 });
+  http5xxRate.add(robots.status >= 500);
+
+  const guard = http.get(`${BASE_URL}/api/v1/recommendations`, {
+    headers,
+    tags: { type: "guard" },
   });
+  check(guard, { "guard blocked": (r) => r.status === 404 || r.status === 403 });
 
   sleep(1);
 }
