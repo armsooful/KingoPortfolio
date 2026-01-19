@@ -19,7 +19,8 @@ docs/
 ├── manuals/          # 운영 매뉴얼
 ├── phase1/           # Phase 1 관련 문서
 ├── phase2/           # Phase 2 관련 문서
-└── phase3/           # Phase 3 관련 문서 (현재)
+├── phase3/           # Phase 3 관련 문서 (현재)
+└── phase4/           # Phase 4 관련 문서
 ```
 
 ---
@@ -97,6 +98,17 @@ docs/
 | [20260119_phase3d_implementation_tickets.md](phase3/20260119_phase3d_implementation_tickets.md) | Phase 3-D 구현 티켓 |
 | [20260119_phase3d_feedback_templates_and_guard.md](phase3/20260119_phase3d_feedback_templates_and_guard.md) | Phase 3-D 피드백 문구 템플릿 + 금지 가드 세트 |
 | [20260118_phase3d_performance_feedback_loop_detailed_design.md](phase3/20260118_phase3d_performance_feedback_loop_detailed_design.md) | Phase 3-D 성과·피드백 루프 상세 설계 |
+
+---
+
+## Phase 4 (운영 전환)
+
+| 파일명 | 설명 |
+|--------|------|
+| [20260119_phase4_implementation_tickets.md](phase4/20260119_phase4_implementation_tickets.md) | Phase 4 작업 티켓 |
+| [20260119_phase4_k6_standard_script.md](phase4/20260119_phase4_k6_standard_script.md) | Phase 4 k6 성능 테스트 표준 스크립트 |
+| [20260119_phase4_runbook_template.md](phase4/20260119_phase4_runbook_template.md) | Phase 4 운영 Runbook 템플릿 |
+| [20260119_phase4_sprint_schedule.md](phase4/20260119_phase4_sprint_schedule.md) | Phase 4 스프린트 일정(2~4주) |
 
 ---
 
@@ -186,6 +198,7 @@ docs/
 |--------|------|
 | [foresto_compass_u3_verification_report_20260119.md](reports/foresto_compass_u3_verification_report_20260119.md) | U-3 종합 검증 보고서 |
 | [foresto_compass_phase3_completion_statement_20260119.md](reports/foresto_compass_phase3_completion_statement_20260119.md) | Phase 3 완료 상태 선언(내부용) |
+| [foresto_compass_phase3_completion_report_20260119.md](reports/foresto_compass_phase3_completion_report_20260119.md) | Phase 3 전체 완료 보고서(내부용) |
 
 ---
 
