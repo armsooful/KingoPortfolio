@@ -21,6 +21,46 @@ from app.exceptions import BaseKingoException, InternalServerError, DatabaseErro
 logger = logging.getLogger(__name__)
 
 
+def _get_request_id(request: Request) -> str:
+    return request.headers.get("x-request-id") or getattr(request.state, "request_id", "")
+
+
+def _error_type_from_status(status_code: int) -> str:
+    if 400 <= status_code < 500:
+        return "USER"
+    return "SYSTEM"
+
+
+def _error_type_from_code(error_code: str) -> str:
+    if error_code in {
+        "UPSTREAM_UNAVAILABLE",
+        "EXTERNAL_DEPENDENCY",
+        "EXTERNAL_API_ERROR",
+        "ALPHA_VANTAGE_ERROR",
+        "PYKRX_ERROR",
+        "CLAUDE_API_ERROR",
+    }:
+        return "EXTERNAL"
+    return ""
+
+
+def _merge_extra(extra: Dict[str, Any], request_id: str, error_type: str) -> Dict[str, Any]:
+    merged = dict(extra) if extra else {}
+    if request_id:
+        merged["request_id"] = request_id
+    if error_type:
+        merged["error_type"] = error_type
+    return merged
+
+
+def _safe_detail(error_type: str, detail: str) -> str:
+    if error_type == "EXTERNAL":
+        return "외부 서비스 응답이 지연되고 있습니다. 잠시 후 다시 시도해주세요."
+    if error_type == "SYSTEM":
+        return "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+    return detail
+
+
 def create_error_response(
     status_code: int,
     error_code: str,
@@ -58,6 +98,8 @@ async def base_kingo_exception_handler(
     """
     커스텀 KingoPortfolio 예외 핸들러
     """
+    request_id = _get_request_id(request)
+    error_type = _error_type_from_code(exc.error_code) or _error_type_from_status(exc.status_code)
     logger.error(
         f"{exc.error_code}: {exc.detail}",
         extra={
@@ -65,15 +107,17 @@ async def base_kingo_exception_handler(
             "method": request.method,
             "error_code": exc.error_code,
             "status_code": exc.status_code,
-            **exc.extra
+            "request_id": request_id,
+            "error_type": error_type,
+            **(exc.extra or {})
         }
     )
 
     return create_error_response(
         status_code=exc.status_code,
         error_code=exc.error_code,
-        detail=exc.detail,
-        extra=exc.extra if exc.extra else None
+        detail=_safe_detail(error_type, exc.detail),
+        extra=_merge_extra(exc.extra, request_id, error_type)
     )
 
 
@@ -84,19 +128,24 @@ async def http_exception_handler(
     """
     일반 HTTPException 핸들러
     """
+    request_id = _get_request_id(request)
+    error_type = _error_type_from_status(exc.status_code)
     logger.warning(
         f"HTTP {exc.status_code}: {exc.detail}",
         extra={
             "path": request.url.path,
             "method": request.method,
-            "status_code": exc.status_code
+            "status_code": exc.status_code,
+            "request_id": request_id,
+            "error_type": error_type,
         }
     )
 
     return create_error_response(
         status_code=exc.status_code,
         error_code=f"HTTP_{exc.status_code}",
-        detail=str(exc.detail)
+        detail=_safe_detail(error_type, str(exc.detail)),
+        extra=_merge_extra({}, request_id, error_type)
     )
 
 
@@ -123,12 +172,15 @@ async def validation_exception_handler(
                 "type": error["type"]
             })
 
+    request_id = _get_request_id(request)
     logger.warning(
         f"Validation error: {len(errors)} errors",
         extra={
             "path": request.url.path,
             "method": request.method,
-            "errors": errors
+            "errors": errors,
+            "request_id": request_id,
+            "error_type": "USER",
         }
     )
 
@@ -136,7 +188,7 @@ async def validation_exception_handler(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         error_code="VALIDATION_ERROR",
         detail="입력 데이터 검증에 실패했습니다",
-        extra={"errors": errors}
+        extra=_merge_extra({"errors": errors}, request_id, "USER")
     )
 
 
@@ -147,12 +199,15 @@ async def sqlalchemy_exception_handler(
     """
     SQLAlchemy 데이터베이스 에러 핸들러
     """
+    request_id = _get_request_id(request)
     logger.error(
         f"Database error: {str(exc)}",
         extra={
             "path": request.url.path,
             "method": request.method,
-            "error_type": type(exc).__name__
+            "error_type": "SYSTEM",
+            "request_id": request_id,
+            "db_error_type": type(exc).__name__,
         },
         exc_info=True
     )
@@ -168,7 +223,8 @@ async def sqlalchemy_exception_handler(
     return create_error_response(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         error_code=error_code,
-        detail=detail
+        detail=_safe_detail("SYSTEM", detail),
+        extra=_merge_extra({}, request_id, "SYSTEM")
     )
 
 
@@ -181,13 +237,16 @@ async def general_exception_handler(
     """
     trace = traceback.format_exc()
 
+    request_id = _get_request_id(request)
     logger.critical(
         f"Unhandled exception: {str(exc)}",
         extra={
             "path": request.url.path,
             "method": request.method,
-            "error_type": type(exc).__name__,
-            "trace": trace
+            "error_type": "SYSTEM",
+            "request_id": request_id,
+            "exception_type": type(exc).__name__,
+            "trace": trace,
         },
         exc_info=True
     )
@@ -206,9 +265,10 @@ async def general_exception_handler(
     return create_error_response(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         error_code="INTERNAL_SERVER_ERROR",
-        detail=detail,
+        detail=_safe_detail("SYSTEM", detail),
         include_trace=include_trace,
-        trace=trace if include_trace else None
+        trace=trace if include_trace else None,
+        extra=_merge_extra({}, request_id, "SYSTEM")
     )
 
 

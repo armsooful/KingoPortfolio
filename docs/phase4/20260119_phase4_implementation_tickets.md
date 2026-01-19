@@ -68,6 +68,7 @@ Phase 4는 기능 추가가 아닌 운영 전환 단계다. 성능/SLA, 관측�
 - 산출물: 타임아웃/재시도 정책 문서
 - 상태: 완료
 - 참고: `docs/phase4/20260119_phase4_timeout_retry_policy.md`
+- 적용: `backend/app/utils/http_client.py`, `backend/app/services/alpha_vantage_client.py`, `backend/app/routes/market.py`, `backend/app/services/qualitative_analyzer.py`
 - 완료 기준:
   - 장애 주입 시 핵심 플로우 유지
 
@@ -76,6 +77,7 @@ Phase 4는 기능 추가가 아닌 운영 전환 단계다. 성능/SLA, 관측�
 - 산출물: Fail-safe 응답 규격, 예시
 - 상태: 완료
 - 참고: `docs/phase4/20260119_phase4_fail_safe_policy.md`
+- 적용: `backend/app/error_handlers.py`
 - 완료 기준:
   - 주요 오류 상황에서 안전한 응답 유지
 

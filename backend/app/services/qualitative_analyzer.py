@@ -7,9 +7,9 @@
 import os
 from typing import Dict, List, Optional
 from anthropic import Anthropic
-import requests
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
+from app.utils.http_client import get_with_retry
 
 # .env 파일 로드
 load_dotenv()
@@ -36,7 +36,7 @@ class QualitativeAnalyzer:
         }
 
         try:
-            response = requests.get(url, params=params, timeout=10)
+            response = get_with_retry(url, params=params, timeout=2.0, retries=2)
             data = response.json()
 
             if "feed" not in data:

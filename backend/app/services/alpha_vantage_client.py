@@ -1,11 +1,11 @@
 # backend/app/services/alpha_vantage_client.py
 
-import requests
 import time
 import logging
 from typing import Dict, Optional, List
 from datetime import datetime, timedelta
 from app.config import settings
+from app.utils.http_client import get_with_retry
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ class AlphaVantageClient:
         params['apikey'] = self.api_key
 
         try:
-            response = requests.get(self.BASE_URL, params=params, timeout=30)
+            response = get_with_retry(self.BASE_URL, params=params, timeout=2.0, retries=2)
             response.raise_for_status()
 
             self.last_request_time = time.time()
@@ -59,7 +59,7 @@ class AlphaVantageClient:
 
             return data
 
-        except requests.RequestException as e:
+        except Exception as e:
             logger.error(f"Alpha Vantage API 요청 실패: {str(e)}")
             return None
 

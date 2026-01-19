@@ -8,7 +8,6 @@ from typing import List, Dict, Any
 import yfinance as yf
 from anthropic import Anthropic
 import os
-import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from pykrx import stock
@@ -16,6 +15,7 @@ from pykrx import stock
 from app.database import get_db
 from app.models.user import User
 from app.routes.auth import get_current_user
+from app.utils.http_client import get_with_retry
 
 router = APIRouter(prefix="/api/market", tags=["market"])
 
@@ -33,7 +33,7 @@ def fetch_naver_finance_news(limit: int = 5) -> List[Dict[str, str]]:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
 
-        response = requests.get(url, headers=headers, timeout=10)
+        response = get_with_retry(url, headers=headers, timeout=2.0, retries=2)
         response.raise_for_status()
 
         soup = BeautifulSoup(response.text, 'html.parser')

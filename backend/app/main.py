@@ -5,6 +5,8 @@ from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.templating import Jinja2Templates
 from contextlib import asynccontextmanager
 from datetime import timedelta
+import logging
+import time
 import uuid
 from dotenv import load_dotenv
 from pathlib import Path
@@ -26,6 +28,8 @@ from slowapi.errors import RateLimitExceeded
 from app.models import securities  # noqa
 from app.models import admin_controls as admin_controls_models  # noqa
 from app.models.user import User  # noqa
+
+logger = logging.getLogger(__name__)
 
 def init_db():
     if settings.reset_db_on_startup:
@@ -174,8 +178,21 @@ app.add_middleware(
 @app.middleware("http")
 async def add_request_id_header(request: Request, call_next):
     request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
+    request.state.request_id = request_id
+    start_time = time.perf_counter()
     response = await call_next(request)
+    latency_ms = (time.perf_counter() - start_time) * 1000
     response.headers["x-request-id"] = request_id
+    logger.info(
+        "request completed",
+        extra={
+            "request_id": request_id,
+            "path": request.url.path,
+            "method": request.method,
+            "status_code": response.status_code,
+            "latency_ms": round(latency_ms, 2),
+        },
+    )
     return response
 
 # Templates 설정
