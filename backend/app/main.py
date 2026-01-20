@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from datetime import timedelta
 import logging
 import time
+from urllib.parse import quote
 import uuid
 from dotenv import load_dotenv
 from pathlib import Path
@@ -177,12 +178,25 @@ app.add_middleware(
 
 @app.middleware("http")
 async def add_request_id_header(request: Request, call_next):
-    request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
+    request_id = request.headers.get("x-request-id")
+    if not request_id:
+        request_id = str(uuid.uuid4())
+    else:
+        try:
+            request_id.encode("latin-1")
+        except UnicodeEncodeError:
+            logger.warning(
+                "invalid request_id header; replacing with generated id",
+                extra={"request_id": request_id},
+            )
+            request_id = str(uuid.uuid4())
     request.state.request_id = request_id
     start_time = time.perf_counter()
     response = await call_next(request)
     latency_ms = (time.perf_counter() - start_time) * 1000
     response.headers["x-request-id"] = request_id
+    response.headers["x-user-disclaimer"] = quote(settings.user_disclaimer, safe="")
+    response.headers["x-user-disclaimer-encoding"] = "urlencoded"
     logger.info(
         "request completed",
         extra={

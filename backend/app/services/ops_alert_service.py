@@ -12,6 +12,7 @@ import logging
 
 from app.models.ops import OpsAlert, ErrorCodeMaster
 from app.services.error_code_service import ErrorCodeService
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -55,9 +56,9 @@ class OpsAlertService:
     def __init__(self, db: Session):
         self.db = db
         self.error_service = ErrorCodeService(db)
-        self._email_enabled = True
-        self._slack_enabled = False
-        self._webhook_url: Optional[str] = None
+        self._email_enabled = settings.ops_alert_email_enabled
+        self._slack_enabled = settings.ops_alert_slack_enabled
+        self._webhook_url: Optional[str] = settings.ops_alert_webhook_url or None
 
     def configure(
         self,

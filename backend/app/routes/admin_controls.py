@@ -58,10 +58,24 @@ def assign_role(
     meta: Dict[str, Optional[str]] = Depends(request_meta(require_idempotency=True)),
 ):
     _require_permission(db, current_user, "ADMIN_ROLE_MANAGE")
+    before_roles = AdminRBACService(db).list_user_roles(user_id)
     mapping = AdminRBACService(db).assign_role(
         user_id=user_id,
         role_name=role_name,
         assigned_by=current_user.id,
+    )
+    after_roles = AdminRBACService(db).list_user_roles(user_id)
+    AdminAuditService(db).record(
+        operator_id=current_user.id,
+        operator_role=current_user.role,
+        action_type="RBAC_ASSIGN_ROLE",
+        target_type="USER",
+        target_id=user_id,
+        reason="RBAC role assignment",
+        request_id=meta["request_id"],
+        idempotency_key=meta["idempotency_key"],
+        before_state={"roles": before_roles},
+        after_state={"roles": after_roles},
     )
     return {
         "success": True,

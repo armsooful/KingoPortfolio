@@ -35,6 +35,28 @@ class Settings:
         ""
     )
 
+    # User disclaimer (Phase 5)
+    user_disclaimer: str = os.getenv(
+        "USER_DISCLAIMER",
+        "본 서비스는 교육 및 정보 제공 목적의 플랫폼입니다. 투자 권유·추천·자문·일임을 제공하지 않습니다. "
+        "제공되는 내용은 과거 데이터 및 공개 정보를 기반으로 하며, 미래 수익을 보장하지 않습니다. "
+        "모든 투자 결정은 사용자 본인의 판단과 책임 하에 이루어져야 합니다."
+    )
+
+    # Ops alerting (Phase 5)
+    ops_alert_email_enabled: bool = os.getenv(
+        "OPS_ALERT_EMAIL_ENABLED",
+        "1"
+    ) in ("1", "true", "True", "yes")
+    ops_alert_slack_enabled: bool = os.getenv(
+        "OPS_ALERT_SLACK_ENABLED",
+        "0"
+    ) in ("1", "true", "True", "yes")
+    ops_alert_webhook_url: str = os.getenv(
+        "OPS_ALERT_WEBHOOK_URL",
+        ""
+    )
+
     # 데이터베이스 초기화 옵션
     reset_db_on_startup: bool = os.getenv(
         "RESET_DB_ON_STARTUP",

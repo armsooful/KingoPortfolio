@@ -46,14 +46,23 @@ Phase 5는 외부 노출 및 운영 단계 진입을 위한 실적용 단계다.
 - 산출물: `docs/phase5/user_disclaimer_v1.md`
 - 우선순위: P1
 - 상태: 완료
+- 검증: `/health` 응답 헤더 `x-user-disclaimer` URL-encoded 확인 (200 OK)
+- 검증 일시: 2026-01-20 00:26:27 GMT
 
 ### P5-C02. 추천·선정 로직 차단 유지 검증
 - 목적: 규제 준수 확인
 - 산출물: 검증 체크리스트
+- 상태: 완료
+- 검증: `pytest -q -m guard --maxfail=1` (tests/unit/test_forbidden_terms_regression.py)
+- 검증 일시: 2026-01-20 09:31:12 KST
 
 ### P5-C03. API Rate Limit/Abuse Guard 적용
 - 목적: 악용 방지
-- 산출물: 정책/설정 문서
+- 산출물: `docs/phase5/rate_limit_policy.md`
+- 상태: 완료
+- 참고: `backend/docs/guides/RATE_LIMITING.md`, `backend/app/rate_limiter.py`
+- 검증: `/auth/login` 12회 호출 시 11~12번째 429 확인 (1~10번째 401)
+- 검증 일시: 2026-01-20 09:36:25 KST
 
 ## 4. 운영 지표
 
