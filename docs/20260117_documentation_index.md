@@ -295,3 +295,4 @@ YYYYMMDD_descriptive_name.md
 
 - [20260117_documentation_index.md](../20260117_documentation_index.md) - 프로젝트 메인 README
 - [scripts/](../scripts/) - 운영 스크립트
+ - [feature_overview.md](feature_overview.md) - 기능 설명서
