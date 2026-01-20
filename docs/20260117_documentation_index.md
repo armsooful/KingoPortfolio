@@ -131,6 +131,7 @@ docs/
 | [phase5_runbook.md](phase5/phase5_runbook.md) | Phase 5 운영 Runbook v1 |
 | [ops_alerting.yaml](phase5/ops_alerting.yaml) | Phase 5 알림/모니터링 설정안 |
 | [phase5_exit_criteria.md](phase5/phase5_exit_criteria.md) | Phase 5 완료 조건 (Exit Criteria) |
+| [phase6_baseline_charter.md](phase6/phase6_baseline_charter.md) | Phase 6 기준선 선언서 (Baseline Charter) |
 
 ---
 
