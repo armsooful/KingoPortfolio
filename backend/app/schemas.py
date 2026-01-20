@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime, date
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Literal
 
 
 # ============================================================
@@ -426,6 +426,94 @@ class PortfolioResponse(BaseModel):
             }
         }
 
+
+# ============================================================
+# Phase 7 Schemas
+# ============================================================
+
+class Phase7PortfolioItemInput(BaseModel):
+    """Phase 7 포트폴리오 구성 항목"""
+    id: str = Field(..., description="종목 또는 섹터 ID")
+    name: str = Field(..., description="종목 또는 섹터 이름")
+    weight: float = Field(..., ge=0, le=1, description="비중 (0~1)")
+
+
+class Phase7PortfolioCreateRequest(BaseModel):
+    """Phase 7 포트폴리오 생성 요청"""
+    portfolio_type: Literal["SECURITY", "SECTOR"] = Field(..., description="SECURITY | SECTOR")
+    portfolio_name: str = Field(..., max_length=100, description="포트폴리오 이름")
+    description: Optional[str] = Field(None, description="메모")
+    items: List[Phase7PortfolioItemInput] = Field(..., min_items=1)
+
+
+class Phase7PortfolioResponse(BaseModel):
+    """Phase 7 포트폴리오 응답"""
+    portfolio_id: int
+    portfolio_type: str
+    portfolio_name: str
+    description: Optional[str]
+    items: List[Phase7PortfolioItemInput]
+    created_at: Optional[str]
+    updated_at: Optional[str]
+
+
+class Phase7PortfolioListResponse(BaseModel):
+    """Phase 7 포트폴리오 목록"""
+    count: int
+    portfolios: List[Phase7PortfolioResponse]
+
+
+class Phase7Period(BaseModel):
+    """Phase 7 평가 기간"""
+    start: date
+    end: date
+
+
+class Phase7EvaluationRequest(BaseModel):
+    """Phase 7 평가 요청"""
+    portfolio_id: int
+    period: Phase7Period
+    rebalance: Literal["NONE", "MONTHLY", "QUARTERLY"] = Field("NONE")
+
+
+class Phase7MetricsResponse(BaseModel):
+    """Phase 7 평가 지표"""
+    cumulative_return: float
+    cagr: float
+    volatility: float
+    max_drawdown: float
+
+
+class Phase7EvaluationResponse(BaseModel):
+    """Phase 7 평가 응답"""
+    period: Phase7Period
+    metrics: Phase7MetricsResponse
+    disclaimer_version: str
+
+
+class Phase7EvaluationHistoryItem(BaseModel):
+    """Phase 7 평가 이력 항목"""
+    evaluation_id: int
+    portfolio_id: int
+    period: Phase7Period
+    rebalance: str
+    created_at: Optional[str]
+
+
+class Phase7EvaluationHistoryResponse(BaseModel):
+    """Phase 7 평가 이력 목록"""
+    count: int
+    evaluations: List[Phase7EvaluationHistoryItem]
+
+
+class Phase7EvaluationDetailResponse(BaseModel):
+    """Phase 7 평가 이력 상세"""
+    evaluation_id: int
+    portfolio_id: int
+    period: Phase7Period
+    rebalance: str
+    created_at: Optional[str]
+    result: Phase7EvaluationResponse
 
 # ============================================================
 # Survey Schemas
