@@ -1,0 +1,2 @@
+2026-01-20 10:05:00 KST | incident=latency_spike | level=warning | threshold=p95>500ms | channel=slack | status=sent
+2026-01-20 10:05:02 KST | incident=latency_spike | level=warning | channel=slack | status=received

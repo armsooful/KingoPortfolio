@@ -13,13 +13,15 @@ Phase 5는 외부 노출 및 운영 단계 진입을 위한 실적용 단계다.
 
 ### P5-A02. 배치/스케줄 모니터링 정의
 - 목적: 배치 실패/지연 탐지
-- 산출물: 스케줄 모니터링 기준 문서
+- 산출물: `docs/phase5/batch_monitoring_policy.md`
+- 상태: 완료
 
 ### P5-A03. 알림 임계치 적용
 - 목적: 에러/지연/비정상 수치 감지
 - 산출물: `ops_alerting.yaml`
 - 우선순위: P0
 - 상태: 완료
+- 검증: `docs/phase5/alert_verification_checklist.md` (로그 샘플 확인)
 
 ## 2. 보안·권한
 
@@ -28,16 +30,20 @@ Phase 5는 외부 노출 및 운영 단계 진입을 위한 실적용 단계다.
 - 산출물: `docs/phase5/rbac_matrix.md`
 - 우선순위: P0
 - 상태: 완료
+- 검증: `docs/phase5/rbac_verification_checklist.md` (샘플 로그 확인)
 
 ### P5-B02. 감사 로그 스키마/정책 확정
 - 목적: 조회/수정/배포 기록
 - 산출물: 감사 로그 정책 문서
 - 우선순위: P0
 - 상태: 완료
+- 검증: `docs/phase5/rbac_verification_checklist.md` (샘플 로그 확인)
 
 ### P5-B03. 민감 파라미터 마스킹 적용
 - 목적: 응답/로그 마스킹
-- 산출물: 마스킹 정책 문서
+- 산출물: `docs/phase5/masking_policy.md`
+- 상태: 완료(정책 확정)
+- 검증: `docs/phase5/masking_verification_checklist.md` (샘플 로그 확인)
 
 ## 3. 외부 노출 정책
 

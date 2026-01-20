@@ -1,0 +1,4 @@
+2026-01-20 10:35:00 KST | role=viewer | action=GET /admin/controls | status=403 | result=blocked
+2026-01-20 10:35:05 KST | role=operator | action=POST /admin/controls/adjustments | status=403 | result=blocked
+2026-01-20 10:35:10 KST | role=admin | action=POST /admin/controls/approvals | status=201 | result=allowed
+2026-01-20 10:35:12 KST | audit_log=role_assignment | actor=admin | target=operator | status=recorded
