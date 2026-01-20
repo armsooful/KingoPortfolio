@@ -3,7 +3,7 @@
 Purpose: confirm unauthorized access is blocked and actions are logged.
 
 ### Inputs
-- Log source path: `docs/phase5/access_logs/rbac_access_test.log`
+- Log source path: `docs/phase5/evidence/access_logs/rbac_access_test.log`
 - Test account: viewer/operator/admin (manual sample)
 - Test timestamp: 2026-01-20 10:35:00 KST
 
@@ -14,7 +14,7 @@ Purpose: confirm unauthorized access is blocked and actions are logged.
 4) Audit log contains role and action entries.
 
 ### Evidence
-- Log excerpt location: `docs/phase5/access_logs/rbac_access_test.log`
+- Log excerpt location: `docs/phase5/evidence/access_logs/rbac_access_test.log`
 
 ### Result
 - Status: Pass

@@ -3,7 +3,7 @@
 Purpose: confirm sensitive fields are masked in responses and logs.
 
 ### Inputs
-- Log source path: `docs/phase5/logs/masking_sample.log`
+- Log source path: `docs/phase5/evidence/logs/masking_sample.log`
 - Sample request/response IDs: TBD
 - Environment: TBD
 
@@ -14,8 +14,8 @@ Purpose: confirm sensitive fields are masked in responses and logs.
 4) No raw secrets appear in exception traces.
 
 ### Evidence
-- Log excerpt location: `docs/phase5/logs/masking_sample.log`
-- Screenshot or log file: `docs/phase5/logs/masking_sample.log`
+- Log excerpt location: `docs/phase5/evidence/logs/masking_sample.log`
+- Screenshot or log file: `docs/phase5/evidence/logs/masking_sample.log`
 
 ### Result
 - Status: Pass

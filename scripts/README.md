@@ -134,7 +134,7 @@ yfinance를 사용한 데이터 수집 기능을 테스트합니다.
 
 **기능**:
 - frontend/src 및 backend/app 디렉토리 스캔
-- 금지어 목록은 docs/forbidden_terms.md에서 관리
+- 금지어 목록은 docs/compliance/20260114_forbidden_terms_list.md에서 관리
 - 면책 조항, 부정문 등 예외 자동 필터링
 - CI/pre-commit 연동 가능
 

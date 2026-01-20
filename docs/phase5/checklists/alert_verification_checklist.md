@@ -3,7 +3,7 @@
 Purpose: confirm alert delivery for test incidents.
 
 ### Inputs
-- Log source path: `docs/phase5/alert_logs/ops_alert_test.log`
+- Log source path: `docs/phase5/evidence/alert_logs/ops_alert_test.log`
 - Channel: slack
 - Test timestamp: 2026-01-20 10:05:00 KST
 
@@ -13,7 +13,7 @@ Purpose: confirm alert delivery for test incidents.
 3) Alert message includes incident type and timestamp.
 
 ### Evidence
-- Log excerpt location: `docs/phase5/alert_logs/ops_alert_test.log`
+- Log excerpt location: `docs/phase5/evidence/alert_logs/ops_alert_test.log`
 
 ### Result
 - Status: Pass

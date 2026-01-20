@@ -27,7 +27,7 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 TARGET_DIRS="${1:-$PROJECT_ROOT/frontend/src $PROJECT_ROOT/backend/app}"
 
 # 금지어 목록 (단일 소스)
-# docs/forbidden_terms.md와 동기화 필요
+# docs/compliance/20260114_forbidden_terms_list.md와 동기화 필요
 FORBIDDEN_TERMS=(
     # 추천/권유 관련 (HIGH)
     "추천"
@@ -46,6 +46,23 @@ FORBIDDEN_TERMS=(
     # 예측/전망 관련 (MEDIUM)
     "기대수익률"
     "예상수익"
+    "기대"
+    "전망"
+    "향후"
+    "가능성"
+    "유효할"
+
+    # 평가/비교/우열 관련 (MEDIUM)
+    "최적"
+    "우수"
+    "효율"
+    "승자"
+    "Top"
+    "랭킹"
+    "더 낫다"
+    "불리하다"
+    "안정적"
+    "공격적"
 
     # 전문가/자문 관련 (HIGH)
     "전문가 조언"
@@ -168,7 +185,7 @@ if [ $FOUND_ISSUES -gt 0 ]; then
     echo -e "${RED}[실패] $FOUND_ISSUES종류의 금지어, 총 $TOTAL_MATCHES건 발견${NC}"
     echo ""
     echo "수정 방법:"
-    echo "  1. docs/forbidden_terms.md에서 대체 표현 확인"
+    echo "  1. docs/compliance/20260114_forbidden_terms_list.md에서 대체 표현 확인"
     echo "  2. 금지어를 허용된 표현으로 변경"
     echo "  3. 면책 조항(Disclaimer)에서 사용하는 경우 예외 처리됨"
     echo ""

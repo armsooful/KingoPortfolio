@@ -127,11 +127,19 @@ docs/
 
 | 파일명 | 설명 |
 |--------|------|
-| [20260119_phase5_implementation_tickets.md](phase5/20260119_phase5_implementation_tickets.md) | Phase 5 상세 작업 티켓 |
-| [phase5_runbook.md](phase5/phase5_runbook.md) | Phase 5 운영 Runbook v1 |
-| [ops_alerting.yaml](phase5/ops_alerting.yaml) | Phase 5 알림/모니터링 설정안 |
-| [phase5_exit_criteria.md](phase5/phase5_exit_criteria.md) | Phase 5 완료 조건 (Exit Criteria) |
-| [phase6_baseline_charter.md](phase6/phase6_baseline_charter.md) | Phase 6 기준선 선언서 (Baseline Charter) |
+| [20260119_phase5_implementation_tickets.md](phase5/guides/20260119_phase5_implementation_tickets.md) | Phase 5 상세 작업 티켓 |
+| [phase5_runbook.md](phase5/guides/phase5_runbook.md) | Phase 5 운영 Runbook v1 |
+| [ops_alerting.yaml](phase5/specs/ops_alerting.yaml) | Phase 5 알림/모니터링 설정안 |
+| [phase5_exit_criteria.md](phase5/checklists/phase5_exit_criteria.md) | Phase 5 완료 조건 (Exit Criteria) |
+| [phase6_execution_guide_revised.md](phase6/guides/phase6_execution_guide_revised.md) | Phase 6 실행가이드 (Revised) |
+| [allowed_phrases_v2.md](phase6/specs/allowed_phrases_v2.md) | Phase 6 허용 문구 v2 |
+| [output_schema_v2.json](phase6/specs/output_schema_v2.json) | Phase 6 Output Schema v2 |
+| [comparison_rules_v2.md](phase6/specs/comparison_rules_v2.md) | Phase 6 비교 규칙 v2 |
+| [ui_guard_rules_v2.md](phase6/specs/ui_guard_rules_v2.md) | Phase 6 UI 통제 규칙 v2 |
+| [disclaimer_v2.md](phase6/specs/disclaimer_v2.md) | Phase 6 고지 문구 v2 |
+| [test_golden_v2.py](phase6/tests/test_golden_v2.py) | Phase 6 Golden Test v2 (spec) |
+| [golden_output_sample_v2.json](phase6/tests/golden_output_sample_v2.json) | Phase 6 Golden Output 샘플 v2 |
+| [phase6_exit_criteria.md](phase6/checklists/phase6_exit_criteria.md) | Phase 6 Exit Criteria |
 
 ---
 
