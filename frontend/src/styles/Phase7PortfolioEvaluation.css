@@ -1,0 +1,216 @@
+.phase7-eval-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 3rem;
+}
+
+.phase7-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.phase7-subtitle {
+  color: #4b5563;
+  margin-bottom: 2rem;
+}
+
+.phase7-status {
+  background: #fff4e5;
+  border: 1px solid #f7b26a;
+  color: #a16207;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.phase7-card {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  margin-bottom: 1.8rem;
+}
+
+.phase7-card h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.phase7-form-row {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  margin-bottom: 1rem;
+}
+
+.phase7-form-row label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.9rem;
+  color: #374151;
+  gap: 0.4rem;
+}
+
+.phase7-form-row input,
+.phase7-form-row select,
+.phase7-item-row input {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
+.phase7-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.phase7-item-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1.2fr 0.8fr auto;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.phase7-item-row button {
+  background: #f3f4f6;
+  border: none;
+  border-radius: 10px;
+  padding: 0.5rem 0.7rem;
+  cursor: pointer;
+}
+
+.phase7-item-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  color: #374151;
+}
+
+.phase7-item-actions button {
+  background: #111827;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+}
+
+.phase7-primary {
+  margin-top: 1rem;
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  padding: 0.7rem 1.4rem;
+  cursor: pointer;
+}
+
+.phase7-result {
+  margin-top: 1.2rem;
+  padding: 1rem;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.phase7-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.5rem;
+}
+
+.phase7-metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0.8rem;
+  background: #ffffff;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+}
+
+.phase7-metric span {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.phase7-metric strong {
+  font-size: 0.95rem;
+  color: #111827;
+}
+
+.phase7-history {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.phase7-history li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: #f9fafb;
+}
+
+.phase7-hash {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.phase7-history button {
+  background: #e0e7ff;
+  border: none;
+  border-radius: 10px;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+}
+
+.phase7-compare-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.phase7-compare-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.phase7-compare-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 0.9rem;
+}
+
+.phase7-compare-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  color: #111827;
+}
+
+.phase7-compare-header span {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.phase7-disclaimer {
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 720px) {
+  .phase7-item-row {
+    grid-template-columns: 1fr;
+  }
+}

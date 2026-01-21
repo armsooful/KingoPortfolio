@@ -497,6 +497,7 @@ class Phase7EvaluationHistoryItem(BaseModel):
     portfolio_id: int
     period: Phase7Period
     rebalance: str
+    result_hash: str
     created_at: Optional[str]
 
 
@@ -513,7 +514,27 @@ class Phase7EvaluationDetailResponse(BaseModel):
     period: Phase7Period
     rebalance: str
     created_at: Optional[str]
+    result_hash: str
     result: Phase7EvaluationResponse
+
+
+class Phase7ComparisonRequest(BaseModel):
+    """Phase 7 비교 요청"""
+    portfolio_ids: List[int] = Field(..., min_items=2)
+
+
+class Phase7ComparisonItem(BaseModel):
+    """Phase 7 비교 항목"""
+    portfolio_id: int
+    period: Phase7Period
+    metrics: Phase7MetricsResponse
+    disclaimer_version: str
+
+
+class Phase7ComparisonResponse(BaseModel):
+    """Phase 7 비교 응답"""
+    count: int
+    portfolios: List[Phase7ComparisonItem]
 
 # ============================================================
 # Survey Schemas

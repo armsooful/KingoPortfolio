@@ -27,6 +27,7 @@ import BacktestPage from './pages/BacktestPage';
 import ScenarioSimulationPage from './pages/ScenarioSimulationPage';
 import PortfolioExplanationPage from './pages/PortfolioExplanationPage';
 import ReportHistoryPage from './pages/ReportHistoryPage';
+import Phase7PortfolioEvaluationPage from './pages/Phase7PortfolioEvaluationPage';
 import './styles/App.css';
 
 // ============================================================
@@ -223,6 +224,14 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <ReportHistoryPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/phase7-evaluation"
+            element={
+              <ProtectedRoute>
+                <Phase7PortfolioEvaluationPage />
               </ProtectedRoute>
             }
           />

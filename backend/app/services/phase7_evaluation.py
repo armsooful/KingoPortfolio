@@ -6,6 +6,7 @@ Phase 7: 과거 데이터 기반 포트폴리오 평가 서비스
 
 from __future__ import annotations
 
+import hashlib
 import json
 from datetime import date
 from typing import Dict, List, Tuple
@@ -75,6 +76,10 @@ def evaluate_phase7_portfolio(
 
 def serialize_result(result: dict) -> str:
     return json.dumps(result, ensure_ascii=False)
+
+
+def hash_result(serialized_result: str) -> str:
+    return hashlib.sha256(serialized_result.encode("utf-8")).hexdigest()
 
 
 def _load_item_series(

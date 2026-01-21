@@ -201,6 +201,40 @@ export const downloadDiagnosisPDF = async (diagnosisId) => {
   document.body.removeChild(a);
 };
 
+// ============================================================
+// Phase 7 Evaluation API
+// ============================================================
+
+export const createPhase7Portfolio = (data) => {
+  return api.post('/api/v1/phase7/portfolios', data);
+};
+
+export const listPhase7Portfolios = () => {
+  return api.get('/api/v1/phase7/portfolios');
+};
+
+export const evaluatePhase7Portfolio = (data) => {
+  return api.post('/api/v1/phase7/evaluations', data);
+};
+
+export const listPhase7Evaluations = (portfolioId, limit = 50, offset = 0) => {
+  const params = new URLSearchParams();
+  if (portfolioId) {
+    params.append('portfolio_id', portfolioId);
+  }
+  params.append('limit', limit);
+  params.append('offset', offset);
+  return api.get(`/api/v1/phase7/evaluations?${params.toString()}`);
+};
+
+export const getPhase7EvaluationDetail = (evaluationId) => {
+  return api.get(`/api/v1/phase7/evaluations/${evaluationId}`);
+};
+
+export const comparePhase7Portfolios = (data) => {
+  return api.post('/api/v1/phase7/comparisons', data);
+};
+
 /**
  * PDF 리포트 데이터 미리보기
  */

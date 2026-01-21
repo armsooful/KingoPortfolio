@@ -85,6 +85,7 @@ def test_phase7_evaluation_flow(client, db, auth_headers, test_user):
     assert list_response.status_code == 200
     list_body = list_response.json()
     assert list_body["count"] >= 1
+    assert list_body["evaluations"][0]["result_hash"]
 
     evaluation_id = list_body["evaluations"][0]["evaluation_id"]
     detail_response = client.get(
@@ -94,3 +95,34 @@ def test_phase7_evaluation_flow(client, db, auth_headers, test_user):
     assert detail_response.status_code == 200
     detail_body = detail_response.json()
     assert detail_body["result"]["disclaimer_version"] == "v2"
+    assert detail_body["result_hash"]
+
+
+def test_phase7_evaluation_invalid_period(client, db, auth_headers, test_user):
+    ticker = "000003"
+    _seed_timeseries(db, ticker)
+    portfolio = _seed_portfolio(db, test_user.id, ticker)
+
+    response = client.post(
+        "/api/v1/phase7/evaluations",
+        json={
+            "portfolio_id": portfolio.portfolio_id,
+            "period": {"start": "2024-01-04", "end": "2024-01-02"},
+            "rebalance": "NONE",
+        },
+        headers=auth_headers,
+    )
+    assert response.status_code == 400
+
+
+def test_phase7_evaluation_missing_portfolio(client, auth_headers):
+    response = client.post(
+        "/api/v1/phase7/evaluations",
+        json={
+            "portfolio_id": 99999,
+            "period": {"start": "2024-01-02", "end": "2024-01-04"},
+            "rebalance": "NONE",
+        },
+        headers=auth_headers,
+    )
+    assert response.status_code == 404

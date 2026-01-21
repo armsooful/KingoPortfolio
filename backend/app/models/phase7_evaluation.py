@@ -28,6 +28,7 @@ class Phase7EvaluationRun(Base):
     period_end = Column(Date, nullable=False)
     rebalance = Column(String(20), nullable=False)  # NONE | MONTHLY | QUARTERLY
     result_json = Column(Text, nullable=False)
+    result_hash = Column(String(64), nullable=False)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
     __table_args__ = (
@@ -45,5 +46,6 @@ class Phase7EvaluationRun(Base):
                 "end": self.period_end.isoformat() if self.period_end else None,
             },
             "rebalance": self.rebalance,
+            "result_hash": self.result_hash,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }

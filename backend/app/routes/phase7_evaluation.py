@@ -19,6 +19,7 @@ from app.schemas import (
 from app.services.phase7_evaluation import (
     Phase7EvaluationError,
     evaluate_phase7_portfolio,
+    hash_result,
     serialize_result,
 )
 
@@ -62,13 +63,15 @@ def create_phase7_evaluation(
             detail=exc.message,
         ) from exc
 
+    serialized_result = serialize_result(result)
     evaluation_run = Phase7EvaluationRun(
         portfolio_id=portfolio.portfolio_id,
         owner_user_id=current_user.id,
         period_start=payload.period.start,
         period_end=payload.period.end,
         rebalance=payload.rebalance,
-        result_json=serialize_result(result),
+        result_json=serialized_result,
+        result_hash=hash_result(serialized_result),
     )
     db.add(evaluation_run)
     db.commit()
@@ -79,6 +82,8 @@ def create_phase7_evaluation(
 @router.get("", response_model=Phase7EvaluationHistoryResponse)
 def list_phase7_evaluations(
     portfolio_id: int | None = None,
+    limit: int = 50,
+    offset: int = 0,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
@@ -88,7 +93,12 @@ def list_phase7_evaluations(
     if portfolio_id is not None:
         query = query.filter(Phase7EvaluationRun.portfolio_id == portfolio_id)
 
-    evaluations = query.order_by(Phase7EvaluationRun.created_at.desc()).all()
+    evaluations = (
+        query.order_by(Phase7EvaluationRun.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
     return Phase7EvaluationHistoryResponse(
         count=len(evaluations),
         evaluations=[
@@ -125,6 +135,7 @@ def get_phase7_evaluation(
         period=Phase7Period(start=evaluation.period_start, end=evaluation.period_end),
         rebalance=evaluation.rebalance,
         created_at=evaluation.created_at.isoformat() if evaluation.created_at else None,
+        result_hash=evaluation.result_hash,
         result=Phase7EvaluationResponse(**result),
     )
 

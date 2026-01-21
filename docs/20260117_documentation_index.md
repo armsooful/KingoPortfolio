@@ -1,8 +1,8 @@
 # Foresto Compass 문서 목록
 최초작성일자: 2026-01-17
-최종수정일자: 2026-01-19
+최종수정일자: 2026-01-21
 
-**최종 업데이트**: 2026-01-19
+**최종 업데이트**: 2026-01-21
 
 ---
 
@@ -21,7 +21,9 @@ docs/
 ├── phase2/           # Phase 2 관련 문서
 ├── phase3/           # Phase 3 관련 문서 (현재)
 ├── phase4/           # Phase 4 관련 문서
-└── phase5/           # Phase 5 관련 문서
+├── phase5/           # Phase 5 관련 문서
+├── phase6/           # Phase 6 관련 문서
+└── phase7/           # Phase 7 관련 문서
 ```
 
 ---
@@ -140,6 +142,18 @@ docs/
 | [test_golden_v2.py](phase6/tests/test_golden_v2.py) | Phase 6 Golden Test v2 (spec) |
 | [golden_output_sample_v2.json](phase6/tests/golden_output_sample_v2.json) | Phase 6 Golden Output 샘플 v2 |
 | [phase6_exit_criteria.md](phase6/checklists/phase6_exit_criteria.md) | Phase 6 Exit Criteria |
+
+---
+
+## Phase 7 (과거 데이터 기반 포트폴리오 평가 공개)
+
+| 파일명 | 설명 |
+|--------|------|
+| [phase7_objectives.md](phase7/phase7_objectives.md) | Phase 7 목표 |
+| [phase7_execution_plan.md](phase7/phase7_execution_plan.md) | Phase 7 실행 계획 |
+| [phase7_ticket_backlog.md](phase7/phase7_ticket_backlog.md) | Phase 7 작업 티켓 |
+| [phase7_specification.md](phase7/phase7_specification.md) | Phase 7 상세 스펙 |
+| [phase7_history_policy.md](phase7/phase7_history_policy.md) | Phase 7 평가 결과 저장/히스토리 정책 |
 
 ---
 
