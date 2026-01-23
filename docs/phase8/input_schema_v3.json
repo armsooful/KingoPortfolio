@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Input Schema v3",
+  "description": "Phase 8-B 입력 스키마 (v2 호환, optional 확장 필드)",
+  "type": "object",
+  "required": ["portfolio_type", "items", "period", "rebalance"],
+  "properties": {
+    "portfolio_type": {
+      "type": "string",
+      "enum": ["SECURITY", "SECTOR"]
+    },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "weight"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "weight": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    },
+    "period": {
+      "type": "object",
+      "required": ["start", "end"],
+      "properties": {
+        "start": { "type": "string", "format": "date" },
+        "end": { "type": "string", "format": "date" }
+      }
+    },
+    "rebalance": {
+      "type": "string",
+      "enum": ["NONE", "MONTHLY", "QUARTERLY"]
+    },
+    "extensions": {
+      "type": "object",
+      "description": "v3 optional 입력 확장",
+      "properties": {
+        "asset_class": {
+          "type": "string",
+          "enum": ["EQUITY", "BOND", "COMMODITY", "GOLD", "REIT", "ETF"]
+        },
+        "currency": {
+          "type": "string",
+          "enum": ["KRW", "USD"]
+        },
+        "return_type": {
+          "type": "string",
+          "enum": ["PRICE", "TOTAL_RETURN"]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

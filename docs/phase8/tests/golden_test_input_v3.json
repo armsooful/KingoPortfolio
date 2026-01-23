@@ -1,0 +1,88 @@
+{
+  "cases": [
+    {
+      "case_id": "v3-krw-price-equity",
+      "description": "Equity / KRW / Price return",
+      "request": {
+        "portfolio_id": 1,
+        "period": {"start": "2023-01-01", "end": "2023-12-31"},
+        "rebalance": "NONE",
+        "extensions": {
+          "asset_class": "EQUITY",
+          "currency": "KRW",
+          "return_type": "PRICE"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "notes": "extensions accepted"
+      }
+    },
+    {
+      "case_id": "v3-krw-price-etf",
+      "description": "ETF / KRW / Price return",
+      "request": {
+        "portfolio_id": 1,
+        "period": {"start": "2023-01-01", "end": "2023-12-31"},
+        "rebalance": "NONE",
+        "extensions": {
+          "asset_class": "ETF",
+          "currency": "KRW",
+          "return_type": "PRICE"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "notes": "extensions accepted"
+      }
+    },
+    {
+      "case_id": "v3-unsupported-asset",
+      "description": "Unsupported asset class returns neutral error",
+      "request": {
+        "portfolio_id": 1,
+        "period": {"start": "2023-01-01", "end": "2023-12-31"},
+        "rebalance": "NONE",
+        "extensions": {
+          "asset_class": "BOND"
+        }
+      },
+      "expected": {
+        "status": "error",
+        "message": "neutral"
+      }
+    },
+    {
+      "case_id": "v3-unsupported-currency",
+      "description": "USD returns neutral error until supported",
+      "request": {
+        "portfolio_id": 1,
+        "period": {"start": "2023-01-01", "end": "2023-12-31"},
+        "rebalance": "NONE",
+        "extensions": {
+          "currency": "USD"
+        }
+      },
+      "expected": {
+        "status": "error",
+        "message": "neutral"
+      }
+    },
+    {
+      "case_id": "v3-unsupported-return",
+      "description": "Total return returns neutral error until supported",
+      "request": {
+        "portfolio_id": 1,
+        "period": {"start": "2023-01-01", "end": "2023-12-31"},
+        "rebalance": "NONE",
+        "extensions": {
+          "return_type": "TOTAL_RETURN"
+        }
+      },
+      "expected": {
+        "status": "error",
+        "message": "neutral"
+      }
+    }
+  ]
+}

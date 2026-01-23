@@ -2,7 +2,7 @@
 최초작성일자: 2026-01-17
 최종수정일자: 2026-01-21
 
-**최종 업데이트**: 2026-01-21
+**최종 업데이트**: 2026-01-21 (Phase 8-B 조건부 완료 상태 기록)
 
 ---
 
@@ -23,7 +23,8 @@ docs/
 ├── phase4/           # Phase 4 관련 문서
 ├── phase5/           # Phase 5 관련 문서
 ├── phase6/           # Phase 6 관련 문서
-└── phase7/           # Phase 7 관련 문서
+├── phase7/           # Phase 7 관련 문서
+└── phase8/           # Phase 8 관련 문서
 ```
 
 ---
@@ -154,6 +155,27 @@ docs/
 | [phase7_ticket_backlog.md](phase7/phase7_ticket_backlog.md) | Phase 7 작업 티켓 |
 | [phase7_specification.md](phase7/phase7_specification.md) | Phase 7 상세 스펙 |
 | [phase7_history_policy.md](phase7/phase7_history_policy.md) | Phase 7 평가 결과 저장/히스토리 정책 |
+| [foresto_compass_phase7_completion_report_20260121.md](reports/foresto_compass_phase7_completion_report_20260121.md) | Phase 7 완료 보고서 |
+| [project_progress_report_20260121.md](reports/project_progress_report_20260121.md) | 프로젝트 진행 보고서 |
+
+---
+
+## Phase 8 (분석 깊이/입력 다양성 확장)
+
+| 파일명 | 설명 |
+|--------|------|
+| [analysis_metrics_v3.md](phase8/analysis_metrics_v3.md) | Phase 8-A 분석 지표 정의 v3 |
+| [output_schema_v3.json](phase8/output_schema_v3.json) | Phase 8-A Output Schema v3 |
+| [phase6_review_addendum_phase8a.md](phase8/phase6_review_addendum_phase8a.md) | Phase 8-A Phase 6 검수 보완 리포트 |
+| [input_taxonomy_v3.md](phase8/input_taxonomy_v3.md) | Phase 8-B 입력 분류 체계 v3 |
+| [input_schema_v3.json](phase8/input_schema_v3.json) | Phase 8-B Input Schema v3 |
+| [data_source_mapping_v3.md](phase8/data_source_mapping_v3.md) | Phase 8-B 데이터 소스 매핑 v3 |
+| [disclaimer_v3.md](phase8/disclaimer_v3.md) | Phase 8-B 고지 문구 v3 |
+| [phase6_review_addendum_phase8b.md](phase8/phase6_review_addendum_phase8b.md) | Phase 8-B Phase 6 검수 보완 리포트 |
+| [phase6_revalidation_phase8b.md](phase8/phase6_revalidation_phase8b.md) | Phase 8-B Phase 6 재검증 요약 |
+| [golden_output_sample_v3.json](phase8/tests/golden_output_sample_v3.json) | Phase 8-A Golden Output v3 |
+| [test_golden_v3.py](phase8/tests/test_golden_v3.py) | Phase 8-A Golden Test v3 |
+| [golden_test_input_v3.json](phase8/tests/golden_test_input_v3.json) | Phase 8-B Golden Input 케이스 v3 |
 
 ---
 

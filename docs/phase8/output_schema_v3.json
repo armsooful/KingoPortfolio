@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Output Schema v3",
+  "description": "Phase 8-A 확장 출력 스키마 (v2 호환, 확장 필드 optional)",
+  "type": "object",
+  "required": ["period", "metrics", "disclaimer_version"],
+  "properties": {
+    "period": {
+      "type": "object",
+      "required": ["start", "end"],
+      "properties": {
+        "start": { "type": "string", "format": "date" },
+        "end": { "type": "string", "format": "date" }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "required": ["cumulative_return", "cagr", "volatility", "max_drawdown"],
+      "properties": {
+        "cumulative_return": { "type": "number" },
+        "cagr": { "type": "number" },
+        "volatility": { "type": "number" },
+        "max_drawdown": { "type": "number" }
+      }
+    },
+    "disclaimer_version": { "type": "string" },
+    "extensions": {
+      "type": "object",
+      "description": "v3 optional 확장 블록",
+      "properties": {
+        "rolling_returns": {
+          "type": "object",
+          "properties": {
+            "window_3y": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["end_date", "value"],
+                "properties": {
+                  "end_date": { "type": "string", "format": "date" },
+                  "value": { "type": "number" }
+                }
+              }
+            },
+            "window_5y": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["end_date", "value"],
+                "properties": {
+                  "end_date": { "type": "string", "format": "date" },
+                  "value": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "rolling_volatility": {
+          "type": "object",
+          "properties": {
+            "window_3y": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["end_date", "value"],
+                "properties": {
+                  "end_date": { "type": "string", "format": "date" },
+                  "value": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "yearly_returns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["year", "value"],
+            "properties": {
+              "year": { "type": "integer" },
+              "value": { "type": "number" }
+            }
+          }
+        },
+        "contributions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["item_id", "item_name", "value"],
+            "properties": {
+              "item_id": { "type": "string" },
+              "item_name": { "type": "string" },
+              "value": { "type": "number" }
+            }
+          }
+        },
+        "drawdown_segments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["start", "end", "drawdown"],
+            "properties": {
+              "start": { "type": "string", "format": "date" },
+              "end": { "type": "string", "format": "date" },
+              "drawdown": { "type": "number" }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
