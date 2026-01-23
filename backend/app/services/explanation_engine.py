@@ -182,7 +182,7 @@ def explain_volatility(volatility: float) -> MetricExplanation:
     elif volatility < 0.12:
         level = RiskLevel.LOW.value
         description = (
-            f"연간 변동성이 {vol_pct:.1f}%로, 비교적 안정적인 가격 흐름을 보입니다. "
+            f"연간 변동성이 {vol_pct:.1f}%로, 변동성이 낮은 가격 흐름을 보입니다. "
             f"채권형 자산과 유사한 변동성 수준입니다."
         )
     elif volatility < 0.20:
@@ -250,7 +250,7 @@ def explain_mdd(
         level = RiskLevel.LOW.value
         description = (
             f"최대 낙폭이 {abs(mdd_pct):.1f}%로, 하락폭이 제한적이었습니다. "
-            f"상대적으로 안정적인 가치 흐름을 보였습니다."
+            f"상대적으로 변동이 적은 가치 흐름을 보였습니다."
         )
     elif mdd > -0.10:
         level = RiskLevel.LOW.value

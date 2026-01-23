@@ -677,10 +677,10 @@ class FinancialAnalyzer:
             # 등급 부여
             if score >= 80:
                 grade = "A"
-                rating = "매우 우수"
+                rating = "최상위"
             elif score >= 60:
                 grade = "B"
-                rating = "우수"
+                rating = "상위"
             elif score >= 40:
                 grade = "C"
                 rating = "보통"
@@ -743,7 +743,7 @@ class FinancialAnalyzer:
         if revenue_5y >= 10 and eps_5y >= 10:
             if roe >= 20:
                 style = "고수익 성장주"
-                description = "높은 성장률과 우수한 수익성을 동시에 보유한 프리미엄 성장주"
+                description = "높은 성장률과 높은 수익성을 동시에 보유한 프리미엄 성장주"
             else:
                 style = "성장주"
                 description = "높은 성장률을 보이는 기업"
@@ -752,7 +752,7 @@ class FinancialAnalyzer:
             description = "성장은 둔화되었으나 높은 수익성을 유지하는 우량 기업"
         elif div_yield >= 3:
             style = "배당주"
-            description = "안정적인 배당을 제공하는 기업"
+            description = "꾸준한 배당을 제공하는 기업"
         elif roe >= 15:
             style = "우량 가치주"
             description = "높은 수익성을 보이는 저평가 기업"
@@ -884,10 +884,10 @@ class FinancialAnalyzer:
             # 등급 부여
             if score >= 80:
                 grade = "A"
-                rating = "매우 우수"
+                rating = "최상위"
             elif score >= 60:
                 grade = "B"
-                rating = "우수"
+                rating = "상위"
             elif score >= 40:
                 grade = "C"
                 rating = "보통"

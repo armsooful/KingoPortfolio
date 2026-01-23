@@ -263,7 +263,7 @@ export default function PortfolioManagementPage() {
                   {strategy.sample_portfolio && (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginTop: '16px' }}>
                       <div style={{ background: 'white', borderRadius: '8px', padding: '12px' }}>
-                        <div style={{ fontSize: '13px', color: '#666' }}>기대 수익률 (연)</div>
+                        <div style={{ fontSize: '13px', color: '#666' }}>과거 연평균 수익률</div>
                         <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#4CAF50' }}>
                           {formatPercent(strategy.sample_portfolio.statistics.expected_annual_return)}
                         </div>
@@ -328,7 +328,7 @@ export default function PortfolioManagementPage() {
                         </div>
                       </div>
                       <div style={{ background: 'white', borderRadius: '8px', padding: '16px' }}>
-                        <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>기대 수익률</div>
+                        <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>과거 연평균 수익률</div>
                         <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#4CAF50' }}>
                           {formatPercent(detailPortfolio.statistics.expected_annual_return)}
                         </div>

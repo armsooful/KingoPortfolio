@@ -47,7 +47,7 @@ function DiagnosisResultPage() {
       label: '안정성 중심 학습 성향',
       color: '#4CAF50',
       icon: '🛡️',
-      description: '안정적인 자산 운용 전략을 학습하고자 하는 성향입니다.',
+      description: '변동성이 낮은 자산 운용 전략을 학습하고자 하는 성향입니다.',
     },
     moderate: {
       label: '균형형 학습 성향',

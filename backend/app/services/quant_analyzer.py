@@ -431,7 +431,7 @@ class QuantAnalyzer:
 
         # 샤프 비율 해석
         if sharpe > 2:
-            interpretation = "우수한 위험 대비 수익"
+            interpretation = "높은 위험 대비 수익"
         elif sharpe > 1:
             interpretation = "양호한 위험 대비 수익"
         elif sharpe > 0:
@@ -487,7 +487,7 @@ class QuantAnalyzer:
 
         # 알파 해석
         if alpha > 5:
-            interpretation = "시장 대비 우수한 초과 수익"
+            interpretation = "시장 대비 높은 초과 수익"
         elif alpha > 0:
             interpretation = "시장 대비 양의 초과 수익"
         elif alpha > -5:

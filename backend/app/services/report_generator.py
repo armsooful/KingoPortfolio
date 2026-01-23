@@ -25,7 +25,7 @@ class ReportGenerator:
 
     # 평가 등급 기준
     RATING_LEVELS = {
-        "excellent": {"min": 80, "label": "우수", "description": "상위 20%"},
+        "excellent": {"min": 80, "label": "상위", "description": "상위 20%"},
         "good": {"min": 60, "label": "양호", "description": "상위 40%"},
         "average": {"min": 40, "label": "보통", "description": "중간 40%"},
         "below_average": {"min": 20, "label": "낮음", "description": "하위 40%"},
@@ -39,7 +39,7 @@ class ReportGenerator:
         - 매수/매도 권고 없이 객관적 등급만 제공
         """
         if score >= 80:
-            return {"level": "우수", "range": "상위 20%", "color": "#4caf50"}
+            return {"level": "상위", "range": "상위 20%", "color": "#4caf50"}
         elif score >= 60:
             return {"level": "양호", "range": "상위 40%", "color": "#8bc34a"}
         elif score >= 40:
@@ -86,7 +86,7 @@ class ReportGenerator:
         """
         if score >= 70:
             return {
-                "category": "재무 건전성 우수",
+                "category": "재무 건전성 상위",
                 "description": "높은 성장성, 수익성, 안정성을 보유",
                 "tier": "상위",
                 "color": "#4caf50"
@@ -154,7 +154,7 @@ class ReportGenerator:
         if risk_score >= 80:
             return {
                 "category": "저위험",
-                "description": "낮은 변동성, 제한적 낙폭, 우수한 위험 대비 수익",
+                "description": "낮은 변동성, 제한적 낙폭, 높은 위험 대비 수익",
                 "level": "1단계",
                 "color": "#4caf50"
             }
@@ -494,7 +494,7 @@ class ReportGenerator:
         concern_count = len(assessment["concerns"])
 
         if strength_count > concern_count * 2:
-            assessment["summary"] = "전반적으로 우수한 지표를 보이고 있습니다."
+            assessment["summary"] = "전반적으로 양호한 지표를 보이고 있습니다."
         elif concern_count > strength_count * 2:
             assessment["summary"] = "일부 지표에서 개선이 필요합니다."
         else:

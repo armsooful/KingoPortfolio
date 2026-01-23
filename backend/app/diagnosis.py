@@ -9,10 +9,10 @@ from app.schemas import DiagnosisAnswerRequest, DiagnosisCharacteristics
 DIAGNOSIS_PROFILES = {
     "conservative": {
         "title": "안정성 중심 학습 성향",
-        "description": "안정적인 자산 운용 전략을 학습하고자 하는 성향입니다. 변동성이 낮은 자산에 대한 이해를 우선적으로 쌓고자 합니다.",
+        "description": "변동성이 낮은 자산 운용 전략을 학습하고자 하는 성향입니다. 변동성이 낮은 자산에 대한 이해를 우선적으로 쌓고자 합니다.",
         "characteristics": [
             "손실 위험에 민감한 편입니다",
-            "안정적인 자산 운용 방식을 선호합니다",
+            "변동성이 낮은 자산 운용 방식을 선호합니다",
             "낮은 변동성 자산에 관심이 있습니다",
             "채권, 예적금, 머니마켓 등을 학습 대상으로 고려합니다",
             "장기적 관점의 자산 보존 전략에 관심이 있습니다"

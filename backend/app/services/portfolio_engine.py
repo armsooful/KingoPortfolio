@@ -462,7 +462,7 @@ class PortfolioEngine:
 
         # 성과
         if stock.one_year_return and stock.one_year_return > 10:
-            rationales.append(f"1년 수익률 {stock.one_year_return:.1f}%의 우수한 성과")
+            rationales.append(f"1년 수익률 {stock.one_year_return:.1f}%의 높은 성과")
 
         # 배당
         if stock.dividend_yield and stock.dividend_yield > 2:
