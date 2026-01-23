@@ -1028,6 +1028,6 @@ def _get_trend_description(trend: str, cagrs: list, volatilities: list) -> str:
             f"초기 {cagrs[0]*100:.1f}%에서 최근 {cagrs[-1]*100:.1f}%로 변화했습니다."
         )
     elif trend == "유지":
-        return "분석 기간 동안 수익률이 비교적 안정적으로 유지되었습니다."
+        return "분석 기간 동안 수익률이 비교적 일정하게 유지되었습니다."
     else:
         return "추이 분석을 위한 충분한 데이터가 없습니다."

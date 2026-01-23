@@ -458,7 +458,7 @@ class ValuationAnalyzer:
         """
         배당할인모형 (DDM - Dividend Discount Model)
         - Gordon Growth Model 사용
-        - 안정적인 배당을 지급하는 기업에 적합
+        - 꾸준한 배당을 지급하는 기업에 적합
         - 한국 주식은 배당 성장률 데이터 부족으로 지원하지 않음
         """
         # 한국 주식인지 확인
@@ -492,7 +492,7 @@ class ValuationAnalyzer:
             return {
                 "symbol": symbol.upper(),
                 "error": "배당금이 없거나 너무 낮습니다",
-                "message": "배당할인모형은 안정적인 배당 지급 기업에만 적용 가능합니다"
+                "message": "배당할인모형은 꾸준한 배당 지급 기업에만 적용 가능합니다"
             }
 
         # 현재 주가와 배당금
@@ -579,7 +579,7 @@ class ValuationAnalyzer:
             "current_dividend_yield": round(current_dividend_yield, 2),
             "avg_earnings_growth": round(avg_growth, 2),
             "scenarios": results,
-            "note": "안정적인 배당 성장 기업에 적합한 모델입니다"
+            "note": "꾸준한 배당 성장 기업에 적합한 모델입니다"
         }
 
     @staticmethod

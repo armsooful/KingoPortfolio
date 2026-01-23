@@ -81,7 +81,7 @@ SURVEY_QUESTIONS = [
         "category": "risk",
         "question": "자산 운용을 학습할 때 위험 요소를 어느 정도까지 고려할 수 있나요?",
         "options": [
-            {"value": "A", "text": "안정적인 요소 위주로 학습하고 싶습니다", "weight": 1.0},
+            {"value": "A", "text": "변동성이 낮은 요소 위주로 학습하고 싶습니다", "weight": 1.0},
             {"value": "B", "text": "적정 수준의 위험 요소는 고려할 수 있습니다", "weight": 2.0},
             {"value": "C", "text": "높은 변동성도 학습 대상으로 고려할 수 있습니다", "weight": 3.0}
         ]

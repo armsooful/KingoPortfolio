@@ -378,7 +378,7 @@ function SignupPage() {
                   value={formData.riskTolerance}
                   onChange={(e) => handleChange('riskTolerance', e.target.value)}
                 >
-                  <option value="보수적">보수적 - 안정적인 수익을 선호</option>
+                  <option value="보수적">보수적 - 변동성이 낮은 수익을 선호</option>
                   <option value="중립적">중립적 - 균형잡힌 투자 선호</option>
                   <option value="공격적">공격적 - 높은 수익을 위해 위험 감수 가능</option>
                 </select>

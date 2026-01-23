@@ -74,9 +74,9 @@ SCENARIOS_FALLBACK: Dict[str, dict] = {
         "id": "MIN_VOL",
         "name": "Minimum Volatility",
         "name_ko": "변동성 최소화",
-        "description": "변동성을 최소화하는 전략을 학습하기 위한 시나리오입니다. 시장 변동에 덜 민감한 자산 배분을 통해 안정적인 포트폴리오 구성 방법을 이해할 수 있습니다.",
-        "objective": "변동성 최소화를 통한 안정적 자산 운용 학습",
-        "target_investor": "변동성에 민감하며 안정적인 자산 운용을 학습하고자 하는 분",
+        "description": "변동성을 최소화하는 전략을 학습하기 위한 시나리오입니다. 시장 변동에 덜 민감한 자산 배분을 통해 변동성이 낮은 포트폴리오 구성 방법을 이해할 수 있습니다.",
+        "objective": "변동성 최소화를 통한 저변동 자산 운용 학습",
+        "target_investor": "변동성에 민감하며 저변동 자산 운용을 학습하고자 하는 분",
         "allocation": {
             "stocks": 15,
             "bonds": 45,

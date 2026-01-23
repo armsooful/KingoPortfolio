@@ -1206,7 +1206,7 @@ async def get_ddm_valuation(symbol: str, db: Session = Depends(get_db)):
     """
     배당할인모형 (DDM - Dividend Discount Model)
     - Gordon Growth Model 사용
-    - 안정적인 배당 지급 기업에 적합
+    - 꾸준한 배당 지급 기업에 적합
     """
     from app.services.valuation import ValuationAnalyzer
 

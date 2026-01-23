@@ -284,7 +284,7 @@ class QualitativeAnalyzer:
 
         # 부정 뉴스가 없는 경우
         if negative_count == 0 and positive_count > 0:
-            insights.append("부정 뉴스 0건 → 시장 분위기 안정적")
+            insights.append("부정 뉴스 0건 → 시장 분위기 양호")
             key_issues.append("리스크 요인 현재 없음 (과매수 경계)")
 
         # 긍정 뉴스가 없는 경우

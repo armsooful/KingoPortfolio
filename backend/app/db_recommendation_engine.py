@@ -122,7 +122,7 @@ class DBProductSampler:
                 "credit_rating": bond.credit_rating,
                 "risk_level": bond.risk_level,
                 "minimum_investment": bond.minimum_investment,
-                "reason": f"{bond.bond_type} - 안정적 수익",
+                "reason": f"{bond.bond_type} - 고정 수익",
                 "expected_return": f"{bond.interest_rate:.1f}%"
             }
             for bond in bonds

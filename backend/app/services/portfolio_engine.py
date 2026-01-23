@@ -624,7 +624,7 @@ class PortfolioEngine:
                 "weight": round((per_bond_budget / budget * 100), 2) if budget > 0 else 0,
                 "expected_return": bond.interest_rate,
                 "risk_level": bond.risk_level,
-                "rationale": f"{bond.bond_type} - 안정적 수익 {bond.interest_rate:.1f}%"
+                "rationale": f"{bond.bond_type} - 고정 수익 {bond.interest_rate:.1f}%"
             })
 
         return result
