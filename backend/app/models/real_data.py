@@ -275,3 +275,175 @@ class DataQualityLog(Base):
 
     def __repr__(self):
         return f"<DataQualityLog [{self.severity}] {self.rule_id}: {self.table_name}>"
+
+
+# ============================================================================
+# Level 2: 재무/공시 데이터 (DART)
+# ============================================================================
+
+class FinancialStatement(Base):
+    """재무제표 (DART)"""
+    __tablename__ = "financial_statement"
+
+    statement_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    ticker = Column(String(10), nullable=False)
+    fiscal_year = Column(Integer, nullable=False)
+    fiscal_quarter = Column(Integer, nullable=False)  # 1, 2, 3, 4 (연간은 4)
+    report_type = Column(String(20), nullable=False)  # 'ANNUAL', 'QUARTERLY'
+
+    # 손익계산서
+    revenue = Column(BigInteger)  # 매출액
+    operating_income = Column(BigInteger)  # 영업이익
+    net_income = Column(BigInteger)  # 당기순이익
+
+    # 재무상태표
+    total_assets = Column(BigInteger)  # 자산총계
+    total_liabilities = Column(BigInteger)  # 부채총계
+    total_equity = Column(BigInteger)  # 자본총계
+
+    # 현금흐름표
+    operating_cash_flow = Column(BigInteger)
+    investing_cash_flow = Column(BigInteger)
+    financing_cash_flow = Column(BigInteger)
+
+    # 주요 비율
+    roe = Column(Numeric(8, 4))  # ROE (%)
+    roa = Column(Numeric(8, 4))  # ROA (%)
+    debt_ratio = Column(Numeric(8, 4))  # 부채비율 (%)
+
+    # 데이터 거버넌스
+    source_id = Column(String(20), ForeignKey("data_source.source_id"), nullable=False)
+    batch_id = Column(Integer, ForeignKey("data_load_batch.batch_id"))
+    as_of_date = Column(Date, nullable=False)
+    dart_rcept_no = Column(String(20))  # DART 접수번호
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint('ticker', 'fiscal_year', 'fiscal_quarter', 'source_id',
+                        name='uq_financial_statement'),
+        Index('idx_fin_stmt_ticker', 'ticker'),
+        Index('idx_fin_stmt_fiscal', 'fiscal_year', 'fiscal_quarter'),
+    )
+
+    def __repr__(self):
+        return f"<FinancialStatement {self.ticker} {self.fiscal_year}Q{self.fiscal_quarter}>"
+
+
+class DividendHistory(Base):
+    """배당 이력 (DART)"""
+    __tablename__ = "dividend_history"
+
+    dividend_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    ticker = Column(String(10), nullable=False)
+    fiscal_year = Column(Integer, nullable=False)
+
+    # 배당 정보
+    dividend_type = Column(String(20), nullable=False)  # 'CASH', 'STOCK', 'INTERIM'
+    dividend_per_share = Column(Numeric(18, 2))  # 주당 배당금
+    dividend_rate = Column(Numeric(8, 4))  # 배당률 (%)
+    dividend_yield = Column(Numeric(8, 4))  # 배당수익률 (%)
+
+    # 배당 일정
+    record_date = Column(Date)  # 배당 기준일
+    payment_date = Column(Date)  # 배당 지급일
+    ex_dividend_date = Column(Date)  # 배당락일
+
+    # 데이터 거버넌스
+    source_id = Column(String(20), ForeignKey("data_source.source_id"), nullable=False)
+    batch_id = Column(Integer, ForeignKey("data_load_batch.batch_id"))
+    as_of_date = Column(Date, nullable=False)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint('ticker', 'fiscal_year', 'dividend_type', 'source_id',
+                        name='uq_dividend_history'),
+        Index('idx_dividend_ticker', 'ticker'),
+        Index('idx_dividend_year', 'fiscal_year'),
+    )
+
+    def __repr__(self):
+        return f"<DividendHistory {self.ticker} {self.fiscal_year} {self.dividend_type}>"
+
+
+# ============================================================================
+# Level 2: 시장 데이터 (KRX)
+# ============================================================================
+
+class SectorClassification(Base):
+    """업종 분류 (KRX)"""
+    __tablename__ = "sector_classification"
+
+    classification_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    ticker = Column(String(10), nullable=False)
+    as_of_date = Column(Date, nullable=False)
+
+    # KRX 업종 분류
+    krx_sector_code = Column(String(10))
+    krx_sector_name = Column(String(100))
+
+    # GICS 분류 (선택)
+    gics_sector_code = Column(String(10))
+    gics_sector_name = Column(String(100))
+    gics_industry_code = Column(String(10))
+    gics_industry_name = Column(String(100))
+
+    # 데이터 거버넌스
+    source_id = Column(String(20), ForeignKey("data_source.source_id"), nullable=False)
+    batch_id = Column(Integer, ForeignKey("data_load_batch.batch_id"))
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint('ticker', 'as_of_date', 'source_id', name='uq_sector_class'),
+        Index('idx_sector_ticker', 'ticker'),
+        Index('idx_sector_code', 'krx_sector_code'),
+    )
+
+    def __repr__(self):
+        return f"<SectorClassification {self.ticker} {self.krx_sector_name}>"
+
+
+class InstitutionTrade(Base):
+    """기관/외국인 매매 (KRX)"""
+    __tablename__ = "institution_trade"
+
+    trade_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    ticker = Column(String(10), nullable=False)
+    trade_date = Column(Date, nullable=False)
+
+    # 기관 매매
+    institution_buy = Column(BigInteger)  # 기관 매수 (주)
+    institution_sell = Column(BigInteger)  # 기관 매도 (주)
+    institution_net = Column(BigInteger)  # 기관 순매수
+
+    # 외국인 매매
+    foreign_buy = Column(BigInteger)
+    foreign_sell = Column(BigInteger)
+    foreign_net = Column(BigInteger)
+
+    # 개인 매매
+    individual_buy = Column(BigInteger)
+    individual_sell = Column(BigInteger)
+    individual_net = Column(BigInteger)
+
+    # 외국인 보유
+    foreign_holding_shares = Column(BigInteger)  # 외국인 보유 주식수
+    foreign_holding_ratio = Column(Numeric(8, 4))  # 외국인 지분율 (%)
+
+    # 데이터 거버넌스
+    source_id = Column(String(20), ForeignKey("data_source.source_id"), nullable=False)
+    batch_id = Column(Integer, ForeignKey("data_load_batch.batch_id"))
+    as_of_date = Column(Date, nullable=False)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint('ticker', 'trade_date', 'source_id', name='uq_institution_trade'),
+        Index('idx_inst_trade_ticker', 'ticker', 'trade_date'),
+        Index('idx_inst_trade_date', 'trade_date'),
+    )
+
+    def __repr__(self):
+        return f"<InstitutionTrade {self.ticker} {self.trade_date}>"

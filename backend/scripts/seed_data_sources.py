@@ -55,6 +55,28 @@ def seed_data_sources(db: Session):
             "is_active": True
         },
         {
+            "source_id": "DART",
+            "source_name": "DART OpenAPI",
+            "source_type": "REGULATOR",
+            "base_url": "https://opendart.fss.or.kr",
+            "api_type": "REST",
+            "update_frequency": "DAILY",
+            "license_type": "PUBLIC",
+            "description": "금융감독원 DART 전자공시시스템. 재무제표, 배당 정보, 공시 정보 등 Level 2 데이터 제공.",
+            "is_active": True
+        },
+        {
+            "source_id": "KRX_INFO",
+            "source_name": "KRX 정보데이터시스템",
+            "source_type": "EXCHANGE",
+            "base_url": "http://data.krx.co.kr",
+            "api_type": "REST",
+            "update_frequency": "DAILY",
+            "license_type": "PUBLIC",
+            "description": "한국거래소 정보데이터시스템. 업종분류, 기관/외국인 매매, ETF 포트폴리오 등 Level 2 데이터 제공.",
+            "is_active": True
+        },
+        {
             "source_id": "INTERNAL",
             "source_name": "내부 계산",
             "source_type": "CALCULATED",

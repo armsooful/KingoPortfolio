@@ -25,7 +25,9 @@ from .admin_controls import (
 )
 from .real_data import (
     DataSource, DataLoadBatch, StockPriceDaily, IndexPriceDaily,
-    StockInfo, DataQualityLog
+    StockInfo, DataQualityLog,
+    # Level 2
+    FinancialStatement, DividendHistory, SectorClassification, InstitutionTrade
 )
 # app/models.py의 모델들을 직접 import하지 않고 lazy import 허용
 
@@ -43,7 +45,8 @@ __all__ = ['User', 'KrxTimeSeries', 'Portfolio', 'PortfolioHistory', 'Simulation
            'AdminRole', 'AdminPermission', 'AdminRolePermission', 'AdminUserRole', 'AdminAuditLog',
            'AdminApproval', 'AdminAdjustment',
            'DataSource', 'DataLoadBatch', 'StockPriceDaily', 'IndexPriceDaily',
-           'StockInfo', 'DataQualityLog']
+           'StockInfo', 'DataQualityLog',
+           'FinancialStatement', 'DividendHistory', 'SectorClassification', 'InstitutionTrade']
 # models.py에서 추가 모델 import
 import sys
 import os
