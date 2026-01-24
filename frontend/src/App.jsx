@@ -28,6 +28,7 @@ import ScenarioSimulationPage from './pages/ScenarioSimulationPage';
 import PortfolioExplanationPage from './pages/PortfolioExplanationPage';
 import ReportHistoryPage from './pages/ReportHistoryPage';
 import Phase7PortfolioEvaluationPage from './pages/Phase7PortfolioEvaluationPage';
+import PortfolioBuilderPage from './pages/PortfolioBuilderPage';
 import './styles/App.css';
 
 // ============================================================
@@ -232,6 +233,22 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <Phase7PortfolioEvaluationPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/portfolio-evaluation"
+            element={
+              <ProtectedRoute>
+                <Phase7PortfolioEvaluationPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/portfolio-builder"
+            element={
+              <ProtectedRoute>
+                <PortfolioBuilderPage />
               </ProtectedRoute>
             }
           />

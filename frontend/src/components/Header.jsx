@@ -86,8 +86,15 @@ function Header() {
             성과해석
           </button>
           <button
-            className={`nav-link ${isActive('/phase7-evaluation') ? 'active' : ''}`}
-            onClick={() => navigate('/phase7-evaluation')}
+            className={`nav-link ${isActive('/portfolio-builder') ? 'active' : ''}`}
+            onClick={() => navigate('/portfolio-builder')}
+            title="종목/섹터 선택으로 포트폴리오 구성"
+          >
+            포트폴리오 구성
+          </button>
+          <button
+            className={`nav-link ${isActive('/portfolio-evaluation') || isActive('/phase7-evaluation') ? 'active' : ''}`}
+            onClick={() => navigate('/portfolio-evaluation')}
             title="직접 구성한 포트폴리오 평가"
           >
             포트폴리오 평가

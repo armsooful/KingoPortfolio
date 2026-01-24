@@ -788,3 +788,76 @@ export const downloadPremiumReportPDF = async (data) => {
   window.URL.revokeObjectURL(url);
   document.body.removeChild(a);
 };
+
+// ============================================================
+// Securities API - 종목/섹터 조회
+// ============================================================
+
+/**
+ * 주식 종목 목록 조회
+ */
+export const listStocks = (params = {}) => {
+  const queryParams = new URLSearchParams();
+  if (params.search) queryParams.append('search', params.search);
+  if (params.sector) queryParams.append('sector', params.sector);
+  if (params.market) queryParams.append('market', params.market);
+  if (params.riskLevel) queryParams.append('risk_level', params.riskLevel);
+  if (params.category) queryParams.append('category', params.category);
+  if (params.sortBy) queryParams.append('sort_by', params.sortBy);
+  if (params.sortOrder) queryParams.append('sort_order', params.sortOrder);
+  if (params.limit) queryParams.append('limit', params.limit);
+  if (params.offset) queryParams.append('offset', params.offset);
+  return api.get(`/api/v1/securities/stocks?${queryParams.toString()}`);
+};
+
+/**
+ * 주식 종목 상세 조회
+ */
+export const getStock = (ticker) => {
+  return api.get(`/api/v1/securities/stocks/${ticker}`);
+};
+
+/**
+ * ETF 목록 조회
+ */
+export const listETFs = (params = {}) => {
+  const queryParams = new URLSearchParams();
+  if (params.search) queryParams.append('search', params.search);
+  if (params.etfType) queryParams.append('etf_type', params.etfType);
+  if (params.riskLevel) queryParams.append('risk_level', params.riskLevel);
+  if (params.sortBy) queryParams.append('sort_by', params.sortBy);
+  if (params.sortOrder) queryParams.append('sort_order', params.sortOrder);
+  if (params.limit) queryParams.append('limit', params.limit);
+  if (params.offset) queryParams.append('offset', params.offset);
+  return api.get(`/api/v1/securities/etfs?${queryParams.toString()}`);
+};
+
+/**
+ * ETF 상세 조회
+ */
+export const getETF = (ticker) => {
+  return api.get(`/api/v1/securities/etfs/${ticker}`);
+};
+
+/**
+ * 섹터 목록 조회
+ */
+export const listSectors = (params = {}) => {
+  const queryParams = new URLSearchParams();
+  if (params.market) queryParams.append('market', params.market);
+  return api.get(`/api/v1/securities/sectors?${queryParams.toString()}`);
+};
+
+/**
+ * 시장 목록 조회
+ */
+export const listMarkets = () => {
+  return api.get('/api/v1/securities/markets');
+};
+
+/**
+ * 카테고리 목록 조회
+ */
+export const listCategories = () => {
+  return api.get('/api/v1/securities/categories');
+};
