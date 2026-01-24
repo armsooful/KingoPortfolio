@@ -17,7 +17,7 @@ load_dotenv()
 
 from app.config import settings
 from app.database import engine, Base, get_db
-from app.routes import auth, diagnosis, admin, admin_batch, admin_lineage, admin_data_quality, market, backtesting, krx_timeseries, admin_portfolio, batch_jobs, stock_detail, portfolio_comparison, pdf_report, scenarios, analysis, performance_internal, performance_public, admin_controls, bookmarks, user_settings, event_log, phase7_portfolios, phase7_evaluation, phase7_comparison
+from app.routes import auth, diagnosis, admin, admin_batch, admin_lineage, admin_data_quality, admin_data_load, market, backtesting, krx_timeseries, admin_portfolio, batch_jobs, stock_detail, portfolio_comparison, pdf_report, scenarios, analysis, performance_internal, performance_public, admin_controls, bookmarks, user_settings, event_log, phase7_portfolios, phase7_evaluation, phase7_comparison
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.error_handlers import setup_exception_handlers
@@ -31,6 +31,7 @@ from app.models import admin_controls as admin_controls_models  # noqa
 from app.models.user import User  # noqa
 from app.models import phase7_portfolio as phase7_portfolio_models  # noqa
 from app.models import phase7_evaluation as phase7_evaluation_models  # noqa
+from app.models import real_data as real_data_models  # noqa
 
 logger = logging.getLogger(__name__)
 
@@ -221,6 +222,7 @@ app.include_router(admin.router)
 app.include_router(admin_batch.router)
 app.include_router(admin_lineage.router)
 app.include_router(admin_data_quality.router)
+app.include_router(admin_data_load.router)
 app.include_router(market.router)
 app.include_router(backtesting.router)
 app.include_router(krx_timeseries.router)
