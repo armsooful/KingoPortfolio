@@ -243,15 +243,15 @@ class QualitativeAnalyzer:
         if avg_score > 0.25:
             market_position = "강세"
             insights.append("최근 뉴스가 매우 긍정적 → 시장 관심도 증가")
-            action_guide = "비중 확대 검토 (단, 과매수 주의)"
+            action_guide = "상승 모멘텀 관찰됨"
             if positive_count > 7:
-                key_issues.append("뉴스 볼륨 급증 → 단기 변동성 확대 예상")
+                key_issues.append("뉴스 볼륨 급증 관찰됨")
 
         # 긍정 신호
         elif avg_score > 0.15:
             market_position = "상승세"
             insights.append("긍정 뉴스 우세 → 단기 지지선 형성")
-            action_guide = "현재 비중 유지 또는 소폭 확대"
+            action_guide = "긍정적 신호 관찰됨"
             if positive_count >= 5:
                 key_issues.append("긍정 모멘텀 지속 중")
 
@@ -264,23 +264,23 @@ class QualitativeAnalyzer:
             else:
                 insights.append("긍정/부정 뉴스 혼재 → 방향성 불명확")
                 key_issues.append("추가 뉴스 모니터링 필요")
-            action_guide = "관망 고려, 급격한 매매 자제"
+            action_guide = "변동성 확대 관찰됨"
 
         # 부정 신호
         elif avg_score > -0.25:
             market_position = "약세"
             insights.append("부정 뉴스 우세 → 단기 저항 예상")
-            action_guide = "비중 축소 검토 또는 손절 준비"
+            action_guide = "부정적 신호 관찰됨"
             if negative_count >= 5:
                 key_issues.append("부정 모멘텀 지속 중")
 
         # 강한 부정 신호
         else:
             market_position = "급락세"
-            insights.append("최근 뉴스가 매우 부정적 → 매도 압력 증가")
-            action_guide = "비중 축소 강력 권고 (리스크 관리)"
+            insights.append("최근 뉴스가 매우 부정적 → 하락 압력 증가")
+            action_guide = "위험 신호 다수 관찰됨"
             if negative_count > 7:
-                key_issues.append("악재 연속 발생 → 추가 하락 가능성")
+                key_issues.append("악재 연속 발생 관찰됨")
 
         # 부정 뉴스가 없는 경우
         if negative_count == 0 and positive_count > 0:
@@ -290,7 +290,7 @@ class QualitativeAnalyzer:
         # 긍정 뉴스가 없는 경우
         if positive_count == 0 and negative_count > 0:
             insights.append("긍정 뉴스 0건 → 반등 모멘텀 부재")
-            key_issues.append("추가 악재 발생시 하락 가속 가능")
+            key_issues.append("부정적 뉴스 누적됨")
 
         return {
             "insights": insights[:3],  # 최대 3개

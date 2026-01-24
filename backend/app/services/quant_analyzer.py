@@ -105,9 +105,9 @@ class QuantAnalyzer:
                 prev_ma200 = sum(price_values[-201:-1]) / 200
 
                 if ma50 > ma200 and prev_ma50 <= prev_ma200:
-                    result["signal"] = "골든크로스 발생 (매수 신호)"
+                    result["signal"] = "골든크로스 발생 (상승 추세)"
                 elif ma50 < ma200 and prev_ma50 >= prev_ma200:
-                    result["signal"] = "데드크로스 발생 (매도 신호)"
+                    result["signal"] = "데드크로스 발생 (하락 추세)"
                 elif ma50 > ma200:
                     result["signal"] = "상승 추세 (MA50 > MA200)"
                 else:
@@ -145,9 +145,9 @@ class QuantAnalyzer:
 
         # RSI 판정
         if rsi >= 70:
-            status = "과매수 (매도 검토)"
+            status = "과매수 구간"
         elif rsi <= 30:
-            status = "과매도 (매수 검토)"
+            status = "과매도 구간"
         else:
             status = "중립"
 
@@ -191,9 +191,9 @@ class QuantAnalyzer:
 
         # 판정
         if current_price > upper_band:
-            status = "상단 밴드 돌파 (과매수)"
+            status = "상단 밴드 돌파"
         elif current_price < lower_band:
-            status = "하단 밴드 이탈 (과매도)"
+            status = "하단 밴드 이탈"
         elif percent_b > 0.8:
             status = "상단 밴드 근접"
         elif percent_b < 0.2:
@@ -263,9 +263,9 @@ class QuantAnalyzer:
         if len(histogram) >= 2:
             prev_histogram = histogram[-2]
             if current_histogram > 0 and prev_histogram <= 0:
-                status = "골든크로스 (매수 신호)"
+                status = "골든크로스 (상승 추세)"
             elif current_histogram < 0 and prev_histogram >= 0:
-                status = "데드크로스 (매도 신호)"
+                status = "데드크로스 (하락 추세)"
             elif current_histogram > 0:
                 status = "상승 추세"
             else:

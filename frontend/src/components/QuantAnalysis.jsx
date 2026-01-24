@@ -56,8 +56,8 @@ const QuantAnalysis = () => {
   const getStatusColor = (status) => {
     if (!status) return '#999';
 
-    const positiveKeywords = ['매수', '골든크로스', '상승', '과매도', '양호', '낮음'];
-    const negativeKeywords = ['매도', '데드크로스', '하락', '과매수', '저조', '높음'];
+    const positiveKeywords = ['골든크로스', '상승', '양호', '낮음'];
+    const negativeKeywords = ['데드크로스', '하락', '저조', '높음'];
 
     if (positiveKeywords.some(kw => status.includes(kw))) return '#4caf50';
     if (negativeKeywords.some(kw => status.includes(kw))) return '#f44336';

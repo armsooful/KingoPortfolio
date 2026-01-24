@@ -427,7 +427,8 @@ def _to_decimal(value: Any) -> Optional[Decimal]:
         return None
     try:
         return Decimal(str(value))
-    except:
+    except (ValueError, TypeError, ArithmeticError) as e:
+        logger.warning(f"Decimal 변환 실패: {value} - {e}")
         return None
 
 

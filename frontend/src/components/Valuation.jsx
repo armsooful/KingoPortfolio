@@ -65,8 +65,8 @@ const Valuation = () => {
   };
 
   const getValuationColor = (status) => {
-    if (status === '저평가' || status === '매수 검토') return '#4caf50';
-    if (status === '고평가' || status === '매도 검토') return '#f44336';
+    if (status === '저평가' || status === '저평가 구간') return '#4caf50';
+    if (status === '고평가' || status === '고평가 구간') return '#f44336';
     return '#ff9800';
   };
 

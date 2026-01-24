@@ -270,7 +270,8 @@ def get_stock_fundamental_data(ticker: str, market: str = "KOSPI") -> dict:
             if ticker in tickers:
                 # 간접적으로 업종 추정 (ETF나 다른 방법 필요)
                 sector_raw = "기타"  # 기본값
-        except:
+        except Exception as e:
+            print(f"  ⚠️ {ticker} 업종 정보 조회 실패: {e}")
             sector_raw = "기타"
 
         return {

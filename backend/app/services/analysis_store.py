@@ -10,7 +10,7 @@ analysis_result 테이블에 대한 CRUD 및 캐시 로직
 
 ⚠️ 이 모듈은 성과 해석용이며, 투자 추천 로직을 포함하지 않습니다.
 """
-
+import logging
 from typing import Dict, List, Optional
 from datetime import date
 
@@ -18,6 +18,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 
 from app.models.analysis import AnalysisResult
+
+logger = logging.getLogger(__name__)
 from app.services.performance_analyzer import (
     analyze_from_nav_list,
     PerformanceMetrics,
@@ -219,9 +221,9 @@ def get_rebalancing_summary(db: Session, simulation_run_id: int) -> Dict:
                 "total_turnover": float(result[1]) if result[1] else 0.0,
                 "total_cost": float(result[2]) if result[2] else 0.0,
             }
-    except Exception:
+    except Exception as e:
         # rebalancing_event 테이블이 없는 경우
-        pass
+        logger.debug(f"리밸런싱 요약 조회 실패 (run_id={simulation_run_id}): {e}")
 
     return {
         "events_count": 0,

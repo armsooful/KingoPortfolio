@@ -1,7 +1,7 @@
 """
 배치 작업 API - 한국 주식 데이터 일괄 수집
 """
-
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Query
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -12,6 +12,7 @@ from app.database import get_db
 from app.auth import require_admin
 from app.models.user import User
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin/batch", tags=["Admin Batch Jobs"])
 
@@ -99,9 +100,10 @@ def run_full_krx_batch_job(
                 if not test_df.empty:
                     trading_date = check_date
                     trading_date_str = check_date_str
-                    print(f"[Batch Job {job_id}] 최근 거래일: {trading_date} ({check_date_str})")
+                    logger.info(f"[Batch Job {job_id}] 최근 거래일: {trading_date} ({check_date_str})")
                     break
-            except:
+            except Exception as e:
+                logger.debug(f"[Batch Job {job_id}] 거래일 탐색 중 (날짜: {check_date_str}): {e}")
                 continue
 
         if not trading_date_str:

@@ -1,6 +1,7 @@
 """
 시장 데이터 API 라우터
 """
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
@@ -13,6 +14,8 @@ from urllib.parse import urljoin
 from pykrx import stock
 
 from app.database import get_db
+
+logger = logging.getLogger(__name__)
 from app.models.user import User
 from app.routes.auth import get_current_user
 from app.utils.http_client import get_with_retry
@@ -156,7 +159,8 @@ def get_top_stocks_by_change(limit: int = 5) -> tuple:
                 if not test_df.empty:
                     today = date_to_check
                     break
-            except:
+            except Exception as e:
+                logger.debug(f"거래일 탐색 중 (날짜: {date_to_check}): {e}")
                 continue
 
         # 전일 대비 등락률 계산을 위해 전일 거래일 찾기
@@ -171,7 +175,8 @@ def get_top_stocks_by_change(limit: int = 5) -> tuple:
                 )
                 if not test_df.empty:
                     break
-            except:
+            except Exception as e:
+                logger.debug(f"전일 거래일 탐색 중 (날짜: {yesterday}): {e}")
                 continue
 
         # 주요 종목 리스트 (거래량 많은 대표 종목)

@@ -16,6 +16,7 @@ Phase 2 Epic C: 커스텀 포트폴리오 시뮬레이션 서비스
 
 import hashlib
 import json
+import logging
 from datetime import date
 from typing import Dict, List, Optional, Any
 from decimal import Decimal
@@ -24,6 +25,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 from app.services.custom_portfolio_service import (
     get_weights_for_simulation,
     get_weights_hash_string,
@@ -304,9 +307,9 @@ def run_custom_portfolio_simulation(
             nav_data = [{"path_date": p["path_date"], "nav": p["nav"]} for p in path]
             performance = analyze_from_nav_list(nav_data, rf_annual=0.0, annualization_factor=252)
             kpi_metrics = performance.to_dict()
-        except Exception:
+        except Exception as e:
             # KPI 계산 실패 시 기본 지표만 사용
-            pass
+            logger.warning(f"KPI 계산 실패 (portfolio_id={portfolio_id}): {e}")
 
     # 8. 결과 반환
     final_nav = path[-1]["nav"] if path else initial_nav
