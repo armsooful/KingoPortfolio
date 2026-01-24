@@ -20,6 +20,10 @@ class AuditType(str, Enum):
     BATCH_REPLAY = "BATCH_REPLAY"
     DATA_CORRECTION = "DATA_CORRECTION"
     CONFIG_CHANGE = "CONFIG_CHANGE"
+    # Phase 10 추가: 평가 및 에러 감사
+    EVALUATION_EXECUTE = "EVALUATION_EXECUTE"
+    EVALUATION_ERROR = "EVALUATION_ERROR"
+    SYSTEM_ERROR = "SYSTEM_ERROR"
 
 
 class TargetType(str, Enum):
@@ -30,6 +34,9 @@ class TargetType(str, Enum):
     EXPLANATION = "EXPLANATION"
     USER = "USER"
     SYSTEM_CONFIG = "SYSTEM_CONFIG"
+    # Phase 10 추가
+    EVALUATION = "EVALUATION"
+    API_ENDPOINT = "API_ENDPOINT"
 
 
 class AuditAction(str, Enum):
@@ -40,6 +47,9 @@ class AuditAction(str, Enum):
     REPLAY = "REPLAY"
     START = "START"
     STOP = "STOP"
+    # Phase 10 추가
+    EXECUTE = "EXECUTE"
+    ERROR = "ERROR"
 
 
 class AuditLogError(Exception):
@@ -210,6 +220,101 @@ class AuditLogService:
             operator_id=operator_id.strip(),
             operator_ip=operator_ip,
             operator_reason=operator_reason.strip(),
+        )
+
+        self.db.add(audit_log)
+        self.db.commit()
+        self.db.refresh(audit_log)
+
+        return audit_log
+
+    def log_evaluation(
+        self,
+        evaluation_id: str,
+        portfolio_id: str,
+        user_id: str,
+        period_start: str,
+        period_end: str,
+        request_id: Optional[str] = None,
+        result_summary: Optional[Dict[str, Any]] = None,
+    ) -> OpsAuditLog:
+        """
+        평가 실행 감사 로그 기록 (Phase 10)
+
+        Args:
+            evaluation_id: 평가 ID
+            portfolio_id: 포트폴리오 ID
+            user_id: 사용자 ID
+            period_start: 평가 시작일
+            period_end: 평가 종료일
+            request_id: 요청 추적 ID
+            result_summary: 결과 요약
+
+        Returns:
+            OpsAuditLog: 생성된 감사 로그
+        """
+        audit_log = OpsAuditLog(
+            audit_type=AuditType.EVALUATION_EXECUTE.value,
+            target_type=TargetType.EVALUATION.value,
+            target_id=evaluation_id,
+            action=AuditAction.EXECUTE.value,
+            before_state=None,
+            after_state={
+                "portfolio_id": portfolio_id,
+                "period_start": period_start,
+                "period_end": period_end,
+                "request_id": request_id,
+                "result_summary": result_summary,
+            },
+            operator_id=user_id,
+            operator_reason="사용자 평가 요청",
+        )
+
+        self.db.add(audit_log)
+        self.db.commit()
+        self.db.refresh(audit_log)
+
+        return audit_log
+
+    def log_error(
+        self,
+        error_type: str,
+        error_message: str,
+        target_type: str,
+        target_id: str,
+        user_id: Optional[str] = None,
+        request_id: Optional[str] = None,
+        error_context: Optional[Dict[str, Any]] = None,
+    ) -> OpsAuditLog:
+        """
+        에러 발생 감사 로그 기록 (Phase 10)
+
+        Args:
+            error_type: 에러 유형 (예: ValidationError, DataNotFoundError)
+            error_message: 에러 메시지
+            target_type: 대상 유형
+            target_id: 대상 ID
+            user_id: 사용자 ID (선택)
+            request_id: 요청 추적 ID (선택)
+            error_context: 에러 컨텍스트 정보 (선택)
+
+        Returns:
+            OpsAuditLog: 생성된 감사 로그
+        """
+        audit_log = OpsAuditLog(
+            audit_type=AuditType.SYSTEM_ERROR.value,
+            target_type=target_type,
+            target_id=target_id,
+            action=AuditAction.ERROR.value,
+            before_state=None,
+            after_state={
+                "error_type": error_type,
+                "error_message": error_message,
+                "request_id": request_id,
+                "context": error_context,
+            },
+            operator_id=user_id or "SYSTEM",
+            operator_reason=f"시스템 에러: {error_type}",
         )
 
         self.db.add(audit_log)

@@ -135,21 +135,27 @@
 
 ---
 
-## 5. Epic 4: 로그·감사 추적 정교화 (P2 - Medium)
+## 5. Epic 4: 로그·감사 추적 정교화 (P2 - Medium) ✅ 완료
 
 **목적**: 운영 가시성 향상
 
+**완료일**: 2026-01-24
+**구현 파일**:
+- `backend/app/utils/structured_logging.py` (구조화된 로깅 유틸리티)
+- `backend/app/services/audit_log_service.py` (감사 로그 확장)
+- `backend/app/routes/phase7_evaluation.py` (로깅 적용)
+
 ### Story 4.1: 구조화된 로깅 표준화
 
-- [ ] 모든 서비스에 request_id 포함
-- [ ] 예외 로깅에 context 정보 포함
-- [ ] 성능 메트릭 로깅 추가
+- [x] 모든 서비스에 request_id 포함 (`StructuredLogger`, `request_context`)
+- [x] 예외 로깅에 context 정보 포함 (`log_error_with_context`)
+- [x] 성능 메트릭 로깅 추가 (`log_performance`, `@log_performance` 데코레이터)
 
 ### Story 4.2: 감사 로그 확장
 
-- [ ] 평가 실행 감사 로그
-- [ ] 설정 변경 감사 로그
-- [ ] 에러 발생 감사 로그
+- [x] 평가 실행 감사 로그 (`log_evaluation`)
+- [x] 설정 변경 감사 로그 (`log_config_change` - 기존)
+- [x] 에러 발생 감사 로그 (`log_error`)
 
 ---
 
@@ -171,11 +177,13 @@
 - [x] Epic 1 모든 항목 수정 완료 (2026-01-24)
 - [x] Epic 2 모든 항목 수정 완료 (2026-01-24)
 - [x] Epic 3 엣지 케이스 테스트 추가 (2026-01-24)
+- [x] Epic 4 로그·감사 추적 정교화 (2026-01-24)
 - [x] bare except 0건
 - [x] 매수/매도 관련 표현 0건
 - [x] 투자 권유 표현 0건
 - [x] 예외 swallowing 0건
-- [ ] Epic 4 로그·감사 추적 정교화
+
+### Phase 10 완료! 🎉
 
 ---
 
@@ -185,3 +193,4 @@
 |------|------|----------|
 | v1.0 | 2026-01-24 | 최초 작성 |
 | v1.1 | 2026-01-24 | Epic 1, 2, 3 완료 표시 |
+| v1.2 | 2026-01-24 | Epic 4 완료, Phase 10 완료 |
