@@ -23,6 +23,10 @@ from .admin_controls import (
     AdminRole, AdminPermission, AdminRolePermission, AdminUserRole,
     AdminAuditLog, AdminApproval, AdminAdjustment
 )
+from .real_data import (
+    DataSource, DataLoadBatch, StockPriceDaily, IndexPriceDaily,
+    StockInfo, DataQualityLog
+)
 # app/models.py의 모델들을 직접 import하지 않고 lazy import 허용
 
 __all__ = ['User', 'KrxTimeSeries', 'Portfolio', 'PortfolioHistory', 'SimulationCache', 'Bookmark',
@@ -37,7 +41,9 @@ __all__ = ['User', 'KrxTimeSeries', 'Portfolio', 'PortfolioHistory', 'Simulation
            'ExecutionContext', 'DataQualityReport', 'DataQualityReportItem',
            'PerformanceResult', 'PerformanceBasis', 'BenchmarkResult', 'PerformancePublicView',
            'AdminRole', 'AdminPermission', 'AdminRolePermission', 'AdminUserRole', 'AdminAuditLog',
-           'AdminApproval', 'AdminAdjustment']
+           'AdminApproval', 'AdminAdjustment',
+           'DataSource', 'DataLoadBatch', 'StockPriceDaily', 'IndexPriceDaily',
+           'StockInfo', 'DataQualityLog']
 # models.py에서 추가 모델 import
 import sys
 import os
