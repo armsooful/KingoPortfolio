@@ -131,6 +131,11 @@ class DataCollector:
                 ytd_return = None
                 one_year_return = None
 
+            if ytd_return is not None:
+                ytd_return = float(ytd_return)
+            if one_year_return is not None:
+                one_year_return = float(one_year_return)
+
             # 데이터가 없으면 None 반환
             if current_price is None:
                 logger.warning(f"No price data for {ticker}")
@@ -179,6 +184,11 @@ class DataCollector:
             else:
                 ytd_return = None
                 one_year_return = None
+
+            if ytd_return is not None:
+                ytd_return = float(ytd_return)
+            if one_year_return is not None:
+                one_year_return = float(one_year_return)
 
             # 데이터가 없으면 None 반환
             if current_price is None:
