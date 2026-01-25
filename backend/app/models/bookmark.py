@@ -8,6 +8,7 @@ import uuid
 from sqlalchemy import Column, String, BigInteger, DateTime, ForeignKey, UniqueConstraint, Index
 
 from app.database import Base
+from app.utils.kst_now import kst_now
 
 
 def _uuid_str() -> str:
@@ -21,7 +22,7 @@ class Bookmark(Base):
     bookmark_id = Column(String(36), primary_key=True, default=_uuid_str)
     user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     portfolio_id = Column(BigInteger, ForeignKey("custom_portfolio.portfolio_id", ondelete="CASCADE"), nullable=False)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=kst_now)
 
     __table_args__ = (
         UniqueConstraint("user_id", "portfolio_id", name="uq_bookmark_user_portfolio"),

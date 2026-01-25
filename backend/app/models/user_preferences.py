@@ -2,12 +2,12 @@
 Phase 3-C / U-3: 사용자 설정/이력 모델
 """
 
-from datetime import datetime
 import uuid
 
 from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, JSON, Index, UniqueConstraint
 
 from app.database import Base
+from app.utils.kst_now import kst_now
 
 
 def _uuid_str() -> str:
@@ -24,8 +24,8 @@ class UserPreset(Base):
     preset_name = Column(String(100), nullable=False)
     preset_payload = Column(JSON, nullable=False)
     is_default = Column(Boolean, nullable=False, default=False)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=kst_now)
+    updated_at = Column(DateTime, nullable=False, default=kst_now, onupdate=kst_now)
 
     __table_args__ = (
         UniqueConstraint("user_id", "preset_type", "preset_name", name="uq_user_preset_name"),
@@ -42,8 +42,8 @@ class UserNotificationSetting(Base):
     user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
     enable_alerts = Column(Boolean, nullable=False, default=False)
     exposure_frequency = Column(String(20), nullable=False, default="STANDARD")
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=kst_now)
+    updated_at = Column(DateTime, nullable=False, default=kst_now, onupdate=kst_now)
 
     __table_args__ = (
         Index("idx_user_notification_user", "user_id"),
@@ -60,7 +60,7 @@ class UserActivityEvent(Base):
     status = Column(String(20), nullable=False)
     reason_code = Column(String(50), nullable=True)
     metadata_json = Column("metadata", JSON, nullable=True)
-    occurred_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    occurred_at = Column(DateTime, nullable=False, default=kst_now)
 
     __table_args__ = (
         Index("idx_user_activity_user", "user_id"),

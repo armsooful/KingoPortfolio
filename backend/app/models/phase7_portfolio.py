@@ -5,7 +5,6 @@ Phase 7: 사용자 주도 포트폴리오 평가용 입력 저장 모델
 추천/최적화 로직은 포함하지 않는다.
 """
 
-from datetime import datetime
 from sqlalchemy import (
     Integer,
     Column,
@@ -20,6 +19,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+from app.utils.kst_now import kst_now
 
 
 class Phase7Portfolio(Base):
@@ -34,8 +34,8 @@ class Phase7Portfolio(Base):
     portfolio_type = Column(String(20), nullable=False)  # SECURITY | SECTOR
     portfolio_name = Column(String(100), nullable=False)
     description = Column(Text, nullable=True)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=kst_now)
+    updated_at = Column(DateTime, nullable=False, default=kst_now, onupdate=kst_now)
 
     items = relationship(
         "Phase7PortfolioItem",

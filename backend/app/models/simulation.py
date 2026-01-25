@@ -9,9 +9,9 @@ from sqlalchemy import (
     ForeignKey, Numeric, Text, Index, JSON
 )
 from sqlalchemy.orm import relationship
-from datetime import datetime
 
 from app.database import Base
+from app.utils.kst_now import kst_now
 
 
 class SimulationRun(Base):
@@ -41,7 +41,7 @@ class SimulationRun(Base):
     run_status = Column(String(20), default='COMPLETED')  # RUNNING, COMPLETED, FAILED
     error_message = Column(Text, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
     expires_at = Column(DateTime, nullable=True)  # TTL
 
     # 관계
@@ -75,7 +75,7 @@ class SimulationPath(Base):
     drawdown = Column(Numeric(12, 8), nullable=True)  # 낙폭 (음수)
     high_water_mark = Column(Numeric(18, 4), nullable=True)  # 고점
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     # 관계
     run = relationship("SimulationRun", back_populates="paths")
@@ -117,7 +117,7 @@ class SimulationSummary(Base):
     trading_days = Column(Integer, nullable=True)  # 거래일 수
     rebalance_count = Column(Integer, default=0)  # 리밸런싱 횟수
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     # 관계
     run = relationship("SimulationRun", back_populates="summary")

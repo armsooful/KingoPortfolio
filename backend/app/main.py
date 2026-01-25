@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.error_handlers import setup_exception_handlers
 from app.rate_limiter import limiter
+from app.utils.structured_logging import setup_logging
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
@@ -68,6 +69,7 @@ def init_db():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("🚀 Lifespan startup 시작")
+    setup_logging()
     try:
         init_db()
         print("✅ Database initialized successfully")

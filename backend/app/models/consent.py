@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String, Text
 
 from app.database import Base
+from app.utils.kst_now import kst_now
 
 
 class ConsentAgreement(Base):
@@ -19,7 +20,7 @@ class ConsentAgreement(Base):
     consent_text = Column(Text, nullable=True)
     ip_address = Column(String(45), nullable=True)
     user_agent = Column(String(255), nullable=True)
-    agreed_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    agreed_at = Column(DateTime, nullable=False, default=kst_now)
 
     __table_args__ = (
         Index("idx_consent_owner", "owner_user_id"),

@@ -15,9 +15,9 @@ from sqlalchemy import (
     ForeignKey, Index, UniqueConstraint, Numeric, CheckConstraint
 )
 from sqlalchemy.orm import relationship
-from datetime import datetime
 
 from app.database import Base
+from app.utils.kst_now import kst_now
 
 
 # ============================================================================
@@ -37,7 +37,7 @@ class DataSource(Base):
     license_type = Column(String(50))  # 'PUBLIC', 'COMMERCIAL', 'INTERNAL'
     description = Column(Text)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     # 관계
     batches = relationship("DataLoadBatch", back_populates="source")
@@ -76,7 +76,7 @@ class DataLoadBatch(Base):
 
     started_at = Column(DateTime)
     completed_at = Column(DateTime)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     # 관계
     source = relationship("DataSource", back_populates="batches")
@@ -130,7 +130,7 @@ class StockPriceDaily(Base):
     is_verified = Column(Boolean, default=False)
     quality_flag = Column(String(10), default='NORMAL')  # 'NORMAL','ADJUSTED','ESTIMATED','MIGRATED'
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     __table_args__ = (
         UniqueConstraint('ticker', 'trade_date', 'source_id', name='uq_stock_price_daily'),
@@ -179,7 +179,7 @@ class IndexPriceDaily(Base):
     is_verified = Column(Boolean, default=False)
     quality_flag = Column(String(10), default='NORMAL')
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     __table_args__ = (
         UniqueConstraint('index_code', 'trade_date', 'source_id', name='uq_index_price_daily'),
@@ -229,7 +229,7 @@ class StockInfo(Base):
     batch_id = Column(Integer, ForeignKey("data_load_batch.batch_id"))
     is_active = Column(Boolean, default=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     __table_args__ = (
         UniqueConstraint('ticker', 'as_of_date', 'source_id', name='uq_stock_info'),
@@ -265,7 +265,7 @@ class DataQualityLog(Base):
     field_value = Column(String(200))
     expected_condition = Column(String(200))
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     __table_args__ = (
         Index('idx_dq_log_batch', 'batch_id'),
@@ -317,7 +317,7 @@ class FinancialStatement(Base):
     as_of_date = Column(Date, nullable=False)
     dart_rcept_no = Column(String(20))  # DART 접수번호
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     __table_args__ = (
         UniqueConstraint('ticker', 'fiscal_year', 'fiscal_quarter', 'source_id',
@@ -354,7 +354,7 @@ class DividendHistory(Base):
     batch_id = Column(Integer, ForeignKey("data_load_batch.batch_id"))
     as_of_date = Column(Date, nullable=False)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     __table_args__ = (
         UniqueConstraint('ticker', 'fiscal_year', 'dividend_type', 'source_id',
@@ -393,7 +393,7 @@ class SectorClassification(Base):
     source_id = Column(String(20), ForeignKey("data_source.source_id"), nullable=False)
     batch_id = Column(Integer, ForeignKey("data_load_batch.batch_id"))
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     __table_args__ = (
         UniqueConstraint('ticker', 'as_of_date', 'source_id', name='uq_sector_class'),
@@ -437,7 +437,7 @@ class InstitutionTrade(Base):
     batch_id = Column(Integer, ForeignKey("data_load_batch.batch_id"))
     as_of_date = Column(Date, nullable=False)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     __table_args__ = (
         UniqueConstraint('ticker', 'trade_date', 'source_id', name='uq_institution_trade'),

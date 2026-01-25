@@ -7,6 +7,15 @@ function ProgressModal({ taskId, onComplete, onClose }) {
   const [error, setError] = useState(null);
   const [logs, setLogs] = useState([]);
 
+  const formatLogTimestamp = (timestamp) => {
+    if (!timestamp) return '';
+    const hasTimezone = /[zZ]|[+-]\d{2}:?\d{2}$/.test(timestamp);
+    const isoTimestamp = hasTimezone ? timestamp : `${timestamp}Z`;
+    const date = new Date(isoTimestamp);
+    if (Number.isNaN(date.getTime())) return timestamp;
+    return date.toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour12: false });
+  };
+
   useEffect(() => {
     if (!taskId) return;
 
@@ -30,7 +39,7 @@ function ProgressModal({ taskId, onComplete, onClose }) {
           // 새로운 항목이 있으면 로그에 추가
           const newItems = data.items_history.slice(logs.length);
           const newLogs = newItems.map(item => {
-            const timestamp = new Date(item.timestamp).toLocaleTimeString();
+            const timestamp = formatLogTimestamp(item.timestamp);
             const status = item.success ? '✅' : '❌';
             return {
               id: `${item.index}-${item.timestamp}`,

@@ -2,7 +2,6 @@
 Phase 3-C / Epic C-3: 성과 분석 모델
 """
 
-from datetime import datetime
 import uuid
 
 from sqlalchemy import (
@@ -12,6 +11,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 
 from app.database import Base
+from app.utils.kst_now import kst_now
 
 
 def _uuid_str() -> str:
@@ -42,7 +42,7 @@ class PerformanceResult(Base):
     snapshot_ids = Column(JSONB, nullable=False, default=list)
     result_version_id = Column(String(36), nullable=True)
     calc_params = Column(JSONB, nullable=False, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     __table_args__ = (
         Index("idx_performance_entity", "entity_type", "entity_id"),
@@ -63,7 +63,7 @@ class PerformanceBasis(Base):
     include_dividend = Column(Boolean, nullable=False, default=False)
     fx_snapshot_id = Column(String(36), ForeignKey("data_snapshot.snapshot_id"), nullable=True)
     notes = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     __table_args__ = (
         Index("idx_performance_basis_perf", "performance_id"),
@@ -80,7 +80,7 @@ class BenchmarkResult(Base):
     benchmark_code = Column(String(50), nullable=False)
     benchmark_return = Column(Numeric(12, 6))
     excess_return = Column(Numeric(12, 6))
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     __table_args__ = (
         Index("idx_benchmark_perf", "performance_id"),
@@ -95,4 +95,4 @@ class PerformancePublicView(Base):
     performance_id = Column(String(36), ForeignKey("performance_result.performance_id", ondelete="CASCADE"), nullable=False)
     headline_json = Column(JSONB, nullable=False, default=dict)
     disclaimer_text = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)

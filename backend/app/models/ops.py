@@ -9,10 +9,10 @@ from sqlalchemy import (
     Index, UniqueConstraint, JSON
 )
 from sqlalchemy.orm import relationship
-from datetime import datetime
 import uuid
 
 from app.database import Base
+from app.utils.kst_now import kst_now
 
 
 def generate_uuid():
@@ -29,8 +29,8 @@ class BatchJob(Base):
     job_description = Column(Text, nullable=True)
     job_type = Column(String(20), nullable=False)  # 'DAILY', 'WEEKLY', 'MONTHLY', 'ON_DEMAND'
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
+    updated_at = Column(DateTime, default=kst_now, onupdate=kst_now)
 
     # 관계
     executions = relationship("BatchExecution", back_populates="job")
@@ -77,8 +77,8 @@ class BatchExecution(Base):
     replay_reason = Column(Text, nullable=True)  # 재처리 사유
 
     # 메타
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
+    updated_at = Column(DateTime, default=kst_now, onupdate=kst_now)
 
     # 관계
     job = relationship("BatchJob", back_populates="executions")
@@ -107,7 +107,7 @@ class BatchExecutionLog(Base):
     log_code = Column(String(20), nullable=True)  # 'C1-INP-001' 형식
     log_message = Column(Text, nullable=False)
     log_detail = Column(JSON, nullable=True)
-    logged_at = Column(DateTime, default=datetime.utcnow)
+    logged_at = Column(DateTime, default=kst_now)
 
     # 관계
     execution = relationship("BatchExecution", back_populates="logs")
@@ -145,7 +145,7 @@ class OpsAuditLog(Base):
     approved_by = Column(String(50), nullable=True)
     approved_at = Column(DateTime, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     __table_args__ = (
         Index('idx_ops_audit_log_audit_type', 'audit_type'),
@@ -177,7 +177,7 @@ class ResultVersion(Base):
     deactivate_reason = Column(Text, nullable=True)
     superseded_by = Column(Integer, ForeignKey("result_version.version_id"), nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     # 관계
     superseding_version = relationship("ResultVersion", remote_side=[version_id], backref="previous_versions")
@@ -217,7 +217,7 @@ class OpsAlert(Base):
     acknowledged_by = Column(String(50), nullable=True)
     acknowledged_at = Column(DateTime, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     __table_args__ = (
         Index('idx_ops_alert_type', 'alert_type'),
@@ -247,8 +247,8 @@ class ErrorCodeMaster(Base):
     alert_level = Column(String(10), nullable=True)
 
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
+    updated_at = Column(DateTime, default=kst_now, onupdate=kst_now)
 
     def __repr__(self):
         return f"<ErrorCodeMaster {self.error_code}: {self.ops_message[:30]}...>"

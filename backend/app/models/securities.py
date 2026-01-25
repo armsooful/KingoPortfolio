@@ -1,8 +1,8 @@
 # backend/app/models/securities.py
 
 from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Date
-from datetime import datetime
 from app.database import Base
+from app.utils.kst_now import kst_now
 
 class Stock(Base):
     """한국 주식"""
@@ -35,8 +35,8 @@ class Stock(Base):
     logo_url = Column(String(300), nullable=True)
     is_active = Column(Boolean, default=True)
     
-    last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    last_updated = Column(DateTime, default=kst_now, onupdate=kst_now)
+    created_at = Column(DateTime, default=kst_now)
 
 
 class ETF(Base):
@@ -63,8 +63,8 @@ class ETF(Base):
     description = Column(String(500))
     is_active = Column(Boolean, default=True)
     
-    last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    last_updated = Column(DateTime, default=kst_now, onupdate=kst_now)
+    created_at = Column(DateTime, default=kst_now)
 
 
 class Bond(Base):
@@ -91,8 +91,8 @@ class Bond(Base):
     description = Column(String(500))
     is_active = Column(Boolean, default=True)
     
-    last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    last_updated = Column(DateTime, default=kst_now, onupdate=kst_now)
+    created_at = Column(DateTime, default=kst_now)
 
 
 class DepositProduct(Base):
@@ -113,8 +113,8 @@ class DepositProduct(Base):
     description = Column(String(500))
     is_active = Column(Boolean, default=True)
 
-    last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    last_updated = Column(DateTime, default=kst_now, onupdate=kst_now)
+    created_at = Column(DateTime, default=kst_now)
 
 
 class KrxTimeSeries(Base):
@@ -131,7 +131,7 @@ class KrxTimeSeries(Base):
     close = Column(Float, nullable=False)
     volume = Column(Integer, nullable=False)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     def __repr__(self):
         return f"<KrxTimeSeries {self.ticker} {self.date}>"
@@ -163,8 +163,8 @@ class StockFinancials(Base):
     operating_margin = Column(Float, nullable=True)  # 영업이익률 = operating_income / revenue
     net_margin = Column(Float, nullable=True)  # 순이익률 = net_income / revenue
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
+    last_updated = Column(DateTime, default=kst_now, onupdate=kst_now)
 
     def __repr__(self):
         return f"<StockFinancials {self.ticker} {self.fiscal_date} ({self.report_type})>"
@@ -183,4 +183,4 @@ class ProductRecommendation(Base):
     score = Column(Float)                                 # 점수 (0~100)
     reason = Column(String(500))                          # 매칭 사유
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)

@@ -8,6 +8,7 @@ from datetime import datetime, date
 from sqlalchemy import Integer, Column, Date, DateTime, ForeignKey, String, Text, Index
 
 from app.database import Base
+from app.utils.kst_now import kst_now
 
 
 class Phase7EvaluationRun(Base):
@@ -29,7 +30,7 @@ class Phase7EvaluationRun(Base):
     rebalance = Column(String(20), nullable=False)  # NONE | MONTHLY | QUARTERLY
     result_json = Column(Text, nullable=False)
     result_hash = Column(String(64), nullable=False)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=kst_now)
 
     __table_args__ = (
         Index("idx_phase7_eval_owner", "owner_user_id"),

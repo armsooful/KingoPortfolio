@@ -10,12 +10,30 @@ const api = axios.create({
   },
 });
 
+// UUID generator for idempotency keys
+const generateUUID = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 // 요청 인터셉터 - 토큰 자동 추가
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    // Add idempotency key for write requests
+    if (config.method && ['post', 'put', 'patch', 'delete'].includes(config.method.toLowerCase())) {
+      if (!config.headers['x-idempotency-key']) {
+        config.headers['x-idempotency-key'] = generateUUID();
+      }
     }
     return config;
   },
@@ -153,6 +171,13 @@ export const getDiagnosisHistory = (limit = 10) => {
 // Health Check
 // ============================================================
 
+const getKSTDateString = () => {
+  const now = new Date();
+  const kstOffset = 9 * 60 * 60 * 1000;
+  const kstDate = new Date(now.getTime() + kstOffset);
+  return kstDate.toISOString().split('T')[0];
+}
+
 /**
  * 백엔드 헬스 체크
  */
@@ -184,7 +209,7 @@ export const downloadPortfolioPDF = async (investmentAmount = 10000000) => {
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `portfolio_report_${new Date().toISOString().split('T')[0]}.pdf`;
+  a.download = `portfolio_report_${getKSTDateString()}.pdf`;
   document.body.appendChild(a);
   a.click();
   window.URL.revokeObjectURL(url);
@@ -211,7 +236,7 @@ export const downloadDiagnosisPDF = async (diagnosisId) => {
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `diagnosis_report_${diagnosisId}_${new Date().toISOString().split('T')[0]}.pdf`;
+  a.download = `diagnosis_report_${diagnosisId}_${getKSTDateString()}.pdf`;
   document.body.appendChild(a);
   a.click();
   window.URL.revokeObjectURL(url);
@@ -701,7 +726,7 @@ export const downloadExplanationPDF = async (data) => {
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `performance_report_${new Date().toISOString().split('T')[0]}.pdf`;
+  a.download = `performance_report_${getKSTDateString()}.pdf`;
   document.body.appendChild(a);
   a.click();
   window.URL.revokeObjectURL(url);
@@ -730,7 +755,7 @@ export const downloadPortfolioExplanationPDF = async (data) => {
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `portfolio_report_${data.portfolio_id}_${new Date().toISOString().split('T')[0]}.pdf`;
+  a.download = `portfolio_report_${data.portfolio_id}_${getKSTDateString()}.pdf`;
   document.body.appendChild(a);
   a.click();
   window.URL.revokeObjectURL(url);
@@ -799,7 +824,7 @@ export const downloadPremiumReportPDF = async (data) => {
   const a = document.createElement('a');
   a.href = url;
   const title = (data.report_title || 'premium_report').replace(/\s+/g, '_').slice(0, 30);
-  a.download = `${title}_${new Date().toISOString().split('T')[0]}.pdf`;
+  a.download = `${title}_${getKSTDateString()}.pdf`;
   document.body.appendChild(a);
   a.click();
   window.URL.revokeObjectURL(url);

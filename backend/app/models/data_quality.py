@@ -10,6 +10,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from datetime import datetime
 
 from app.database import Base
+from app.utils.kst_now import kst_now
 
 
 class DataSnapshot(Base):
@@ -24,7 +25,7 @@ class DataSnapshot(Base):
     source_uri = Column(Text, nullable=True)
     record_count = Column(Integer, default=0)
     checksum = Column(String(128), nullable=True)
-    collected_at = Column(DateTime, default=datetime.utcnow)
+    collected_at = Column(DateTime, default=kst_now)
     is_active = Column(Boolean, default=True)
 
     __table_args__ = (
@@ -41,7 +42,7 @@ class DataLineageNode(Base):
     node_type = Column(String(30), nullable=False)
     ref_type = Column(String(50), nullable=False)
     ref_id = Column(String(100), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
     is_active = Column(Boolean, default=True)
 
     __table_args__ = (
@@ -56,7 +57,7 @@ class DataLineageEdge(Base):
     edge_id = Column(String(36), primary_key=True)
     from_node_id = Column(String(36), ForeignKey("data_lineage_node.node_id", ondelete="CASCADE"), nullable=False)
     to_node_id = Column(String(36), ForeignKey("data_lineage_node.node_id", ondelete="CASCADE"), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     __table_args__ = (
         Index("idx_lineage_edge_from", "from_node_id"),
@@ -78,8 +79,8 @@ class ValidationRuleMaster(Base):
     scope_value = Column(String(100), nullable=True)
     scope_json = Column(JSONB, nullable=False, default={})
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
+    updated_at = Column(DateTime, default=kst_now, onupdate=kst_now)
 
     __table_args__ = (
         Index("idx_validation_rule_type", "rule_type"),
@@ -97,7 +98,7 @@ class ValidationRuleVersion(Base):
     rule_params = Column(JSONB, nullable=False, default={})
     effective_from = Column(Date, nullable=False)
     effective_to = Column(Date, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     __table_args__ = (
         Index("ux_validation_rule_version", "rule_code", "version_no", unique=True),
@@ -117,7 +118,7 @@ class ValidationResult(Base):
     status = Column(String(10), nullable=False)  # PASS/WARN/FAIL
     violation_count = Column(Integer, default=0)
     sample_detail = Column(JSONB, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     __table_args__ = (
         Index("idx_validation_result_exec", "execution_id"),
@@ -137,7 +138,7 @@ class ExecutionContext(Base):
     code_version = Column(String(50), nullable=True)
     started_at = Column(DateTime, nullable=True)
     ended_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     __table_args__ = (
         Index("ux_execution_context_execution", "execution_id", unique=True),
@@ -152,7 +153,7 @@ class DataQualityReport(Base):
     execution_id = Column(String(36), ForeignKey("batch_execution.execution_id", ondelete="CASCADE"), nullable=False)
     report_date = Column(Date, nullable=False)
     summary_json = Column(JSONB, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     __table_args__ = (
         Index("idx_dq_report_date", "report_date"),
@@ -168,7 +169,7 @@ class DataQualityReportItem(Base):
     dataset_type = Column(String(50), nullable=False)
     status = Column(String(10), nullable=False)
     detail_json = Column(JSONB, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     __table_args__ = (
         Index("idx_dq_item_report", "report_id"),

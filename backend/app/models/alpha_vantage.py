@@ -3,6 +3,7 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Text, Date
 from datetime import datetime
 from app.database import Base
+from app.utils.kst_now import kst_now
 
 
 class AlphaVantageStock(Base):
@@ -52,8 +53,8 @@ class AlphaVantageStock(Base):
     logo_url = Column(String(300), nullable=True)
     is_active = Column(Boolean, default=True)
 
-    last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    last_updated = Column(DateTime, default=kst_now, onupdate=kst_now)
+    created_at = Column(DateTime, default=kst_now)
 
     def __repr__(self):
         return f"<AlphaVantageStock {self.symbol}: {self.name}>"
@@ -98,8 +99,8 @@ class AlphaVantageFinancials(Base):
     current_ratio = Column(Float, nullable=True)  # 유동비율
     profit_margin = Column(Float, nullable=True)  # 순이익률 = net_income / revenue
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
+    last_updated = Column(DateTime, default=kst_now, onupdate=kst_now)
 
     def __repr__(self):
         return f"<AlphaVantageFinancials {self.symbol} {self.fiscal_date} ({self.report_type})>"
@@ -138,8 +139,8 @@ class AlphaVantageETF(Base):
     description = Column(Text)
     is_active = Column(Boolean, default=True)
 
-    last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    last_updated = Column(DateTime, default=kst_now, onupdate=kst_now)
+    created_at = Column(DateTime, default=kst_now)
 
     def __repr__(self):
         return f"<AlphaVantageETF {self.symbol}: {self.name}>"
@@ -160,7 +161,7 @@ class AlphaVantageTimeSeries(Base):
     volume = Column(Integer, nullable=False)
     adjusted_close = Column(Float)  # 조정 종가
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     def __repr__(self):
         return f"<AlphaVantageTimeSeries {self.symbol} {self.date}>"

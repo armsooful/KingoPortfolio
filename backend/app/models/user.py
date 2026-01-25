@@ -2,9 +2,9 @@
 
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Date
 from sqlalchemy.orm import relationship
-from datetime import datetime
 import uuid
 from app.database import Base
+from app.utils.kst_now import kst_now
 
 class User(Base):
     """사용자 모델"""
@@ -56,10 +56,10 @@ class User(Base):
     # 사용량 추적 (월별 리셋)
     monthly_ai_requests = Column(Integer, default=0)  # 이번 달 AI 요청 횟수
     monthly_reports_generated = Column(Integer, default=0)  # 이번 달 리포트 생성 횟수
-    last_usage_reset = Column(DateTime, default=datetime.utcnow)  # 마지막 사용량 리셋 시간
+    last_usage_reset = Column(DateTime, default=kst_now)  # 마지막 사용량 리셋 시간
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
+    updated_at = Column(DateTime, default=kst_now, onupdate=kst_now)
 
     # 관계
     diagnoses = relationship("Diagnosis", back_populates="user", cascade="all, delete-orphan")

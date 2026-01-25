@@ -10,9 +10,9 @@ from sqlalchemy import (
     ForeignKey, Numeric, Text, Index, Boolean, JSON
 )
 from sqlalchemy.orm import relationship
-from datetime import datetime
 
 from app.database import Base
+from app.utils.kst_now import kst_now
 
 
 class ScenarioDefinition(Base):
@@ -33,8 +33,8 @@ class ScenarioDefinition(Base):
     disclaimer = Column(Text, nullable=False)
     is_active = Column(Boolean, default=True)
     display_order = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
+    updated_at = Column(DateTime, default=kst_now, onupdate=kst_now)
 
     # 관계
     portfolios = relationship("PortfolioModel", back_populates="scenario")
@@ -83,7 +83,7 @@ class PortfolioModel(Base):
     expiry_date = Column(Date)
     rebalance_freq = Column(String(20), default='NONE')
     engine_version = Column(String(20))
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     # 관계
     scenario = relationship("ScenarioDefinition", back_populates="portfolios")
@@ -119,7 +119,7 @@ class PortfolioAllocation(Base):
     instrument_id = Column(BigInteger, nullable=False)  # instrument_master 참조
     weight = Column(Numeric(5, 4), nullable=False)  # 0.0000 ~ 1.0000
     asset_class = Column(String(50))  # 'EQUITY', 'BOND', 'CASH', 'COMMODITY', 'OTHER'
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     # 관계
     portfolio = relationship("PortfolioModel", back_populates="allocations")

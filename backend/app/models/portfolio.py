@@ -7,6 +7,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 
 from app.database import Base
+from app.utils.kst_now import kst_now
 
 
 class Portfolio(Base):
@@ -27,8 +28,8 @@ class Portfolio(Base):
     # 포트폴리오 구성 (JSON)
     composition = Column(JSON)  # {stocks: [...], etfs: [...], bonds: [...], deposits: [...]}
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
+    updated_at = Column(DateTime, default=kst_now, onupdate=kst_now)
 
     # 관계
     user = relationship("User", back_populates="portfolios")
@@ -57,7 +58,7 @@ class PortfolioHistory(Base):
     # 자산별 구성 비율 (스냅샷)
     allocation_snapshot = Column(JSON)  # {stocks: 60, etfs: 20, bonds: 15, deposits: 5}
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     # 관계
     portfolio = relationship("Portfolio", back_populates="histories")
@@ -78,6 +79,6 @@ class SimulationCache(Base):
     engine_version = Column(String(20), nullable=False, default="1.0.0")  # 결과 생성 시 엔진 버전
 
     hit_count = Column(Integer, default=0)  # 캐시 히트 횟수
-    created_at = Column(DateTime, default=datetime.utcnow)
-    last_accessed_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
+    last_accessed_at = Column(DateTime, default=kst_now)
     expires_at = Column(DateTime, nullable=True)  # 만료 시간 (None이면 무기한)

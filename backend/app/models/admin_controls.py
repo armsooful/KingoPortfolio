@@ -2,13 +2,13 @@
 Phase 3-C / Epic C-4: 관리자 통제 모델 (RBAC)
 """
 
-from datetime import datetime
 import uuid
 
 from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Text, Index
 from sqlalchemy.dialects.postgresql import JSONB
 
 from app.database import Base
+from app.utils.kst_now import kst_now
 
 
 def _uuid_str() -> str:
@@ -23,7 +23,7 @@ class AdminRole(Base):
     role_name = Column(String(50), nullable=False, unique=True)
     role_desc = Column(Text, nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
 
 class AdminPermission(Base):
@@ -33,7 +33,7 @@ class AdminPermission(Base):
     permission_id = Column(String(36), primary_key=True, default=_uuid_str)
     permission_key = Column(String(100), nullable=False, unique=True)
     permission_desc = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
 
 class AdminRolePermission(Base):
@@ -42,7 +42,7 @@ class AdminRolePermission(Base):
 
     role_id = Column(String(36), ForeignKey("admin_role.role_id", ondelete="CASCADE"), primary_key=True)
     permission_id = Column(String(36), ForeignKey("admin_permission.permission_id", ondelete="CASCADE"), primary_key=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     __table_args__ = (
         Index("idx_admin_role_permission_role", "role_id"),
@@ -57,7 +57,7 @@ class AdminUserRole(Base):
     user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     role_id = Column(String(36), ForeignKey("admin_role.role_id", ondelete="CASCADE"), primary_key=True)
     assigned_by = Column(String(36), ForeignKey("users.id"), nullable=True)
-    assigned_at = Column(DateTime, default=datetime.utcnow)
+    assigned_at = Column(DateTime, default=kst_now)
     is_active = Column(Boolean, nullable=False, default=True)
 
     __table_args__ = (
@@ -81,7 +81,7 @@ class AdminAuditLog(Base):
     idempotency_key = Column(String(100), nullable=True)
     before_state = Column(JSONB, nullable=True)
     after_state = Column(JSONB, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     __table_args__ = (
         Index("idx_admin_audit_operator", "operator_id"),
@@ -99,7 +99,7 @@ class AdminApproval(Base):
     request_payload = Column(JSONB, nullable=False, default=dict)
     status = Column(String(20), nullable=False, default="PENDING")
     requested_by = Column(String(36), ForeignKey("users.id"), nullable=False)
-    requested_at = Column(DateTime, default=datetime.utcnow)
+    requested_at = Column(DateTime, default=kst_now)
     approved_by = Column(String(36), ForeignKey("users.id"), nullable=True)
     approved_at = Column(DateTime, nullable=True)
     approved_reason = Column(Text, nullable=True)
@@ -126,7 +126,7 @@ class AdminAdjustment(Base):
     approval_id = Column(String(36), ForeignKey("admin_approval.approval_id"), nullable=True)
     status = Column(String(20), nullable=False, default="PENDING")
     requested_by = Column(String(36), ForeignKey("users.id"), nullable=False)
-    requested_at = Column(DateTime, default=datetime.utcnow)
+    requested_at = Column(DateTime, default=kst_now)
     applied_at = Column(DateTime, nullable=True)
 
     __table_args__ = (

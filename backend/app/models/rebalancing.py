@@ -16,6 +16,7 @@ from datetime import datetime, date
 from typing import Dict, Optional, List
 
 from app.database import Base
+from app.utils.kst_now import kst_now
 
 
 class RebalancingRule(Base):
@@ -50,8 +51,8 @@ class RebalancingRule(Base):
 
     # 메타데이터
     is_active = Column(Boolean, nullable=False, default=True)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=kst_now)
+    updated_at = Column(DateTime, nullable=False, default=kst_now, onupdate=kst_now)
 
     # 관계
     events = relationship("RebalancingEvent", back_populates="rule")
@@ -150,7 +151,7 @@ class RebalancingEvent(Base):
     cost_amount = Column(Numeric(18, 8), nullable=True)
 
     # 메타데이터
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=kst_now)
 
     # 관계
     rule = relationship("RebalancingRule", back_populates="events")
@@ -227,7 +228,7 @@ class RebalancingCostModel(Base):
     model_type = Column(String(32), nullable=False, default='FIXED_RATE')
     description = Column(Text, nullable=True)
     param_json = Column(JSONB, default={})
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=kst_now)
 
     def __repr__(self):
         return f"<RebalancingCostModel {self.model_id} {self.model_name}>"

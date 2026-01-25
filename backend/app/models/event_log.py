@@ -2,12 +2,12 @@
 Phase 3-D / 이벤트 로그 모델
 """
 
-from datetime import datetime
 import uuid
 
 from sqlalchemy import Column, String, DateTime, JSON, Index
 
 from app.database import Base
+from app.utils.kst_now import kst_now
 
 
 def _uuid_str() -> str:
@@ -25,8 +25,8 @@ class UserEventLog(Base):
     status = Column(String(20), nullable=False)
     reason_code = Column(String(50), nullable=True)
     metadata_json = Column("metadata", JSON, nullable=True)
-    occurred_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    occurred_at = Column(DateTime, nullable=False, default=kst_now)
+    created_at = Column(DateTime, nullable=False, default=kst_now)
 
     __table_args__ = (
         Index("idx_user_event_log_user_time", "user_id", "occurred_at"),

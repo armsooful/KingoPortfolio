@@ -18,10 +18,46 @@ from contextvars import ContextVar
 from datetime import datetime
 from functools import wraps
 from typing import Any, Callable, Dict, Optional
+import pytz
 
 # Context variable for request tracking
 _request_id: ContextVar[Optional[str]] = ContextVar("request_id", default=None)
 _user_id: ContextVar[Optional[str]] = ContextVar("user_id", default=None)
+
+
+def setup_logging():
+    """
+    로깅 기본 설정
+    - 레벨: INFO
+    - 포맷: [시간 KST] [레벨] [소스] 메시지
+    - 시간대: Asia/Seoul
+    """
+    kst = pytz.timezone('Asia/Seoul')
+
+    class KSTFormatter(logging.Formatter):
+        def converter(self, timestamp):
+            return datetime.fromtimestamp(timestamp, kst)
+
+        def formatTime(self, record, datefmt=None):
+            dt = self.converter(record.created)
+            if datefmt:
+                s = dt.strftime(datefmt)
+            else:
+                s = dt.strftime('%Y-%m-%d %H:%M:%S,%f')[:-3] + f" {kst}"
+            return s
+
+    formatter = KSTFormatter(
+        '[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+
+    root_logger = logging.getLogger()
+    root_logger.addHandler(handler)
+    root_logger.setLevel(logging.INFO)
+    logging.getLogger('uvicorn.access').setLevel(logging.WARNING)
 
 
 def generate_request_id() -> str:

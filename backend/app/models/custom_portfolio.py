@@ -12,10 +12,10 @@ from sqlalchemy import (
     DateTime, Boolean, ForeignKey, Index, CheckConstraint
 )
 from sqlalchemy.orm import relationship
-from datetime import datetime
 from typing import Dict, List, Optional
 
 from app.database import Base
+from app.utils.kst_now import kst_now
 
 
 class AssetClassMaster(Base):
@@ -36,7 +36,7 @@ class AssetClassMaster(Base):
     description = Column(Text)
     display_order = Column(Integer, default=0)
     is_active = Column(Boolean, nullable=False, default=True)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=kst_now)
 
     def __repr__(self):
         return f"<AssetClass {self.asset_class_code}>"
@@ -88,8 +88,8 @@ class CustomPortfolio(Base):
     is_active = Column(Boolean, nullable=False, default=True)
 
     # 메타데이터
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=kst_now)
+    updated_at = Column(DateTime, nullable=False, default=kst_now, onupdate=kst_now)
 
     # 관계
     weights = relationship(

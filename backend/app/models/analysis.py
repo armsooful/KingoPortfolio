@@ -11,10 +11,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
-from datetime import datetime
 from typing import Dict, Optional
 
 from app.database import Base
+from app.utils.kst_now import kst_now
 
 
 class AnalysisResult(Base):
@@ -50,7 +50,7 @@ class AnalysisResult(Base):
     metrics_json = Column(JSONB, nullable=False)
 
     # 메타데이터
-    calculated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    calculated_at = Column(DateTime, nullable=False, default=kst_now)
 
     __table_args__ = (
         # 동일 run + 동일 가정이면 결과 1건 (캐시 키)
@@ -153,8 +153,8 @@ class ExplanationHistory(Base):
     pdf_downloaded = Column(Integer, default=0)  # PDF 다운로드 횟수
 
     # 생성/수정 시간
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=kst_now)
+    updated_at = Column(DateTime, nullable=False, default=kst_now, onupdate=kst_now)
 
     __table_args__ = (
         Index('idx_explanation_history_user', 'user_id'),

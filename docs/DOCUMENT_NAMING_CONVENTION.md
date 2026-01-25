@@ -70,7 +70,7 @@ phase{N}{sub}   예: phase3a, phase7, phase9
 | `_index` | 인덱스/목차 | `phase3_index.md` |
 
 ## 버전 관리
-
+규칙에 따라 문서를 정리해줘
 동일 주제의 문서가 메이저 변경되는 경우 `_v{N}` 접미사 사용:
 
 ```
