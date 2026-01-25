@@ -35,6 +35,13 @@ export default function AdminPage() {
       color: '#00BCD4'
     },
     {
+      icon: '🧾',
+      title: '동의 이력',
+      description: '유의사항 동의 기록 조회',
+      path: '/admin/consents',
+      color: '#ef4444'
+    },
+    {
       icon: '📊',
       title: '포트폴리오 관리',
       description: '투자 성향별 포트폴리오 전략 및 종목 구성',

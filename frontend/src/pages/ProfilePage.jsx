@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api, { changePassword } from '../services/api';
+import api, { changePassword, listConsents } from '../services/api';
 import '../styles/ProfilePage.css';
 
 function ProfilePage() {
@@ -11,6 +11,9 @@ function ProfilePage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
+  const [consents, setConsents] = useState([]);
+  const [consentLoading, setConsentLoading] = useState(true);
+  const [consentError, setConsentError] = useState('');
 
   // 비밀번호 변경 관련 상태
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -42,8 +45,22 @@ function ProfilePage() {
     }
   };
 
+  const fetchConsents = async () => {
+    try {
+      setConsentLoading(true);
+      setConsentError('');
+      const response = await listConsents();
+      setConsents(response.data.consents || []);
+    } catch (err) {
+      setConsentError('동의 이력을 불러오는데 실패했습니다.');
+    } finally {
+      setConsentLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchProfile();
+    fetchConsents();
   }, []);
 
   // 프로필 수정
@@ -489,6 +506,32 @@ function ProfilePage() {
               />
             </div>
           </div>
+        </div>
+
+        {/* 동의 이력 */}
+        <div className="profile-section">
+          <h2>동의 이력</h2>
+          {consentLoading && <div className="info-message">불러오는 중...</div>}
+          {consentError && <div className="error-message">{consentError}</div>}
+          {!consentLoading && !consentError && consents.length === 0 && (
+            <div className="info-message">동의 이력이 없습니다.</div>
+          )}
+          {!consentLoading && !consentError && consents.length > 0 && (
+            <div className="consent-table">
+              <div className="consent-row consent-header">
+                <span>유형</span>
+                <span>버전</span>
+                <span>동의 일시</span>
+              </div>
+              {consents.map((consent) => (
+                <div key={consent.consent_id} className="consent-row">
+                  <span>{consent.consent_type}</span>
+                  <span>{consent.consent_version}</span>
+                  <span>{new Date(consent.agreed_at).toLocaleString('ko-KR')}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </form>
 

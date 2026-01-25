@@ -68,6 +68,7 @@ function Header() {
           { label: '관리자 홈', path: '/admin' },
           { label: '데이터 관리', path: '/admin/data' },
           { label: '사용자 관리', path: '/admin/users' },
+          { label: '동의 이력', path: '/admin/consents' },
           { label: '포트폴리오 관리', path: '/admin/portfolio' },
           { label: '포트폴리오 비교', path: '/admin/portfolio-comparison' },
           { label: '배치 작업', path: '/admin/batch' },

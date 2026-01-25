@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getSurveyQuestions, submitDiagnosis } from '../services/api';
+import { getSurveyQuestions, recordConsent, submitDiagnosis } from '../services/api';
 import SurveyQuestion from '../components/SurveyQuestion';
 import Disclaimer from '../components/Disclaimer';
 
@@ -9,6 +9,9 @@ function SurveyPage() {
   const [answers, setAnswers] = useState({});
   const [monthlyInvestment, setMonthlyInvestment] = useState('50');
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [agreedToNotice, setAgreedToNotice] = useState(false);
+  const [showSurvey, setShowSurvey] = useState(false);
+  const [isRecordingConsent, setIsRecordingConsent] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -136,11 +139,54 @@ const handleSubmit = async () => {
   const progress = ((currentIndex + 1) / questions.length) * 100;
   const isAnswered = answers[currentQuestion.id] !== null;
 
+  const handleStartSurvey = async () => {
+    setError('');
+    setIsRecordingConsent(true);
+    try {
+      await recordConsent({
+        consent_type: 'diagnosis_notice',
+        consent_version: 'v1',
+        consent_text:
+          '본 투자 성향 진단은 교육 및 정보 제공 목적의 자가 점검 도구이며, 특정 금융상품·종목에 대한 투자 권유, 추천 또는 자문을 제공하지 않습니다.\n' +
+          '진단 결과는 이용자의 설문 응답 시점을 기준으로 산출된 참고 정보로, 개인의 재무 상황, 시장 환경, 시간의 경과 등에 따라 달라질 수 있습니다.\n' +
+          '본 서비스는 이용자의 투자 판단 또는 투자 결정을 대행하지 않으며, 투자 판단 및 그에 따른 책임은 전적으로 이용자 본인에게 있습니다.\n' +
+          '본 서비스는 자본시장과 금융투자업에 관한 법률에 따른 투자자문업 또는 투자일임업에 해당하는 행위를 수행하지 않도록 설계되었습니다.',
+      });
+      setShowSurvey(true);
+    } catch (err) {
+      setError('유의사항 동의 기록에 실패했습니다.');
+    } finally {
+      setIsRecordingConsent(false);
+    }
+  };
+
   return (
     <div className="survey-container">
       <div className="survey-card">
-        {/* 면책 문구 */}
-        {currentIndex === 0 && <Disclaimer type="diagnosis" />}
+        {!showSurvey ? (
+          <>
+            <Disclaimer type="diagnosis" />
+            {error && <div className="error-message">{error}</div>}
+            <div className="notice-consent">
+              <label className="notice-checkbox">
+                <input
+                  type="checkbox"
+                  checked={agreedToNotice}
+                  onChange={(event) => setAgreedToNotice(event.target.checked)}
+                />
+                유의사항을 읽고 이해했으며, 이에 동의합니다.
+              </label>
+              <button
+                className="btn btn-primary"
+                onClick={handleStartSurvey}
+                disabled={!agreedToNotice || isRecordingConsent}
+              >
+                {isRecordingConsent ? '기록 중...' : '설문 시작'}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
 
         {/* 진행률 */}
         <div className="progress-section">
@@ -219,6 +265,8 @@ const handleSubmit = async () => {
             ⚠️ 설문 완료 여부와 관계없이 시나리오 기반 모의실험을 이용할 수 있습니다.
           </p>
         </div>
+          </>
+        )}
       </div>
     </div>
   );

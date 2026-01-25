@@ -498,6 +498,64 @@ class Phase8RollingPoint(BaseModel):
     value: float
 
 
+# ============================================================
+# Consent Schemas
+# ============================================================
+
+
+class ConsentCreateRequest(BaseModel):
+    """동의 기록 생성 요청"""
+    consent_type: str = Field(..., max_length=50, description="동의 유형")
+    consent_version: str = Field(..., max_length=20, description="동의 버전")
+    consent_text: Optional[str] = Field(None, description="동의 문구 원문")
+
+
+class ConsentResponse(BaseModel):
+    """동의 기록 응답"""
+    consent_id: int
+    consent_type: str
+    consent_version: str
+    consent_text: Optional[str]
+    agreed_at: datetime
+
+
+class ConsentHistoryItem(BaseModel):
+    """동의 기록 상세"""
+    consent_id: int
+    consent_type: str
+    consent_version: str
+    consent_text: Optional[str]
+    agreed_at: datetime
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+
+
+class ConsentListResponse(BaseModel):
+    """동의 기록 목록"""
+    count: int
+    consents: List[ConsentHistoryItem]
+
+
+class AdminConsentItem(BaseModel):
+    """관리자용 동의 기록"""
+    consent_id: int
+    consent_type: str
+    consent_version: str
+    consent_text: Optional[str]
+    agreed_at: datetime
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    user_id: str
+    user_email: Optional[str] = None
+    user_name: Optional[str] = None
+
+
+class AdminConsentListResponse(BaseModel):
+    """관리자용 동의 기록 목록"""
+    count: int
+    consents: List[AdminConsentItem]
+
+
 class Phase8YearlyReturn(BaseModel):
     """Phase 8-A 연도별 성과"""
     year: int

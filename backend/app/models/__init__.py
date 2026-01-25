@@ -4,6 +4,7 @@ from .portfolio import Portfolio, PortfolioHistory, SimulationCache
 from .bookmark import Bookmark
 from .user_preferences import UserPreset, UserNotificationSetting, UserActivityEvent
 from .event_log import UserEventLog
+from .consent import ConsentAgreement
 from .simulation import SimulationRun, SimulationPath, SimulationSummary
 from .scenario import ScenarioDefinition, PortfolioModel, PortfolioAllocation
 from .rebalancing import RebalancingRule, RebalancingEvent, RebalancingCostModel

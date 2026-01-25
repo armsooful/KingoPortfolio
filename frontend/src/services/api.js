@@ -100,6 +100,23 @@ export const getSurveyQuestion = (questionId) => {
   return api.get(`/survey/questions/${questionId}`);
 };
 
+/**
+ * 유의사항 동의 기록
+ */
+export const recordConsent = (data) => {
+  return api.post('/api/v1/consents', data);
+};
+
+export const listConsents = (limit = 50, offset = 0) => {
+  const params = new URLSearchParams({ limit, offset });
+  return api.get(`/api/v1/consents?${params.toString()}`);
+};
+
+export const listAdminConsents = (params = {}) => {
+  const query = new URLSearchParams(params);
+  return api.get(`/admin/consents?${query.toString()}`);
+};
+
 // ============================================================
 // Diagnosis API
 // ============================================================

@@ -13,6 +13,7 @@ import TerminologyPage from './pages/TerminologyPage';
 import DiagnosisResultPage from './pages/DiagnosisResultPage';
 import DiagnosisHistoryPage from './pages/DiagnosisHistoryPage';
 import AdminPage from './pages/AdminPage';
+import AdminConsentPage from './pages/AdminConsentPage';
 import DataManagementPage from './pages/DataManagementPage';
 import UserManagementPage from './pages/UserManagementPage';
 import PortfolioManagementPage from './pages/PortfolioManagementPage';
@@ -283,6 +284,14 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <UserManagementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/consents"
+            element={
+              <ProtectedRoute>
+                <AdminConsentPage />
               </ProtectedRoute>
             }
           />
