@@ -10,10 +10,12 @@ class Settings:
     debug: bool = False
     
     # 데이터베이스
-    database_url: str = os.getenv(
-        "DATABASE_URL", 
+    _raw_database_url: str = os.getenv(
+        "DATABASE_URL",
         "sqlite:///./kingo.db"
     )
+    # Render uses postgres:// but SQLAlchemy requires postgresql://
+    database_url: str = _raw_database_url.replace("postgres://", "postgresql://", 1) if _raw_database_url.startswith("postgres://") else _raw_database_url
     
     # 보안
     secret_key: str = os.getenv(
