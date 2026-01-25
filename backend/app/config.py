@@ -9,13 +9,8 @@ class Settings:
     app_version: str = "1.0.0"
     debug: bool = False
     
-    # 데이터베이스
-    _raw_database_url: str = os.getenv(
-        "DATABASE_URL",
-        "sqlite:///./kingo.db"
-    )
-    # Render uses postgres:// but SQLAlchemy requires postgresql://
-    database_url: str = _raw_database_url.replace("postgres://", "postgresql://", 1) if _raw_database_url.startswith("postgres://") else _raw_database_url
+    # 데이터베이스 - __init__에서 설정
+    database_url: str = ""
     
     # 보안
     secret_key: str = os.getenv(
@@ -111,7 +106,15 @@ class Settings:
     allowed_origins: List[str] = []
     
     def __init__(self):
-        """환경변수 기반 CORS 설정"""
+        """환경변수 기반 설정"""
+        # 데이터베이스 URL 설정 (인스턴스 생성 시점에 환경변수 읽기)
+        raw_db_url = os.getenv("DATABASE_URL", "sqlite:///./kingo.db")
+        # Render uses postgres:// but SQLAlchemy requires postgresql://
+        if raw_db_url.startswith("postgres://"):
+            self.database_url = raw_db_url.replace("postgres://", "postgresql://", 1)
+        else:
+            self.database_url = raw_db_url
+
         # 환경변수에서 origin 읽기
         env_origins = os.getenv("ALLOWED_ORIGINS", "")
         
