@@ -48,24 +48,36 @@ from app import models as diagnosis_models  # noqa - Diagnosis, DiagnosisAnswer,
 logger = logging.getLogger(__name__)
 
 def init_db():
+    print(f"🔧 init_db() 시작 - DB URL: {settings.database_url[:50]}...")
+    print(f"🔧 등록된 테이블: {list(Base.metadata.tables.keys())}")
+
     if settings.reset_db_on_startup:
         # 환경변수 RESET_DB_ON_STARTUP=true 일 때만 기존 테이블 삭제 후 재생성 (데이터 손실)
         Base.metadata.drop_all(bind=engine)
         print("⚠️ Database tables dropped (RESET_DB_ON_STARTUP=true)")
 
     # 테이블 생성 (이미 존재하면 무시)
-    Base.metadata.create_all(bind=engine)
-    print("✅ Database initialized (tables created if not exists)")
+    try:
+        Base.metadata.create_all(bind=engine)
+        print(f"✅ Database initialized - {len(Base.metadata.tables)} tables created/verified")
+    except Exception as e:
+        print(f"❌ Table creation failed: {e}")
+        raise
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    print("🚀 Lifespan startup 시작")
     try:
         init_db()
         print("✅ Database initialized successfully")
     except Exception as e:
-        print(f"⚠️ Database initialization warning: {e}")
+        print(f"❌ Database initialization FAILED: {e}")
+        import traceback
+        traceback.print_exc()
+        # 테이블 생성 실패 시 앱을 중단하지 않고 계속 진행 (경고만 출력)
     yield
+    print("🛑 Lifespan shutdown")
 
 
 app = FastAPI(
