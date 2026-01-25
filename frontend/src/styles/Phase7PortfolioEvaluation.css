@@ -37,11 +37,38 @@
   margin-bottom: 1rem;
 }
 
+.phase7-hint {
+  margin: 0;
+  color: #4b5563;
+}
+
 .phase7-form-row {
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   margin-bottom: 1rem;
+}
+
+.phase7-advanced {
+  margin-bottom: 1rem;
+}
+
+.phase7-advanced-toggle {
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 999px;
+  color: #4338ca;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.phase7-advanced-panel {
+  margin-top: 0.8rem;
+  padding: 0.8rem;
+  background: #f1f5f9;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
 }
 
 .phase7-form-row label {
@@ -114,6 +141,50 @@
   padding: 1rem;
   border-radius: 12px;
   background: #f8fafc;
+}
+
+.phase7-tab-header {
+  display: flex;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.phase7-tab {
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  background: #e5e7eb;
+  color: #374151;
+  cursor: pointer;
+}
+
+.phase7-tab.active {
+  background: #1d4ed8;
+  color: #ffffff;
+}
+
+.phase7-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.8rem;
+}
+
+.phase7-detail-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 0.8rem;
+}
+
+.phase7-detail-card h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.phase7-note {
+  margin-top: 0.8rem;
+  font-size: 0.85rem;
+  color: #6b7280;
 }
 
 .phase7-metrics {

@@ -2,12 +2,14 @@ import { useState, useEffect, createContext, useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { getCurrentUser, logout as logoutApi } from './services/api';
 import Header from './components/Header';
+import Footer from './components/Footer';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import EmailVerificationPage from './pages/EmailVerificationPage';
 import ProfilePage from './pages/ProfilePage';
 import SurveyPage from './pages/SurveyPage';
+import TerminologyPage from './pages/TerminologyPage';
 import DiagnosisResultPage from './pages/DiagnosisResultPage';
 import DiagnosisHistoryPage from './pages/DiagnosisHistoryPage';
 import AdminPage from './pages/AdminPage';
@@ -169,6 +171,14 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <SurveyPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/terminology"
+            element={
+              <ProtectedRoute>
+                <TerminologyPage />
               </ProtectedRoute>
             }
           />
@@ -345,6 +355,7 @@ function AppContent() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+      <Footer />
     </div>
   );
 }

@@ -214,7 +214,7 @@ const handleSubmit = async () => {
 
         {/* 안내 메시지 */}
         <div className="survey-info">
-          <p>💡 이 도구는 투자 용어와 개념을 이해하는 데 도움을 주는 선택적 학습 도구입니다.</p>
+          <p>💡 이 설문은 투자 성향을 진단하기 위한 도구입니다.</p>
           <p style={{ fontSize: '0.85rem', color: '#666', marginTop: '0.5rem' }}>
             ⚠️ 설문 완료 여부와 관계없이 시나리오 기반 모의실험을 이용할 수 있습니다.
           </p>

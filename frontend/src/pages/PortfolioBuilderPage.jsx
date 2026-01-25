@@ -498,16 +498,27 @@ const PortfolioBuilderPage = () => {
             {myPortfolios.slice(0, 5).map((p) => (
               <div key={p.portfolio_id} className="portfolio-card">
                 <div className="portfolio-info">
-                  <span className="portfolio-type">{p.portfolio_type === 'SECURITY' ? '종목' : '섹터'}</span>
+                  <span className="portfolio-type">포트폴리오</span>
                   <span className="portfolio-name">{p.portfolio_name}</span>
                 </div>
                 <div className="portfolio-items">
                   {p.items?.slice(0, 3).map((item) => (
-                    <span key={item.item_key} className="item-badge">
-                      {item.item_name} ({(item.weight * 100).toFixed(0)}%)
-                    </span>
+                    <div key={item.id} className="item-weight">
+                      <div className="item-weight-row">
+                        <span className="item-weight-name">{item.name}</span>
+                        <span className="item-weight-value">{(item.weight * 100).toFixed(0)}%</span>
+                      </div>
+                      <div className="item-weight-bar">
+                        <span
+                          className="item-weight-fill"
+                          style={{ width: `${Math.min(item.weight * 100, 100)}%` }}
+                        />
+                      </div>
+                    </div>
                   ))}
-                  {p.items?.length > 3 && <span className="more-badge">+{p.items.length - 3}</span>}
+                  {p.items?.length > 3 && (
+                    <span className="more-badge">+{p.items.length - 3}</span>
+                  )}
                 </div>
               </div>
             ))}

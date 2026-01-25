@@ -469,11 +469,19 @@ class Phase7Period(BaseModel):
     end: date
 
 
+class Phase8InputExtensions(BaseModel):
+    """Phase 8-B 입력 확장"""
+    asset_class: Optional[Literal["EQUITY", "BOND", "COMMODITY", "GOLD", "REIT", "ETF"]] = None
+    currency: Optional[Literal["KRW", "USD"]] = None
+    return_type: Optional[Literal["PRICE", "TOTAL_RETURN"]] = None
+
+
 class Phase7EvaluationRequest(BaseModel):
     """Phase 7 평가 요청"""
     portfolio_id: int
     period: Phase7Period
     rebalance: Literal["NONE", "MONTHLY", "QUARTERLY"] = Field("NONE")
+    extensions: Optional["Phase8InputExtensions"] = None
 
 
 class Phase7MetricsResponse(BaseModel):
@@ -484,11 +492,49 @@ class Phase7MetricsResponse(BaseModel):
     max_drawdown: float
 
 
+class Phase8RollingPoint(BaseModel):
+    """Phase 8-A 확장 지표 포인트"""
+    end_date: date
+    value: float
+
+
+class Phase8YearlyReturn(BaseModel):
+    """Phase 8-A 연도별 성과"""
+    year: int
+    value: float
+
+
+class Phase8Contribution(BaseModel):
+    """Phase 8-A 기여도"""
+    item_id: str
+    item_name: str
+    value: float
+
+
+class Phase8DrawdownSegment(BaseModel):
+    """Phase 8-A 드로다운 구간"""
+    start: date
+    end: date
+    drawdown: float
+
+
+class Phase8Extensions(BaseModel):
+    """Phase 8-A 확장 블록"""
+    rolling_returns: Optional[Dict[str, List[Phase8RollingPoint]]]
+    rolling_volatility: Optional[Dict[str, List[Phase8RollingPoint]]]
+    yearly_returns: Optional[List[Phase8YearlyReturn]]
+    contributions: Optional[List[Phase8Contribution]]
+    drawdown_segments: Optional[List[Phase8DrawdownSegment]]
+
+
+
+
 class Phase7EvaluationResponse(BaseModel):
     """Phase 7 평가 응답"""
     period: Phase7Period
     metrics: Phase7MetricsResponse
     disclaimer_version: str
+    extensions: Optional[Phase8Extensions] = None
 
 
 class Phase7EvaluationHistoryItem(BaseModel):

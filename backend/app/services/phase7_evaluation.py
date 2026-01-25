@@ -16,12 +16,9 @@ from sqlalchemy.orm import Session
 from app.models.phase7_portfolio import Phase7Portfolio
 from app.models.securities import KrxTimeSeries, Stock
 from app.services.performance_analyzer import NAVPoint, analyze_performance
-
-
-class Phase7EvaluationError(Exception):
-    def __init__(self, message: str):
-        self.message = message
-        super().__init__(self.message)
+from app.services.analytics_engine_v3 import build_extensions
+from app.services.engine_input_adapter_v3 import build_input_context
+from app.services.phase7_errors import Phase7EvaluationError
 
 
 def evaluate_phase7_portfolio(
@@ -30,7 +27,9 @@ def evaluate_phase7_portfolio(
     period_start: date,
     period_end: date,
     rebalance: str,
+    input_extensions: dict | None = None,
 ) -> dict:
+    build_input_context(input_extensions)
     items = portfolio.items
     if not items:
         raise Phase7EvaluationError("데이터가 일부 누락되어 계산이 제한됩니다.")
@@ -59,7 +58,7 @@ def evaluate_phase7_portfolio(
 
     metrics = analyze_performance(nav_series)
 
-    return {
+    result = {
         "period": {
             "start": common_dates[0].isoformat(),
             "end": common_dates[-1].isoformat(),
@@ -72,6 +71,16 @@ def evaluate_phase7_portfolio(
         },
         "disclaimer_version": "v2",
     }
+
+    extensions = build_extensions(
+        nav_series,
+        item_series,
+        [float(item.weight) for item in items],
+        [{"id": item.item_key, "name": item.item_name} for item in items],
+    )
+    result["extensions"] = extensions.to_dict()
+
+    return result
 
 
 def serialize_result(result: dict) -> str:

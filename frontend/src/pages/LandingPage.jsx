@@ -168,22 +168,6 @@ function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="landing-footer">
-        <div className="footer-content">
-          <p>&copy; 2025 Foresto Compass. All rights reserved.</p>
-          <div className="footer-links">
-            <a
-              href="https://blog.foresto.co.kr"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="footer-link"
-            >
-              블로그
-            </a>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

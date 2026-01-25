@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Disclaimer from '../components/Disclaimer';
 import {
   createPhase7Portfolio,
@@ -22,12 +23,18 @@ function Phase7PortfolioEvaluationPage() {
   const [periodStart, setPeriodStart] = useState('');
   const [periodEnd, setPeriodEnd] = useState('');
   const [rebalance, setRebalance] = useState('NONE');
+  const [assetClass, setAssetClass] = useState('');
+  const [currency, setCurrency] = useState('');
+  const [returnType, setReturnType] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [evaluationResult, setEvaluationResult] = useState(null);
   const [historyItems, setHistoryItems] = useState([]);
   const [historyDetail, setHistoryDetail] = useState(null);
   const [comparisonSelection, setComparisonSelection] = useState({});
   const [comparisonResult, setComparisonResult] = useState(null);
   const [statusMessage, setStatusMessage] = useState('');
+  const [activeTab, setActiveTab] = useState('summary');
+  const navigate = useNavigate();
 
   const portfolioMap = useMemo(() => {
     const map = new Map();
@@ -123,10 +130,21 @@ function Phase7PortfolioEvaluationPage() {
       setStatusMessage('분석 기간을 입력해 주세요.');
       return;
     }
+    const extensions = {};
+    if (assetClass) {
+      extensions.asset_class = assetClass;
+    }
+    if (currency) {
+      extensions.currency = currency;
+    }
+    if (returnType) {
+      extensions.return_type = returnType;
+    }
     const response = await evaluatePhase7Portfolio({
       portfolio_id: Number(selectedPortfolioId),
       period: { start: periodStart, end: periodEnd },
       rebalance,
+      extensions: Object.keys(extensions).length ? extensions : undefined,
     });
     setEvaluationResult(response.data);
     await refreshHistory(selectedPortfolioId);
@@ -160,7 +178,7 @@ function Phase7PortfolioEvaluationPage() {
 
   return (
     <div className="phase7-eval-page">
-      <h1 className="phase7-title">포트폴리오 평가(Phase 7)</h1>
+      <h1 className="phase7-title">포트폴리오 평가</h1>
       <p className="phase7-subtitle">
         사용자가 직접 구성한 포트폴리오의 과거 데이터 기반 성과·리스크를 확인합니다.
       </p>
@@ -168,75 +186,7 @@ function Phase7PortfolioEvaluationPage() {
       {statusMessage && <div className="phase7-status">{statusMessage}</div>}
 
       <section className="phase7-card">
-        <h2>1) 포트폴리오 구성 저장</h2>
-        <div className="phase7-form-row">
-          <label>
-            유형
-            <select
-              value={portfolioType}
-              onChange={(event) => setPortfolioType(event.target.value)}
-            >
-              <option value="SECURITY">종목</option>
-              <option value="SECTOR">섹터</option>
-            </select>
-          </label>
-          <label>
-            이름
-            <input
-              value={portfolioName}
-              onChange={(event) => setPortfolioName(event.target.value)}
-              placeholder="포트폴리오 이름"
-            />
-          </label>
-          <label>
-            메모
-            <input
-              value={portfolioDescription}
-              onChange={(event) => setPortfolioDescription(event.target.value)}
-              placeholder="선택 사항"
-            />
-          </label>
-        </div>
-
-        <div className="phase7-items">
-          {items.map((item, index) => (
-            <div key={`item-${index}`} className="phase7-item-row">
-              <input
-                value={item.id}
-                onChange={(event) => handleItemChange(index, 'id', event.target.value)}
-                placeholder={portfolioType === 'SECTOR' ? '섹터 코드' : '종목 코드'}
-              />
-              <input
-                value={item.name}
-                onChange={(event) => handleItemChange(index, 'name', event.target.value)}
-                placeholder="이름"
-              />
-              <input
-                type="number"
-                step="0.0001"
-                value={item.weight}
-                onChange={(event) => handleItemChange(index, 'weight', event.target.value)}
-                placeholder="비중"
-              />
-              <button type="button" onClick={() => removeItem(index)}>
-                삭제
-              </button>
-            </div>
-          ))}
-          <div className="phase7-item-actions">
-            <button type="button" onClick={addItem}>
-              항목 추가
-            </button>
-            <span>합계: {weightSum.toFixed(4)}</span>
-          </div>
-        </div>
-        <button type="button" className="phase7-primary" onClick={handleCreatePortfolio}>
-          저장
-        </button>
-      </section>
-
-      <section className="phase7-card">
-        <h2>2) 평가 실행</h2>
+        <h2>1) 평가 실행</h2>
         <div className="phase7-form-row">
           <label>
             포트폴리오 선택
@@ -280,34 +230,129 @@ function Phase7PortfolioEvaluationPage() {
             </select>
           </label>
         </div>
+        <div className="phase7-advanced">
+          <button
+            type="button"
+            className="phase7-advanced-toggle"
+            onClick={() => setShowAdvanced((prev) => !prev)}
+          >
+            {showAdvanced ? '고급 옵션 닫기' : '고급 옵션 열기'}
+          </button>
+          {showAdvanced && (
+            <div className="phase7-form-row phase7-advanced-panel">
+              <label>
+                자산군
+                <select value={assetClass} onChange={(event) => setAssetClass(event.target.value)}>
+                  <option value="">선택</option>
+                  <option value="EQUITY">국내 주식</option>
+                  <option value="BOND">채권</option>
+                  <option value="COMMODITY">원자재</option>
+                  <option value="GOLD">금</option>
+                  <option value="REIT">리츠</option>
+                  <option value="ETF">ETF</option>
+                </select>
+              </label>
+              <label>
+                통화 기준
+                <select value={currency} onChange={(event) => setCurrency(event.target.value)}>
+                  <option value="">선택</option>
+                  <option value="KRW">KRW</option>
+                  <option value="USD">USD</option>
+                </select>
+              </label>
+              <label>
+                수익 기준
+                <select value={returnType} onChange={(event) => setReturnType(event.target.value)}>
+                  <option value="">선택</option>
+                  <option value="PRICE">가격 수익</option>
+                  <option value="TOTAL_RETURN">총수익(배당 포함)</option>
+                </select>
+              </label>
+            </div>
+          )}
+        </div>
         <button type="button" className="phase7-primary" onClick={handleEvaluate}>
           평가 실행
         </button>
 
         {evaluationResult && (
           <div className="phase7-result">
-            <h3>평가 결과</h3>
-            <p>
-              기간: {evaluationResult.period.start} ~ {evaluationResult.period.end}
-            </p>
-            <div className="phase7-metrics">
-              <div className="phase7-metric">
-                <span>누적수익률</span>
-                <strong>{evaluationResult.metrics.cumulative_return}</strong>
-              </div>
-              <div className="phase7-metric">
-                <span>CAGR</span>
-                <strong>{evaluationResult.metrics.cagr}</strong>
-              </div>
-              <div className="phase7-metric">
-                <span>변동성</span>
-                <strong>{evaluationResult.metrics.volatility}</strong>
-              </div>
-              <div className="phase7-metric">
-                <span>MDD</span>
-                <strong>{evaluationResult.metrics.max_drawdown}</strong>
-              </div>
+            <div className="phase7-tab-header">
+              <button
+                type="button"
+                className={`phase7-tab ${activeTab === 'summary' ? 'active' : ''}`}
+                onClick={() => setActiveTab('summary')}
+              >
+                요약
+              </button>
+              <button
+                type="button"
+                className={`phase7-tab ${activeTab === 'detail' ? 'active' : ''}`}
+                onClick={() => setActiveTab('detail')}
+              >
+                분석 상세
+              </button>
             </div>
+
+            {activeTab === 'summary' && (
+              <>
+                <h3>평가 결과</h3>
+                <p>
+                  기간: {evaluationResult.period.start} ~ {evaluationResult.period.end}
+                </p>
+                <div className="phase7-metrics">
+                  <div className="phase7-metric">
+                    <span>누적수익률</span>
+                    <strong>{evaluationResult.metrics.cumulative_return}</strong>
+                  </div>
+                  <div className="phase7-metric">
+                    <span>CAGR</span>
+                    <strong>{evaluationResult.metrics.cagr}</strong>
+                  </div>
+                  <div className="phase7-metric">
+                    <span>변동성</span>
+                    <strong>{evaluationResult.metrics.volatility}</strong>
+                  </div>
+                  <div className="phase7-metric">
+                    <span>MDD</span>
+                    <strong>{evaluationResult.metrics.max_drawdown}</strong>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {activeTab === 'detail' && (
+              <>
+                <h3>분석 상세</h3>
+                <div className="phase7-detail-grid">
+                  <div className="phase7-detail-card">
+                    <h4>롤링 수익률</h4>
+                    <p>3Y 데이터: {evaluationResult.extensions?.rolling_returns?.window_3y?.length || 0}건</p>
+                    <p>5Y 데이터: {evaluationResult.extensions?.rolling_returns?.window_5y?.length || 0}건</p>
+                  </div>
+                  <div className="phase7-detail-card">
+                    <h4>롤링 변동성</h4>
+                    <p>3Y 데이터: {evaluationResult.extensions?.rolling_volatility?.window_3y?.length || 0}건</p>
+                  </div>
+                  <div className="phase7-detail-card">
+                    <h4>연도별 성과</h4>
+                    <p>연도 수: {evaluationResult.extensions?.yearly_returns?.length || 0}</p>
+                  </div>
+                  <div className="phase7-detail-card">
+                    <h4>기여도</h4>
+                    <p>항목 수: {evaluationResult.extensions?.contributions?.length || 0}</p>
+                  </div>
+                  <div className="phase7-detail-card">
+                    <h4>드로다운 구간</h4>
+                    <p>구간 수: {evaluationResult.extensions?.drawdown_segments?.length || 0}</p>
+                  </div>
+                </div>
+                <div className="phase7-note">
+                  표와 그래프는 계산 기준 값만 제공합니다.
+                </div>
+              </>
+            )}
+
             <div className="phase7-disclaimer">
               <Disclaimer type="portfolio" />
             </div>
@@ -316,7 +361,7 @@ function Phase7PortfolioEvaluationPage() {
       </section>
 
       <section className="phase7-card">
-        <h2>3) 평가 히스토리</h2>
+        <h2>2) 평가 히스토리</h2>
         {historyItems.length === 0 ? (
           <p>평가 이력이 없습니다.</p>
         ) : (
@@ -363,7 +408,7 @@ function Phase7PortfolioEvaluationPage() {
       </section>
 
       <section className="phase7-card">
-        <h2>4) 포트폴리오 비교</h2>
+        <h2>3) 포트폴리오 비교</h2>
         <div className="phase7-compare-list">
           {portfolios.map((portfolio) => (
             <label key={`compare-${portfolio.portfolio_id}`}>

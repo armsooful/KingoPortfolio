@@ -77,6 +77,7 @@ def test_phase7_evaluation_flow(client, db, auth_headers, test_user):
     body = response.json()
     assert body["disclaimer_version"] == "v2"
     assert "metrics" in body
+    assert "extensions" in body
 
     list_response = client.get(
         "/api/v1/phase7/evaluations",
@@ -96,6 +97,7 @@ def test_phase7_evaluation_flow(client, db, auth_headers, test_user):
     detail_body = detail_response.json()
     assert detail_body["result"]["disclaimer_version"] == "v2"
     assert detail_body["result_hash"]
+    assert "extensions" in detail_body["result"]
 
 
 def test_phase7_evaluation_invalid_period(client, db, auth_headers, test_user):

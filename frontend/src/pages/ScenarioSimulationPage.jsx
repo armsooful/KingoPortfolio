@@ -361,7 +361,7 @@ function ScenarioSimulationPage() {
           <p>
             투자 용어가 생소하다면{' '}
             <button
-              onClick={() => navigate('/survey')}
+              onClick={() => navigate('/terminology')}
               style={{
                 background: 'none',
                 border: 'none',

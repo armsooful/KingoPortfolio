@@ -26,7 +26,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 # Import models to register them with Base.metadata
-from app.models import securities  # noqa
+from app.models import securities as securities_models  # noqa
 from app.models import admin_controls as admin_controls_models  # noqa
 from app.models.user import User  # noqa
 from app.models import phase7_portfolio as phase7_portfolio_models  # noqa

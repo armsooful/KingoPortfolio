@@ -125,6 +125,7 @@ class Settings:
                 "http://localhost:5173",
                 "http://127.0.0.1:3000",
                 "http://127.0.0.1:5173",
+                "http://127.0.0.1:8000",
                 # Vercel 배포 (모든 배포 URL 수용)
                 "https://kingo-portfolio-*.vercel.app",
             ]

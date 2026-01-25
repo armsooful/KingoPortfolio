@@ -42,6 +42,7 @@ class StockItem(BaseModel):
 
     class Config:
         from_attributes = True
+        orm_mode = True
 
 
 class ETFItem(BaseModel):
@@ -60,6 +61,13 @@ class ETFItem(BaseModel):
 
     class Config:
         from_attributes = True
+        orm_mode = True
+
+
+def _model_validate(model, obj):
+    if hasattr(model, "model_validate"):
+        return model.model_validate(obj)
+    return model.from_orm(obj)
 
 
 class SectorInfo(BaseModel):
@@ -152,7 +160,7 @@ def list_stocks(
 
     return StockListResponse(
         total_count=total_count,
-        stocks=[StockItem.model_validate(s) for s in stocks],
+        stocks=[_model_validate(StockItem, s) for s in stocks],
     )
 
 
@@ -202,7 +210,7 @@ def list_etfs(
 
     return ETFListResponse(
         total_count=total_count,
-        etfs=[ETFItem.model_validate(e) for e in etfs],
+        etfs=[_model_validate(ETFItem, e) for e in etfs],
     )
 
 
@@ -272,7 +280,7 @@ def get_stock(
             detail=f"종목을 찾을 수 없습니다: {ticker}",
         )
 
-    return StockItem.model_validate(stock)
+    return _model_validate(StockItem, stock)
 
 
 @router.get("/etfs/{ticker}", response_model=ETFItem)
@@ -293,7 +301,7 @@ def get_etf(
             detail=f"ETF를 찾을 수 없습니다: {ticker}",
         )
 
-    return ETFItem.model_validate(etf)
+    return _model_validate(ETFItem, etf)
 
 
 @router.get("/markets")
@@ -308,7 +316,11 @@ def list_markets(db: Session = Depends(get_db)):
         .all()
     )
 
-    return {"markets": [m[0] for m in markets if m[0]]}
+    default_markets = ["KOSPI", "KOSDAQ", "KONEX"]
+    db_markets = [m[0] for m in markets if m[0]]
+    combined = default_markets + [m for m in db_markets if m not in default_markets]
+
+    return {"markets": combined}
 
 
 @router.get("/categories")
