@@ -33,6 +33,17 @@ from app.models.user import User  # noqa
 from app.models import phase7_portfolio as phase7_portfolio_models  # noqa
 from app.models import phase7_evaluation as phase7_evaluation_models  # noqa
 from app.models import real_data as real_data_models  # noqa
+from app.models import portfolio as portfolio_models  # noqa
+from app.models import bookmark as bookmark_models  # noqa
+from app.models import user_preferences as user_preferences_models  # noqa
+from app.models import event_log as event_log_models  # noqa
+from app.models import simulation as simulation_models  # noqa
+from app.models import scenario as scenario_models  # noqa
+from app.models import rebalancing as rebalancing_models  # noqa
+from app.models import ops as ops_models  # noqa
+from app.models import performance as performance_models  # noqa
+from app.models import data_quality as data_quality_models  # noqa
+from app import models as diagnosis_models  # noqa - Diagnosis, DiagnosisAnswer, SurveyQuestion
 
 logger = logging.getLogger(__name__)
 
