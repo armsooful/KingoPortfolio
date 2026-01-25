@@ -67,7 +67,7 @@ class CustomPortfolio(Base):
 
     # 소유자
     owner_user_id = Column(
-        BigInteger,
+        String(36),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=True
     )

@@ -19,7 +19,7 @@ class Bookmark(Base):
     __tablename__ = "bookmark"
 
     bookmark_id = Column(String(36), primary_key=True, default=_uuid_str)
-    user_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     portfolio_id = Column(BigInteger, ForeignKey("custom_portfolio.portfolio_id", ondelete="CASCADE"), nullable=False)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 

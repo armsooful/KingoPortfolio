@@ -125,7 +125,7 @@ class ExplanationHistory(Base):
 
     # FK to users
     user_id = Column(
-        BigInteger,
+        String(36),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False
     )
