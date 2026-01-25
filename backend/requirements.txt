@@ -27,3 +27,4 @@ faker==39.0.0
 reportlab==4.2.5
 pillow==11.0.0
 matplotlib==3.10.0
+psycopg2-binary==2.9.9
