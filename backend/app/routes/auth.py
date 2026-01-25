@@ -433,7 +433,10 @@ async def get_me(current_user: User = Depends(__import__("app.auth", fromlist=["
         "email": current_user.email,
         "name": getattr(current_user, "name", None),
         "role": current_user.role,
-        "created_at": current_user.created_at
+        "created_at": current_user.created_at,
+        "vip_tier": getattr(current_user, "vip_tier", "bronze"),
+        "membership_plan": getattr(current_user, "membership_plan", "free"),
+        "activity_points": getattr(current_user, "activity_points", 0),
     }
 
 @router.post(
