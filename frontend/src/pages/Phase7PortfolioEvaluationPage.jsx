@@ -149,6 +149,10 @@ function Phase7PortfolioEvaluationPage() {
       extensions: Object.keys(extensions).length ? extensions : undefined,
     });
     setEvaluationResult(response.data);
+    console.log(
+      'Phase7 evaluation extensions.nav_series length:',
+      response.data?.extensions?.nav_series?.length
+    );
     await refreshHistory(selectedPortfolioId);
   };
 
