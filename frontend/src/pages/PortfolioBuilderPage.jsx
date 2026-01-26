@@ -144,7 +144,7 @@ const PortfolioBuilderPage = () => {
       }),
     };
 
-    setSelectedItems([...selectedItems, newItem]);
+    setSelectedItems((prev) => [...prev, newItem]);
     setSearchQuery('');
   };
 
