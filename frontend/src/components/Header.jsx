@@ -43,7 +43,7 @@ function Header() {
       {
         label: '포트폴리오',
         items: [
-          { label: '포트폴리오', path: '/portfolio' },
+          { label: '포트폴리오 시뮬레이션', path: '/portfolio' },
           { label: '백테스팅', path: '/backtest' },
           { label: '성과해석', path: '/analysis' },
           { label: '포트폴리오 구성', path: '/portfolio-builder' },
