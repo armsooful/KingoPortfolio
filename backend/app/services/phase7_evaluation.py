@@ -122,7 +122,7 @@ def _load_security_series(
         .all()
     )
     if not rows:
-        raise Phase7EvaluationError("선택한 기간의 과거 데이터를 불러올 수 없습니다.")
+        raise Phase7EvaluationError("조회기간에 해당하는 시계열 데이터가 없습니다.")
 
     return {row.date: row.close for row in rows}
 
@@ -140,7 +140,7 @@ def _load_sector_series(
         .all()
     ]
     if not tickers:
-        raise Phase7EvaluationError("선택한 기간의 과거 데이터를 불러올 수 없습니다.")
+        raise Phase7EvaluationError("조회기간에 해당하는 시계열 데이터가 없습니다.")
 
     rows = (
         db.query(KrxTimeSeries)
@@ -153,7 +153,7 @@ def _load_sector_series(
         .all()
     )
     if not rows:
-        raise Phase7EvaluationError("선택한 기간의 과거 데이터를 불러올 수 없습니다.")
+        raise Phase7EvaluationError("조회기간에 해당하는 시계열 데이터가 없습니다.")
 
     sums: Dict[date, float] = {}
     counts: Dict[date, int] = {}
