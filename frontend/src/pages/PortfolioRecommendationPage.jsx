@@ -11,6 +11,7 @@ function PortfolioRecommendationPage() {
   const [portfolio, setPortfolio] = useState(null);
   const [investmentAmount, setInvestmentAmount] = useState(10000000); // 기본 1000만원
   const [downloadingPDF, setDownloadingPDF] = useState(false);
+  const [showDiagnosisModal, setShowDiagnosisModal] = useState(false);
 
   useEffect(() => {
     fetchPortfolio();
@@ -30,7 +31,7 @@ function PortfolioRecommendationPage() {
     } catch (err) {
       console.error('Portfolio fetch error:', err);
       if (err.response?.status === 400 && err.response?.data?.detail?.includes('No diagnosis found')) {
-        setError('투자 성향 분석을 먼저 진행해주세요.');
+        setShowDiagnosisModal(true);
       } else {
         setError('포트폴리오를 불러오는데 실패했습니다.');
       }
@@ -97,6 +98,27 @@ function PortfolioRecommendationPage() {
     return `${Number(value).toFixed(1)}%`;
   };
 
+  const diagnosisModal = showDiagnosisModal && (
+    <div className="portfolio-modal-overlay" onClick={() => setShowDiagnosisModal(false)}>
+      <div className="portfolio-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="portfolio-modal-header">
+          <h2>진단 결과 없음</h2>
+          <button className="portfolio-modal-close" onClick={() => setShowDiagnosisModal(false)}>
+            ✕
+          </button>
+        </div>
+        <div className="portfolio-modal-body">
+          <p>진단 결과가 없습니다. 먼저 투자 성향 진단을 진행해주세요.</p>
+        </div>
+        <div className="portfolio-modal-footer">
+          <button className="btn-primary" onClick={() => navigate('/survey')}>
+            진단 바로가기
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="portfolio-page">
@@ -104,6 +126,7 @@ function PortfolioRecommendationPage() {
           <div className="spinner"></div>
           <p>포트폴리오를 생성하고 있습니다...</p>
         </div>
+        {diagnosisModal}
       </div>
     );
   }
@@ -117,16 +140,22 @@ function PortfolioRecommendationPage() {
             학습 성향 진단하기
           </button>
         </div>
+        {diagnosisModal}
       </div>
     );
   }
 
   if (!portfolio) {
-    return null;
+    return (
+      <div className="portfolio-page">
+        {diagnosisModal}
+      </div>
+    );
   }
 
   return (
     <div className="portfolio-page">
+      {diagnosisModal}
       {/* 헤더 */}
       <div className="portfolio-header">
         <div className="header-content">

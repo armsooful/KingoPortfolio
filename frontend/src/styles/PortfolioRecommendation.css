@@ -564,6 +564,71 @@
   margin-bottom: 1.5rem;
 }
 
+/* Diagnosis Modal */
+.portfolio-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+}
+
+.portfolio-modal {
+  background: white;
+  border-radius: 16px;
+  width: min(520px, 92%);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.portfolio-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.portfolio-modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.portfolio-modal-close {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+.portfolio-modal-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.portfolio-modal-body {
+  padding: 1.5rem;
+  color: #333;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.portfolio-modal-footer {
+  padding: 0 1.5rem 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
   .assets-grid {
