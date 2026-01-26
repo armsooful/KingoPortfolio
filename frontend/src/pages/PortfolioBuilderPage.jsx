@@ -316,69 +316,6 @@ const PortfolioBuilderPage = () => {
             </div>
           </div>
 
-          <div className="panel-section selected-items-section">
-            <div className="section-header">
-              <h3>선택된 {portfolioType === 'SECURITY' ? '종목' : '섹터'}</h3>
-              <span className="item-count">{selectedItems.length}개</span>
-            </div>
-
-            {selectedItems.length === 0 ? (
-              <div className="empty-state">
-                <p>아직 선택된 항목이 없습니다.</p>
-                <p className="hint">
-                  오른쪽에서 {portfolioType === 'SECURITY' ? '종목을 검색하여' : '섹터를'} 추가하세요.
-                </p>
-              </div>
-            ) : (
-              <>
-                <div className="weight-actions">
-                  <button className="btn-equal-weight" onClick={handleEqualWeight}>
-                    균등 비중 적용
-                  </button>
-                </div>
-
-                <div className="selected-items-list">
-                  {selectedItems.map((item) => (
-                    <div key={item.id} className="selected-item">
-                      <div className="item-info">
-                        <span className="item-id">{item.id}</span>
-                        <span className="item-name">{item.name}</span>
-                        {item.market && <span className="item-market">{item.market}</span>}
-                      </div>
-                      <div className="item-weight">
-                        <input
-                          type="number"
-                          value={item.weight || ''}
-                          onChange={(e) => handleWeightChange(item.id, e.target.value)}
-                          min="0"
-                          max="100"
-                          step="0.1"
-                        />
-                        <span>%</span>
-                      </div>
-                      <button className="btn-remove" onClick={() => handleRemoveItem(item.id)}>
-                        X
-                      </button>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="weight-summary">
-                  <div className="weight-bar-container">
-                    <div
-                      className={`weight-bar ${totalWeight > 100 ? 'over' : totalWeight === 100 ? 'complete' : ''}`}
-                      style={{ width: `${Math.min(totalWeight, 100)}%` }}
-                    />
-                  </div>
-                  <div className={`weight-total ${Math.abs(totalWeight - 100) < 0.01 ? 'valid' : 'invalid'}`}>
-                    합계: {totalWeight.toFixed(2)}%
-                    {Math.abs(totalWeight - 100) < 0.01 ? ' OK' : ' (100%가 되어야 합니다)'}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-
           <div className="panel-actions">
             <button className="btn-secondary" onClick={() => navigate('/portfolio-evaluation')}>
               취소
@@ -485,6 +422,69 @@ const PortfolioBuilderPage = () => {
                   </div>
                 )}
               </div>
+            )}
+          </div>
+
+          <div className="panel-section selected-items-section">
+            <div className="section-header">
+              <h3>선택된 {portfolioType === 'SECURITY' ? '종목' : '섹터'}</h3>
+              <span className="item-count">{selectedItems.length}개</span>
+            </div>
+
+            {selectedItems.length === 0 ? (
+              <div className="empty-state">
+                <p>아직 선택된 항목이 없습니다.</p>
+                <p className="hint">
+                  위에서 {portfolioType === 'SECURITY' ? '종목을 검색하여' : '섹터를'} 추가하세요.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="weight-actions">
+                  <button className="btn-equal-weight" onClick={handleEqualWeight}>
+                    균등 비중 적용
+                  </button>
+                </div>
+
+                <div className="selected-items-list">
+                  {selectedItems.map((item) => (
+                    <div key={item.id} className="selected-item">
+                      <div className="item-info">
+                        <span className="item-id">{item.id}</span>
+                        <span className="item-name">{item.name}</span>
+                        {item.market && <span className="item-market">{item.market}</span>}
+                      </div>
+                      <div className="item-weight">
+                        <input
+                          type="number"
+                          value={item.weight || ''}
+                          onChange={(e) => handleWeightChange(item.id, e.target.value)}
+                          min="0"
+                          max="100"
+                          step="0.1"
+                        />
+                        <span>%</span>
+                      </div>
+                      <button className="btn-remove" onClick={() => handleRemoveItem(item.id)}>
+                        X
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="weight-summary">
+                  <div className="weight-bar-container">
+                    <div
+                      className={`weight-bar ${totalWeight > 100 ? 'over' : totalWeight === 100 ? 'complete' : ''}`}
+                      style={{ width: `${Math.min(totalWeight, 100)}%` }}
+                    />
+                  </div>
+                  <div className={`weight-total ${Math.abs(totalWeight - 100) < 0.01 ? 'valid' : 'invalid'}`}>
+                    합계: {totalWeight.toFixed(2)}%
+                    {Math.abs(totalWeight - 100) < 0.01 ? ' OK' : ' (100%가 되어야 합니다)'}
+                  </div>
+                </div>
+              </>
             )}
           </div>
         </div>
