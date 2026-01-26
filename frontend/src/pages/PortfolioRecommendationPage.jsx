@@ -30,7 +30,8 @@ function PortfolioRecommendationPage() {
       setPortfolio(response.data);
     } catch (err) {
       console.error('Portfolio fetch error:', err);
-      if (err.response?.status === 400 && err.response?.data?.detail?.includes('No diagnosis found')) {
+      const apiMessage = err.response?.data?.detail || err.response?.data?.error?.message || '';
+      if (err.response?.status === 400 && apiMessage.includes('No diagnosis found')) {
         setShowDiagnosisModal(true);
       } else {
         setError('포트폴리오를 불러오는데 실패했습니다.');
