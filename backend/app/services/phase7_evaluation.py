@@ -19,6 +19,9 @@ from app.services.performance_analyzer import NAVPoint, analyze_performance
 from app.services.analytics_engine_v3 import build_extensions
 from app.services.engine_input_adapter_v3 import build_input_context
 from app.services.phase7_errors import Phase7EvaluationError
+from app.utils.structured_logging import get_structured_logger
+
+logger = get_structured_logger(__name__)
 
 
 def evaluate_phase7_portfolio(
@@ -78,6 +81,7 @@ def evaluate_phase7_portfolio(
         [float(item.weight) for item in items],
         [{"id": item.item_key, "name": item.item_name} for item in items],
     )
+    logger.info(f"extensions.nav_series: {extensions.nav_series}")
     result["extensions"] = extensions.to_dict()
 
     return result

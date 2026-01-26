@@ -2,14 +2,27 @@ import { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Disclaimer from '../components/Disclaimer';
 import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Tooltip,
+  Filler,
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
+import {
   createPhase7Portfolio,
   listPhase7Portfolios,
   evaluatePhase7Portfolio,
   listPhase7Evaluations,
   getPhase7EvaluationDetail,
   comparePhase7Portfolios,
+  getPhase7AvailablePeriod,
 } from '../services/api';
 import '../styles/Phase7PortfolioEvaluation.css';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler);
 
 const emptyItem = () => ({ id: '', name: '', weight: '' });
 
@@ -34,15 +47,167 @@ function Phase7PortfolioEvaluationPage() {
   const [comparisonResult, setComparisonResult] = useState(null);
   const [statusMessage, setStatusMessage] = useState('');
   const [activeTab, setActiveTab] = useState('summary');
+  const [availablePeriod, setAvailablePeriod] = useState(null);
   const startDateRef = useRef(null);
   const endDateRef = useRef(null);
   const navigate = useNavigate();
+
+  const formatPercent = (value) => {
+    if (value === null || value === undefined) return '-';
+    return `${(value * 100).toFixed(1)}%`;
+  };
+
+  const getToneClass = (value, type) => {
+    if (value === null || value === undefined) return 'neutral';
+    const abs = Math.abs(value);
+    if (type === 'cumulative' || type === 'cagr') {
+      if (value >= 0.12) return 'good';
+      if (value >= 0.05) return 'caution';
+      return 'bad';
+    }
+    if (type === 'volatility') {
+      if (abs <= 0.15) return 'good';
+      if (abs <= 0.25) return 'caution';
+      return 'bad';
+    }
+    if (type === 'mdd') {
+      if (abs <= 0.1) return 'good';
+      if (abs <= 0.2) return 'caution';
+      return 'bad';
+    }
+    return 'neutral';
+  };
+
+  const getMetricLevel = (value, type) => {
+    if (value === null || value === undefined) return '정보 부족';
+    const abs = Math.abs(value);
+    if (type === 'cagr') {
+      if (value >= 0.12) return '높음';
+      if (value >= 0.08) return '양호';
+      if (value >= 0.05) return '보통';
+      return '낮음';
+    }
+    if (type === 'volatility') {
+      if (abs <= 0.15) return '낮음';
+      if (abs <= 0.25) return '보통';
+      return '높음';
+    }
+    if (type === 'mdd') {
+      if (abs <= 0.1) return '낮음';
+      if (abs <= 0.2) return '보통';
+      return '높음';
+    }
+    return '보통';
+  };
+
+  const buildStatusSummary = (metrics) => {
+    if (!metrics) {
+      return {
+        title: '데이터 부족',
+        grade: 'N/A',
+        strengths: [],
+        cautions: ['지표를 계산할 데이터가 부족합니다.'],
+        tip: '기간을 넓혀 다시 평가해 보세요.',
+      };
+    }
+
+    const cagrLevel = getMetricLevel(metrics.cagr, 'cagr');
+    const volLevel = getMetricLevel(metrics.volatility, 'volatility');
+    const mddLevel = getMetricLevel(metrics.max_drawdown, 'mdd');
+
+    let title = '균형형';
+    let grade = 'B';
+    if (cagrLevel === '높음' && volLevel !== '높음' && mddLevel !== '높음') {
+      title = '안정적 성장형';
+      grade = 'B+';
+    } else if (cagrLevel === '낮음' && (volLevel === '높음' || mddLevel === '높음')) {
+      title = '방어 필요형';
+      grade = 'C';
+    } else if (cagrLevel === '높음' && (volLevel === '높음' || mddLevel === '높음')) {
+      title = '공격적 성장형';
+      grade = 'B';
+    }
+
+    const strengths = [];
+    const cautions = [];
+
+    if (cagrLevel === '높음' || cagrLevel === '양호') {
+      strengths.push(`CAGR ${formatPercent(metrics.cagr)}로 수익성이 ${cagrLevel} 수준입니다.`);
+    } else {
+      cautions.push(`CAGR ${formatPercent(metrics.cagr)}로 수익성이 ${cagrLevel} 수준입니다.`);
+    }
+
+    if (mddLevel === '낮음' || mddLevel === '보통') {
+      strengths.push(`MDD ${formatPercent(metrics.max_drawdown)}로 최대 손실폭이 관리되고 있습니다.`);
+    } else {
+      cautions.push(`MDD ${formatPercent(metrics.max_drawdown)}로 큰 하락 구간이 있었습니다.`);
+    }
+
+    if (volLevel === '높음') {
+      cautions.push(`변동성 ${formatPercent(metrics.volatility)}로 단기 등락이 큽니다.`);
+    } else {
+      strengths.push(`변동성 ${formatPercent(metrics.volatility)}로 변동폭이 ${volLevel} 수준입니다.`);
+    }
+
+    return {
+      title,
+      grade,
+      strengths,
+      cautions,
+      tip: '섹터 분산과 비중 조절로 변동성을 낮춰보세요.',
+    };
+  };
 
   const portfolioMap = useMemo(() => {
     const map = new Map();
     portfolios.forEach((portfolio) => map.set(portfolio.portfolio_id, portfolio));
     return map;
   }, [portfolios]);
+
+  const summaryChartData = useMemo(() => {
+    const navSeries = evaluationResult?.extensions?.nav_series || [];
+    if (navSeries.length < 2) {
+      return null;
+    }
+    return {
+      labels: navSeries.map((point) => point.date),
+      datasets: [
+        {
+          label: 'NAV',
+          data: navSeries.map((point) => point.nav),
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59, 130, 246, 0.12)',
+          tension: 0.35,
+          fill: true,
+          pointRadius: 0,
+        },
+      ],
+    };
+  }, [evaluationResult]);
+
+  const summaryChartOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (context) => `NAV ${context.parsed.y.toFixed(3)}`,
+          },
+        },
+      },
+      scales: {
+        x: { display: false },
+        y: {
+          ticks: {
+            callback: (value) => value.toFixed(2),
+          },
+        },
+      },
+    }),
+    []
+  );
 
   const weightSum = useMemo(() => {
     return items.reduce((sum, item) => sum + Number(item.weight || 0), 0);
@@ -65,6 +230,29 @@ function Phase7PortfolioEvaluationPage() {
   useEffect(() => {
     refreshPortfolios();
   }, []);
+
+  useEffect(() => {
+    if (!selectedPortfolioId) {
+      setAvailablePeriod(null);
+      return;
+    }
+
+    const fetchAvailablePeriod = async () => {
+      try {
+        const response = await getPhase7AvailablePeriod(selectedPortfolioId);
+        setAvailablePeriod(response.data);
+        if (response.data?.has_overlap && response.data?.start && response.data?.end) {
+          setPeriodStart(response.data.start);
+          setPeriodEnd(response.data.end);
+        }
+      } catch (err) {
+        console.error('Failed to fetch available period:', err);
+        setAvailablePeriod(null);
+      }
+    };
+
+    fetchAvailablePeriod();
+  }, [selectedPortfolioId]);
 
   useEffect(() => {
     refreshHistory(selectedPortfolioId);
@@ -268,6 +456,13 @@ function Phase7PortfolioEvaluationPage() {
             </select>
           </label>
         </div>
+        {availablePeriod && (
+          <div className="phase7-period-hint">
+            {availablePeriod.has_overlap && availablePeriod.start && availablePeriod.end
+              ? `사용 가능 기간: ${availablePeriod.start} ~ ${availablePeriod.end}`
+              : '선택한 포트폴리오에 사용할 수 있는 기간이 없습니다.'}
+          </div>
+        )}
         <div className="phase7-advanced">
           <button
             type="button"
@@ -334,28 +529,106 @@ function Phase7PortfolioEvaluationPage() {
 
             {activeTab === 'summary' && (
               <>
-                <h3>평가 결과</h3>
-                <p>
-                  기간: {evaluationResult.period.start} ~ {evaluationResult.period.end}
-                </p>
-                <div className="phase7-metrics">
-                  <div className="phase7-metric">
-                    <span>누적수익률</span>
-                    <strong>{evaluationResult.metrics.cumulative_return}</strong>
+                <div className="phase7-summary-card">
+                  <div>
+                    <h3>포트폴리오 성과 요약</h3>
+                    <p>
+                      기간: {evaluationResult.period.start} ~ {evaluationResult.period.end}
+                    </p>
+                    <div className="phase7-summary-metrics">
+                      <div className={`phase7-summary-metric ${getToneClass(evaluationResult.metrics.cumulative_return, 'cumulative')}`}>
+                        <span>누적수익률</span>
+                        <strong>{formatPercent(evaluationResult.metrics.cumulative_return)}</strong>
+                      </div>
+                      <div className={`phase7-summary-metric ${getToneClass(evaluationResult.metrics.cagr, 'cagr')}`}>
+                        <span>CAGR</span>
+                        <strong>{formatPercent(evaluationResult.metrics.cagr)}</strong>
+                      </div>
+                      <div className={`phase7-summary-metric ${getToneClass(evaluationResult.metrics.volatility, 'volatility')}`}>
+                        <span>변동성</span>
+                        <strong>{formatPercent(evaluationResult.metrics.volatility)}</strong>
+                      </div>
+                      <div className={`phase7-summary-metric ${getToneClass(evaluationResult.metrics.max_drawdown, 'mdd')}`}>
+                        <span>MDD</span>
+                        <strong>{formatPercent(evaluationResult.metrics.max_drawdown)}</strong>
+                      </div>
+                    </div>
+                    <p className="phase7-summary-note">
+                      이 지표들은 과거 데이터를 기반으로 한 학습용 분석입니다. 실제 투자 시 시장 변동성을 고려해 주세요.
+                    </p>
                   </div>
-                  <div className="phase7-metric">
-                    <span>CAGR</span>
-                    <strong>{evaluationResult.metrics.cagr}</strong>
-                  </div>
-                  <div className="phase7-metric">
-                    <span>변동성</span>
-                    <strong>{evaluationResult.metrics.volatility}</strong>
-                  </div>
-                  <div className="phase7-metric">
-                    <span>MDD</span>
-                    <strong>{evaluationResult.metrics.max_drawdown}</strong>
+                  <div className="phase7-summary-chart">
+                    {summaryChartData ? (
+                      <Line data={summaryChartData} options={summaryChartOptions} />
+                    ) : (
+                      <span>기간별 수익 곡선을 준비 중입니다.</span>
+                    )}
                   </div>
                 </div>
+
+                <div className="phase7-metric-grid">
+                  <div className="phase7-metric-card">
+                    <h4>누적수익률</h4>
+                    <strong className={`phase7-metric-value ${getToneClass(evaluationResult.metrics.cumulative_return, 'cumulative')}`}>
+                      {formatPercent(evaluationResult.metrics.cumulative_return)}
+                    </strong>
+                    <p>
+                      시작 시점부터 현재까지의 총 수익률입니다. 기간이 길수록 복리 효과가 반영됩니다.
+                    </p>
+                  </div>
+                  <div className="phase7-metric-card">
+                    <h4>CAGR</h4>
+                    <strong className={`phase7-metric-value ${getToneClass(evaluationResult.metrics.cagr, 'cagr')}`}>
+                      {formatPercent(evaluationResult.metrics.cagr)}
+                    </strong>
+                    <p>
+                      연평균 복리 수익률입니다. 장기 성과 비교에 적합하며, {getMetricLevel(evaluationResult.metrics.cagr, 'cagr')} 수준입니다.
+                    </p>
+                  </div>
+                  <div className="phase7-metric-card">
+                    <h4>변동성</h4>
+                    <strong className={`phase7-metric-value ${getToneClass(evaluationResult.metrics.volatility, 'volatility')}`}>
+                      {formatPercent(evaluationResult.metrics.volatility)}
+                    </strong>
+                    <p>
+                      수익률의 표준편차로 가격 등락 폭을 의미합니다. 현재 변동성은 {getMetricLevel(evaluationResult.metrics.volatility, 'volatility')}입니다.
+                    </p>
+                  </div>
+                  <div className="phase7-metric-card">
+                    <h4>MDD</h4>
+                    <strong className={`phase7-metric-value ${getToneClass(evaluationResult.metrics.max_drawdown, 'mdd')}`}>
+                      {formatPercent(evaluationResult.metrics.max_drawdown)}
+                    </strong>
+                    <p>
+                      최고점 대비 최대 하락 폭입니다. 손실 폭이 {getMetricLevel(evaluationResult.metrics.max_drawdown, 'mdd')} 수준입니다.
+                    </p>
+                  </div>
+                </div>
+
+                {(() => {
+                  const status = buildStatusSummary(evaluationResult.metrics);
+                  return (
+                    <div className="phase7-status-card">
+                      <div className="phase7-status-header">
+                        <h4>포트폴리오 상태: {status.title}</h4>
+                        <span className="phase7-grade">{status.grade}</span>
+                      </div>
+                      {status.strengths.length > 0 && (
+                        <div className="phase7-status-line">
+                          ✅ {status.strengths.join(' ')}
+                        </div>
+                      )}
+                      {status.cautions.length > 0 && (
+                        <div className="phase7-status-line">
+                          ⚠️ {status.cautions.join(' ')}
+                        </div>
+                      )}
+                      <div className="phase7-status-line">
+                        💡 학습 팁: {status.tip}
+                      </div>
+                    </div>
+                  );
+                })()}
               </>
             )}
 

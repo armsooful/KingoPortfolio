@@ -622,6 +622,15 @@ class Phase7EvaluationDetailResponse(BaseModel):
     result: Phase7EvaluationResponse
 
 
+class Phase7AvailablePeriodResponse(BaseModel):
+    """Phase 7 평가 가능 기간"""
+    start: Optional[date]
+    end: Optional[date]
+    has_overlap: bool
+    item_count: int
+    ticker_count: int
+
+
 class Phase7ComparisonRequest(BaseModel):
     """Phase 7 비교 요청"""
     portfolio_ids: List[int] = Field(..., min_items=2)

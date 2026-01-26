@@ -16,6 +16,7 @@ from app.services.performance_analyzer import NAVPoint, calculate_daily_returns,
 
 @dataclass
 class ExtensionData:
+    nav_series: List[dict]
     rolling_returns_3y: List[dict]
     rolling_returns_5y: List[dict]
     rolling_volatility_3y: List[dict]
@@ -25,6 +26,7 @@ class ExtensionData:
 
     def to_dict(self) -> dict:
         return {
+            "nav_series": self.nav_series,
             "rolling_returns": {
                 "window_3y": self.rolling_returns_3y,
                 "window_5y": self.rolling_returns_5y,
@@ -44,6 +46,13 @@ def build_extensions(
     weights: List[float],
     items: List[dict],
 ) -> ExtensionData:
+    nav_points = [
+        {
+            "date": point.nav_date.isoformat(),
+            "nav": round(point.nav, 6),
+        }
+        for point in nav_series
+    ]
     rolling_returns_3y = _calculate_rolling_returns(nav_series, years=3)
     rolling_returns_5y = _calculate_rolling_returns(nav_series, years=5)
     rolling_volatility_3y = _calculate_rolling_volatility(nav_series, years=3)
@@ -52,6 +61,7 @@ def build_extensions(
     drawdown_segments = _calculate_drawdown_segments(nav_series)
 
     return ExtensionData(
+        nav_series=nav_points,
         rolling_returns_3y=rolling_returns_3y,
         rolling_returns_5y=rolling_returns_5y,
         rolling_volatility_3y=rolling_volatility_3y,

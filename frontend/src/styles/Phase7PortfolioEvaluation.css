@@ -49,6 +49,12 @@
   margin-bottom: 1rem;
 }
 
+.phase7-period-hint {
+  margin-bottom: 1rem;
+  color: #475569;
+  font-size: 0.9rem;
+}
+
 .phase7-advanced {
   margin-bottom: 1rem;
 }
@@ -211,6 +217,27 @@
   color: #6b7280;
 }
 
+.phase7-explain {
+  margin-top: 1rem;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+}
+
+.phase7-explain h4 {
+  margin: 0 0 0.6rem 0;
+  font-size: 0.95rem;
+  color: #1f2937;
+}
+
+.phase7-explain ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: #4b5563;
+  font-size: 0.9rem;
+}
+
 .phase7-metrics {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -235,6 +262,162 @@
 .phase7-metric strong {
   font-size: 0.95rem;
   color: #111827;
+}
+
+.phase7-summary-card {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 1.5rem;
+  padding: 1.2rem;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.phase7-summary-card h3 {
+  margin-top: 0;
+}
+
+.phase7-summary-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.8rem;
+  margin: 1rem 0;
+}
+
+.phase7-summary-metric {
+  padding: 0.75rem;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  text-align: center;
+}
+
+.phase7-summary-metric span {
+  display: block;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.phase7-summary-metric strong {
+  font-size: 1.1rem;
+  color: #111827;
+}
+
+.phase7-summary-metric.good strong,
+.phase7-metric-value.good {
+  color: #10b981;
+}
+
+.phase7-summary-metric.caution strong,
+.phase7-metric-value.caution {
+  color: #f59e0b;
+}
+
+.phase7-summary-metric.bad strong,
+.phase7-metric-value.bad {
+  color: #ef4444;
+}
+
+.phase7-summary-metric.neutral strong,
+.phase7-metric-value.neutral {
+  color: #64748b;
+}
+
+.phase7-summary-note {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.phase7-summary-chart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #cbd5f5;
+  border-radius: 12px;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  min-height: 160px;
+  background: #ffffff;
+}
+
+.phase7-summary-chart canvas {
+  width: 100% !important;
+  height: 200px !important;
+}
+
+.phase7-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.phase7-metric-card {
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.phase7-metric-card h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.95rem;
+  color: #1f2937;
+}
+
+.phase7-metric-card strong {
+  font-size: 1.2rem;
+  color: #1d4ed8;
+}
+
+.phase7-metric-card p {
+  font-size: 0.85rem;
+  color: #4b5563;
+  margin: 0.6rem 0 0 0;
+}
+
+.phase7-status-card {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid #dbeafe;
+  background: #eff6ff;
+}
+
+.phase7-status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.phase7-status-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: #1e3a8a;
+}
+
+.phase7-grade {
+  background: #1d4ed8;
+  color: #ffffff;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.phase7-status-line {
+  font-size: 0.85rem;
+  color: #1e293b;
+  margin-top: 0.4rem;
+}
+
+@media (max-width: 900px) {
+  .phase7-summary-card {
+    grid-template-columns: 1fr;
+  }
 }
 
 .phase7-history {

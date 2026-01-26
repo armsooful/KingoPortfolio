@@ -273,6 +273,10 @@ export const getPhase7EvaluationDetail = (evaluationId) => {
   return api.get(`/api/v1/phase7/evaluations/${evaluationId}`);
 };
 
+export const getPhase7AvailablePeriod = (portfolioId) => {
+  return api.get(`/api/v1/phase7/evaluations/available-period?portfolio_id=${portfolioId}`);
+};
+
 export const comparePhase7Portfolios = (data) => {
   return api.post('/api/v1/phase7/comparisons', data);
 };

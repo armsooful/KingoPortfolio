@@ -3,13 +3,16 @@ import json
 import time
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
 from app.database import get_db
 from app.models.phase7_evaluation import Phase7EvaluationRun
 from app.models.phase7_portfolio import Phase7Portfolio
+from app.models.securities import KrxTimeSeries, Stock
 from app.schemas import (
+    Phase7AvailablePeriodResponse,
     Phase7EvaluationDetailResponse,
     Phase7EvaluationHistoryItem,
     Phase7EvaluationHistoryResponse,
@@ -34,6 +37,104 @@ logger = get_structured_logger(__name__)
 
 
 router = APIRouter(prefix="/api/v1/phase7/evaluations", tags=["Phase7 Evaluations"])
+
+
+@router.get("/available-period", response_model=Phase7AvailablePeriodResponse)
+def get_available_period(
+    portfolio_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    portfolio = (
+        db.query(Phase7Portfolio)
+        .filter(
+            Phase7Portfolio.portfolio_id == portfolio_id,
+            Phase7Portfolio.owner_user_id == current_user.id,
+        )
+        .first()
+    )
+    if not portfolio:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="포트폴리오를 찾을 수 없습니다.",
+        )
+
+    items = portfolio.items or []
+    if not items:
+        return Phase7AvailablePeriodResponse(
+            start=None,
+            end=None,
+            has_overlap=False,
+            item_count=0,
+            ticker_count=0,
+        )
+
+    if portfolio.portfolio_type == "SECTOR":
+        sectors = [item.item_key for item in items]
+        tickers = [
+            row[0]
+            for row in db.query(Stock.ticker)
+            .filter(
+                Stock.sector.in_(sectors),
+                Stock.is_active == True,
+            )
+            .all()
+        ]
+    else:
+        tickers = [item.item_key for item in items]
+
+    if not tickers:
+        return Phase7AvailablePeriodResponse(
+            start=None,
+            end=None,
+            has_overlap=False,
+            item_count=len(items),
+            ticker_count=0,
+        )
+
+    ranges = (
+        db.query(
+            KrxTimeSeries.ticker,
+            func.min(KrxTimeSeries.date).label("min_date"),
+            func.max(KrxTimeSeries.date).label("max_date"),
+        )
+        .filter(KrxTimeSeries.ticker.in_(tickers))
+        .group_by(KrxTimeSeries.ticker)
+        .all()
+    )
+
+    if not ranges:
+        return Phase7AvailablePeriodResponse(
+            start=None,
+            end=None,
+            has_overlap=False,
+            item_count=len(items),
+            ticker_count=0,
+        )
+
+    min_dates = [row.min_date for row in ranges if row.min_date]
+    max_dates = [row.max_date for row in ranges if row.max_date]
+
+    if not min_dates or not max_dates:
+        return Phase7AvailablePeriodResponse(
+            start=None,
+            end=None,
+            has_overlap=False,
+            item_count=len(items),
+            ticker_count=len(ranges),
+        )
+
+    start = max(min_dates)
+    end = min(max_dates)
+    has_overlap = start <= end
+
+    return Phase7AvailablePeriodResponse(
+        start=start if has_overlap else None,
+        end=end if has_overlap else None,
+        has_overlap=has_overlap,
+        item_count=len(items),
+        ticker_count=len(ranges),
+    )
 
 
 @router.post("", response_model=Phase7EvaluationResponse, status_code=status.HTTP_201_CREATED)
