@@ -119,17 +119,11 @@ const PortfolioBuilderPage = () => {
   // ============================================================
 
   const handleAddItem = (item) => {
-    // 이미 선택된 항목인지 확인
     const itemKey = portfolioType === 'SECURITY' ? item.ticker : item.sector_code;
-    if (selectedItems.some((i) => i.id === itemKey)) {
-      return;
-    }
-
     const newItem = {
       id: itemKey,
       name: portfolioType === 'SECURITY' ? item.name : item.sector_name,
       weight: 0,
-      // 추가 정보
       ...(portfolioType === 'SECURITY' && {
         ticker: item.ticker,
         market: item.market,
@@ -144,7 +138,12 @@ const PortfolioBuilderPage = () => {
       }),
     };
 
-    setSelectedItems((prev) => [...prev, newItem]);
+    setSelectedItems((prev) => {
+      if (prev.some((i) => i.id === itemKey)) {
+        return prev;
+      }
+      return [...prev, newItem];
+    });
     setSearchQuery('');
   };
 
@@ -355,7 +354,7 @@ const PortfolioBuilderPage = () => {
                   filteredStocks.length > 0 ? (
                     <div className="results-list">
                       {filteredStocks.map((stock) => (
-                        <div key={stock.ticker} className="result-item">
+                        <div key={stock.ticker} className="result-item" onClick={() => handleAddItem(stock)}>
                           <div className="result-main">
                             <span className="result-ticker">{stock.ticker}</span>
                             <span className="result-name">{stock.name}</span>
@@ -369,7 +368,14 @@ const PortfolioBuilderPage = () => {
                               </span>
                             )}
                           </div>
-                          <button className="btn-add" onClick={() => handleAddItem(stock)}>
+                          <button
+                            type="button"
+                            className="btn-add"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleAddItem(stock);
+                            }}
+                          >
                             추가
                           </button>
                         </div>
@@ -388,7 +394,7 @@ const PortfolioBuilderPage = () => {
                   <div className="results-list sectors">
                     {filteredSectors.length > 0 ? (
                       filteredSectors.map((sector) => (
-                        <div key={sector.sector_code} className="result-item">
+                        <div key={sector.sector_code} className="result-item" onClick={() => handleAddItem(sector)}>
                           <div className="result-main">
                             <span className="result-name">{sector.sector_name}</span>
                           </div>
@@ -397,7 +403,14 @@ const PortfolioBuilderPage = () => {
                             {sector.avg_pe_ratio && <span>평균 PER: {sector.avg_pe_ratio.toFixed(1)}</span>}
                             {sector.avg_dividend_yield && <span>평균 배당률: {sector.avg_dividend_yield.toFixed(2)}%</span>}
                           </div>
-                          <button className="btn-add" onClick={() => handleAddItem(sector)}>
+                          <button
+                            type="button"
+                            className="btn-add"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleAddItem(sector);
+                            }}
+                          >
                             추가
                           </button>
                         </div>
