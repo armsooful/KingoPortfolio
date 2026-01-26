@@ -88,6 +88,30 @@
   font-size: 0.9rem;
 }
 
+.phase7-date-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.phase7-date-field input {
+  flex: 1;
+}
+
+.phase7-date-button {
+  border: 1px solid #d1d5db;
+  background: #f3f4f6;
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.phase7-date-button:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
 .phase7-items {
   display: flex;
   flex-direction: column;

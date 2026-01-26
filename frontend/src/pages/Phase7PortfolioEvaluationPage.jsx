@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Disclaimer from '../components/Disclaimer';
 import {
@@ -34,6 +34,8 @@ function Phase7PortfolioEvaluationPage() {
   const [comparisonResult, setComparisonResult] = useState(null);
   const [statusMessage, setStatusMessage] = useState('');
   const [activeTab, setActiveTab] = useState('summary');
+  const startDateRef = useRef(null);
+  const endDateRef = useRef(null);
   const navigate = useNavigate();
 
   const portfolioMap = useMemo(() => {
@@ -204,19 +206,51 @@ function Phase7PortfolioEvaluationPage() {
           </label>
           <label>
             시작일
-            <input
-              type="date"
-              value={periodStart}
-              onChange={(event) => setPeriodStart(event.target.value)}
-            />
+            <div className="phase7-date-field">
+              <input
+                ref={startDateRef}
+                type="date"
+                value={periodStart}
+                onChange={(event) => setPeriodStart(event.target.value)}
+              />
+              <button
+                type="button"
+                className="phase7-date-button"
+                onClick={() => {
+                  if (startDateRef.current?.showPicker) {
+                    startDateRef.current.showPicker();
+                  } else {
+                    startDateRef.current?.focus();
+                  }
+                }}
+              >
+                📅
+              </button>
+            </div>
           </label>
           <label>
             종료일
-            <input
-              type="date"
-              value={periodEnd}
-              onChange={(event) => setPeriodEnd(event.target.value)}
-            />
+            <div className="phase7-date-field">
+              <input
+                ref={endDateRef}
+                type="date"
+                value={periodEnd}
+                onChange={(event) => setPeriodEnd(event.target.value)}
+              />
+              <button
+                type="button"
+                className="phase7-date-button"
+                onClick={() => {
+                  if (endDateRef.current?.showPicker) {
+                    endDateRef.current.showPicker();
+                  } else {
+                    endDateRef.current?.focus();
+                  }
+                }}
+              >
+                📅
+              </button>
+            </div>
           </label>
           <label>
             리밸런싱
