@@ -81,7 +81,7 @@ def evaluate_phase7_portfolio(
         [float(item.weight) for item in items],
         [{"id": item.item_key, "name": item.item_name} for item in items],
     )
-    logger.info(f"extensions.nav_series: {extensions.nav_series}")
+    logger.info(f"extensions.nav_series length: {len(extensions.nav_series)}")
     result["extensions"] = extensions.to_dict()
 
     return result

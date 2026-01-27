@@ -24,6 +24,21 @@ import '../styles/Phase7PortfolioEvaluation.css';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler);
 
+const MAX_NAV_POINTS = 200;
+
+const downsampleNavSeries = (series, maxPoints = MAX_NAV_POINTS) => {
+  if (!Array.isArray(series) || series.length <= maxPoints) {
+    return series || [];
+  }
+  const stride = Math.ceil(series.length / maxPoints);
+  const sampled = series.filter((_, index) => index % stride === 0);
+  const last = series[series.length - 1];
+  if (last && sampled[sampled.length - 1] !== last) {
+    sampled.push(last);
+  }
+  return sampled;
+};
+
 const emptyItem = () => ({ id: '', name: '', weight: '' });
 
 function Phase7PortfolioEvaluationPage() {
@@ -166,20 +181,22 @@ function Phase7PortfolioEvaluationPage() {
 
   const summaryChartData = useMemo(() => {
     const navSeries = evaluationResult?.extensions?.nav_series || [];
-    if (navSeries.length < 2) {
+    const sampledSeries = downsampleNavSeries(navSeries);
+    if (sampledSeries.length < 2) {
       return null;
     }
     return {
-      labels: navSeries.map((point) => point.date),
+      labels: sampledSeries.map((point) => point.date),
       datasets: [
         {
           label: 'NAV',
-          data: navSeries.map((point) => point.nav),
+          data: sampledSeries.map((point) => point.nav),
           borderColor: '#3b82f6',
           backgroundColor: 'rgba(59, 130, 246, 0.12)',
           tension: 0.35,
           fill: true,
           pointRadius: 0,
+          normalized: true,
         },
       ],
     };

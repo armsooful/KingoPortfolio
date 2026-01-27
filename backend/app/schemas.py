@@ -498,6 +498,12 @@ class Phase8RollingPoint(BaseModel):
     value: float
 
 
+class Phase8NAVPoint(BaseModel):
+    """Phase 8-A NAV 시계열 포인트"""
+    date: str
+    nav: float
+
+
 # ============================================================
 # Consent Schemas
 # ============================================================
@@ -578,6 +584,7 @@ class Phase8DrawdownSegment(BaseModel):
 
 class Phase8Extensions(BaseModel):
     """Phase 8-A 확장 블록"""
+    nav_series: Optional[List[Phase8NAVPoint]] = None
     rolling_returns: Optional[Dict[str, List[Phase8RollingPoint]]]
     rolling_volatility: Optional[Dict[str, List[Phase8RollingPoint]]]
     yearly_returns: Optional[List[Phase8YearlyReturn]]
