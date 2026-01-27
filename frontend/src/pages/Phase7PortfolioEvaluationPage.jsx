@@ -25,6 +25,15 @@ import '../styles/Phase7PortfolioEvaluation.css';
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler);
 
 const MAX_NAV_POINTS = 200;
+const COMPARISON_Y_RANGE = 40;
+const COMPARISON_COLORS = [
+  '#2563eb',
+  '#ef4444',
+  '#10b981',
+  '#f59e0b',
+  '#8b5cf6',
+  '#14b8a6',
+];
 
 const downsampleNavSeries = (series, maxPoints = MAX_NAV_POINTS) => {
   if (!Array.isArray(series) || series.length <= maxPoints) {
@@ -58,8 +67,12 @@ function Phase7PortfolioEvaluationPage() {
   const [evaluationResult, setEvaluationResult] = useState(null);
   const [historyItems, setHistoryItems] = useState([]);
   const [historyDetail, setHistoryDetail] = useState(null);
+  const [historyDetailLoading, setHistoryDetailLoading] = useState(false);
+  const [historyDetailError, setHistoryDetailError] = useState('');
   const [comparisonSelection, setComparisonSelection] = useState({});
   const [comparisonResult, setComparisonResult] = useState(null);
+  const [comparisonChartData, setComparisonChartData] = useState(null);
+  const [comparisonChartError, setComparisonChartError] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
   const [activeTab, setActiveTab] = useState('summary');
   const [availablePeriod, setAvailablePeriod] = useState(null);
@@ -71,6 +84,114 @@ function Phase7PortfolioEvaluationPage() {
     if (value === null || value === undefined) return '-';
     return `${(value * 100).toFixed(1)}%`;
   };
+
+  const formatRebalance = (value) => {
+    if (!value) return '-';
+    const labelMap = {
+      NONE: '리밸런싱 없음',
+      MONTHLY: '월간 리밸런싱',
+      QUARTERLY: '분기 리밸런싱',
+    };
+    return labelMap[value] || value;
+  };
+
+  const buildReturnSeries = (navSeries) => {
+    if (!Array.isArray(navSeries) || navSeries.length < 2) {
+      return [];
+    }
+    const initialNav = navSeries[0]?.nav ?? 1;
+    if (!initialNav) {
+      return [];
+    }
+    return navSeries.map((point) => ({
+      date: point.date,
+      value: ((point.nav - initialNav) / initialNav) * 100,
+    }));
+  };
+
+  const buildComparisonChartData = (seriesList) => {
+    if (!seriesList || seriesList.length < 2) {
+      return null;
+    }
+    const maps = seriesList.map((series) => {
+      const map = new Map();
+      series.data.forEach((point) => {
+        if (point.date) {
+          map.set(point.date, point.value);
+        }
+      });
+      return map;
+    });
+    const dateSets = maps.map((map) => new Set(map.keys()));
+    let intersection = [...dateSets[0]];
+    for (let i = 1; i < dateSets.length; i += 1) {
+      const nextSet = dateSets[i];
+      intersection = intersection.filter((date) => nextSet.has(date));
+    }
+    if (intersection.length < 2) {
+      return null;
+    }
+    intersection.sort();
+    if (intersection.length > MAX_NAV_POINTS) {
+      const stride = Math.ceil(intersection.length / MAX_NAV_POINTS);
+      intersection = intersection.filter((_, index) => index % stride === 0);
+    }
+    const baseDate = intersection[0];
+    return {
+      labels: intersection,
+      datasets: seriesList.map((series, idx) => {
+        const baseValue = series.map.get(baseDate) ?? 0;
+        return {
+          label: series.label,
+          data: intersection.map((date) => (series.map.get(date) ?? 0) - baseValue),
+          borderColor: COMPARISON_COLORS[idx % COMPARISON_COLORS.length],
+          backgroundColor: 'rgba(37, 99, 235, 0.08)',
+          tension: 0.35,
+          fill: false,
+          pointRadius: 0,
+          normalized: true,
+        };
+      }),
+    };
+  };
+
+  const comparisonChartOptions = useMemo(() => {
+    if (!comparisonChartData) {
+      return null;
+    }
+    const allValues = comparisonChartData.datasets.flatMap((dataset) => dataset.data || []);
+    const minValue = Math.min(...allValues);
+    const maxValue = Math.max(...allValues);
+    const range = maxValue - minValue;
+    const padding = range === 0 ? 0.2 : Math.max(range * 0.05, 0.2);
+    const stepSize = range === 0 ? 1 : Math.max(Math.ceil(range / 6), 1);
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'bottom' },
+        tooltip: {
+          callbacks: {
+            label: (context) =>
+              `${context.dataset.label}: ${context.parsed.y.toFixed(2)}%`,
+          },
+        },
+      },
+      scales: {
+        x: { display: false },
+        y: {
+          min: minValue - padding,
+          max: maxValue + padding,
+          grace: 0,
+          ticks: {
+            stepSize,
+            maxTicksLimit: 7,
+            callback: (value) => `${value.toFixed(0)}%`,
+          },
+        },
+      },
+    };
+  }, [comparisonChartData]);
 
   const getToneClass = (value, type) => {
     if (value === null || value === undefined) return 'neutral';
@@ -179,24 +300,72 @@ function Phase7PortfolioEvaluationPage() {
     return map;
   }, [portfolios]);
 
+  const uniqueHistoryItems = useMemo(() => {
+    const seen = new Set();
+    return historyItems.filter((item) => {
+      const hash = item.result_hash;
+      if (!hash) {
+        return true;
+      }
+      if (seen.has(hash)) {
+        return false;
+      }
+      seen.add(hash);
+      return true;
+    });
+  }, [historyItems]);
+
   const summaryChartData = useMemo(() => {
     const navSeries = evaluationResult?.extensions?.nav_series || [];
     const sampledSeries = downsampleNavSeries(navSeries);
     if (sampledSeries.length < 2) {
       return null;
     }
+    const initialNav = sampledSeries[0]?.nav ?? 1;
+    const returns = sampledSeries.map((point) => {
+      if (!initialNav) return 0;
+      return ((point.nav - initialNav) / initialNav) * 100;
+    });
+
+    const minReturn = Math.min(...returns);
+    const maxReturn = Math.max(...returns);
+    const minIndex = returns.indexOf(minReturn);
+    const maxIndex = returns.indexOf(maxReturn);
+    const markers = [
+      {
+        x: sampledSeries[minIndex]?.date,
+        y: minReturn,
+        type: '최저',
+      },
+      {
+        x: sampledSeries[maxIndex]?.date,
+        y: maxReturn,
+        type: '최고',
+      },
+    ].filter((point) => point.x);
+
     return {
       labels: sampledSeries.map((point) => point.date),
       datasets: [
         {
-          label: 'NAV',
-          data: sampledSeries.map((point) => point.nav),
+          label: '수익률(%)',
+          data: returns,
           borderColor: '#3b82f6',
           backgroundColor: 'rgba(59, 130, 246, 0.12)',
           tension: 0.35,
           fill: true,
           pointRadius: 0,
           normalized: true,
+        },
+        {
+          label: '극값',
+          data: markers,
+          parsing: { xAxisKey: 'x', yAxisKey: 'y' },
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          showLine: false,
+          borderColor: '#ef4444',
+          backgroundColor: '#ef4444',
         },
       ],
     };
@@ -210,7 +379,14 @@ function Phase7PortfolioEvaluationPage() {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: (context) => `NAV ${context.parsed.y.toFixed(3)}`,
+            label: (context) => {
+              const base = `수익률 ${context.parsed.y.toFixed(2)}%`;
+              if (context.dataset.label === '극값') {
+                const type = context.raw?.type ? ` (${context.raw.type})` : '';
+                return `${base}${type}`;
+              }
+              return base;
+            },
           },
         },
       },
@@ -218,13 +394,39 @@ function Phase7PortfolioEvaluationPage() {
         x: { display: false },
         y: {
           ticks: {
-            callback: (value) => value.toFixed(2),
+            callback: (value) => `${value.toFixed(0)}%`,
           },
         },
       },
     }),
     []
   );
+
+  const returnExtremes = useMemo(() => {
+    const navSeries = evaluationResult?.extensions?.nav_series || [];
+    if (navSeries.length < 2) {
+      return null;
+    }
+    const initialNav = navSeries[0]?.nav ?? 1;
+    const returns = navSeries.map((point) => {
+      if (!initialNav) return 0;
+      return ((point.nav - initialNav) / initialNav) * 100;
+    });
+    const minReturn = Math.min(...returns);
+    const maxReturn = Math.max(...returns);
+    const minIndex = returns.indexOf(minReturn);
+    const maxIndex = returns.indexOf(maxReturn);
+    return {
+      min: {
+        date: navSeries[minIndex]?.date,
+        value: minReturn,
+      },
+      max: {
+        date: navSeries[maxIndex]?.date,
+        value: maxReturn,
+      },
+    };
+  }, [evaluationResult]);
 
   const weightSum = useMemo(() => {
     return items.reduce((sum, item) => sum + Number(item.weight || 0), 0);
@@ -362,8 +564,18 @@ function Phase7PortfolioEvaluationPage() {
   };
 
   const handleHistoryDetail = async (evaluationId) => {
-    const response = await getPhase7EvaluationDetail(evaluationId);
-    setHistoryDetail(response.data);
+    setHistoryDetailLoading(true);
+    setHistoryDetailError('');
+    try {
+      const response = await getPhase7EvaluationDetail(evaluationId);
+      setHistoryDetail(response.data);
+    } catch (err) {
+      console.error('Failed to load evaluation detail:', err);
+      setHistoryDetail(null);
+      setHistoryDetailError('상세 정보를 불러오지 못했습니다. 다시 시도해 주세요.');
+    } finally {
+      setHistoryDetailLoading(false);
+    }
   };
 
   const handleToggleComparison = (portfolioId) => {
@@ -381,10 +593,50 @@ function Phase7PortfolioEvaluationPage() {
       setStatusMessage('비교 대상은 최소 2개가 필요합니다.');
       return;
     }
+    setComparisonChartError('');
+    setComparisonChartData(null);
     const response = await comparePhase7Portfolios({
       portfolio_ids: selectedIds,
     });
     setComparisonResult(response.data);
+    try {
+    const seriesResponses = await Promise.all(
+        selectedIds.map(async (portfolioId) => {
+          const historyResponse = await listPhase7Evaluations(portfolioId, 1, 0);
+          const latest = historyResponse.data?.evaluations?.[0];
+          if (!latest) {
+            return null;
+          }
+          const detailResponse = await getPhase7EvaluationDetail(latest.evaluation_id);
+          const navSeries = detailResponse.data?.result?.extensions?.nav_series || [];
+          const returnSeries = buildReturnSeries(navSeries);
+          if (returnSeries.length < 2) {
+            return null;
+          }
+          return {
+            label: portfolioMap.get(portfolioId)?.portfolio_name || `#${portfolioId}`,
+            period: detailResponse.data?.result?.period,
+            data: returnSeries,
+            map: new Map(returnSeries.map((point) => [point.date, point.value])),
+          };
+        })
+      );
+      const validSeries = seriesResponses.filter(Boolean);
+      const chartData = buildComparisonChartData(validSeries);
+      if (!chartData) {
+        setComparisonChartError('비교할 수 있는 공통 기간 데이터가 없습니다.');
+        return;
+      }
+      setComparisonChartData(chartData);
+      if (chartData.labels.length) {
+        const start = chartData.labels[0];
+        const end = chartData.labels[chartData.labels.length - 1];
+        setComparisonResult((prev) => (prev ? { ...prev, common_period: { start, end } } : prev));
+      }
+    } catch (err) {
+      console.error('Failed to build comparison chart:', err);
+      setComparisonChartError('비교 차트를 불러오지 못했습니다. 다시 시도해 주세요.');
+    }
   };
 
   return (
@@ -580,6 +832,16 @@ function Phase7PortfolioEvaluationPage() {
                     ) : (
                       <span>기간별 수익 곡선을 준비 중입니다.</span>
                     )}
+                    {returnExtremes && (
+                      <div className="phase7-chart-extremes">
+                        <div>
+                          최저 수익률: {returnExtremes.min.date} ({returnExtremes.min.value.toFixed(2)}%)
+                        </div>
+                        <div>
+                          최고 수익률: {returnExtremes.max.date} ({returnExtremes.max.value.toFixed(2)}%)
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -681,58 +943,64 @@ function Phase7PortfolioEvaluationPage() {
               </>
             )}
 
-            <div className="phase7-disclaimer">
-              <Disclaimer type="portfolio" />
-            </div>
           </div>
         )}
       </section>
 
       <section className="phase7-card">
         <h2>2) 평가 히스토리</h2>
-        {historyItems.length === 0 ? (
+        {uniqueHistoryItems.length === 0 ? (
           <p>평가 이력이 없습니다.</p>
         ) : (
           <ul className="phase7-history">
-            {historyItems.map((item) => (
-              <li key={item.evaluation_id}>
+            {uniqueHistoryItems.map((item) => (
+              <li
+                key={item.evaluation_id}
+                className={
+                  historyDetail && historyDetail.evaluation_id === item.evaluation_id
+                    ? 'phase7-history-item active'
+                    : 'phase7-history-item'
+                }
+              >
                 <span>
-                  {item.period.start} ~ {item.period.end} ({item.rebalance})
+                  {item.period.start} ~ {item.period.end} ({formatRebalance(item.rebalance)})
                 </span>
                 <span className="phase7-hash">{item.result_hash}</span>
                 <button type="button" onClick={() => handleHistoryDetail(item.evaluation_id)}>
-                  상세
+                  평가보기
                 </button>
+                {historyDetail && historyDetail.evaluation_id === item.evaluation_id && (
+                  <div className="phase7-result phase7-result-inline">
+                    <h3>상세 결과</h3>
+                    <p>
+                      기간: {historyDetail.result.period.start} ~ {historyDetail.result.period.end}
+                    </p>
+                    <div className="phase7-metrics">
+                      <div className="phase7-metric">
+                        <span>누적수익률</span>
+                        <strong>{historyDetail.result.metrics.cumulative_return}</strong>
+                      </div>
+                      <div className="phase7-metric">
+                        <span>CAGR</span>
+                        <strong>{historyDetail.result.metrics.cagr}</strong>
+                      </div>
+                      <div className="phase7-metric">
+                        <span>변동성</span>
+                        <strong>{historyDetail.result.metrics.volatility}</strong>
+                      </div>
+                      <div className="phase7-metric">
+                        <span>MDD</span>
+                        <strong>{historyDetail.result.metrics.max_drawdown}</strong>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
         )}
-        {historyDetail && (
-          <div className="phase7-result">
-            <h3>상세 결과</h3>
-            <p>
-              기간: {historyDetail.result.period.start} ~ {historyDetail.result.period.end}
-            </p>
-            <div className="phase7-metrics">
-              <div className="phase7-metric">
-                <span>누적수익률</span>
-                <strong>{historyDetail.result.metrics.cumulative_return}</strong>
-              </div>
-              <div className="phase7-metric">
-                <span>CAGR</span>
-                <strong>{historyDetail.result.metrics.cagr}</strong>
-              </div>
-              <div className="phase7-metric">
-                <span>변동성</span>
-                <strong>{historyDetail.result.metrics.volatility}</strong>
-              </div>
-              <div className="phase7-metric">
-                <span>MDD</span>
-                <strong>{historyDetail.result.metrics.max_drawdown}</strong>
-              </div>
-            </div>
-          </div>
-        )}
+        {historyDetailLoading && <p className="phase7-muted">상세 정보를 불러오는 중입니다...</p>}
+        {historyDetailError && <p className="phase7-error">{historyDetailError}</p>}
       </section>
 
       <section className="phase7-card">
@@ -755,6 +1023,23 @@ function Phase7PortfolioEvaluationPage() {
         {comparisonResult && (
           <div className="phase7-result">
             <h3>비교 결과</h3>
+            <div className="phase7-compare-chart">
+              {comparisonResult?.common_period && (
+                <p className="phase7-compare-period">
+                  공통 비교 기간: {comparisonResult.common_period.start} ~{' '}
+                  {comparisonResult.common_period.end}
+                </p>
+              )}
+              {comparisonChartData ? (
+                <Line
+                  data={comparisonChartData}
+                  options={comparisonChartOptions}
+                />
+              ) : (
+                <span>비교 차트를 준비 중입니다.</span>
+              )}
+              {comparisonChartError && <p className="phase7-error">{comparisonChartError}</p>}
+            </div>
             <div className="phase7-compare-grid">
               {comparisonResult.portfolios.map((item) => (
                 <div key={`compare-result-${item.portfolio_id}`} className="phase7-compare-card">
@@ -787,12 +1072,12 @@ function Phase7PortfolioEvaluationPage() {
                 </div>
               ))}
             </div>
-            <div className="phase7-disclaimer">
-              <Disclaimer type="portfolio" />
-            </div>
           </div>
         )}
       </section>
+      <div className="phase7-disclaimer phase7-disclaimer-bottom">
+        <Disclaimer type="portfolio" />
+      </div>
     </div>
   );
 }

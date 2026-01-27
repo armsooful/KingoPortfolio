@@ -173,6 +173,11 @@
   background: #f8fafc;
 }
 
+.phase7-result-inline {
+  width: 100%;
+  margin-top: 0.75rem;
+}
+
 .phase7-tab-header {
   display: flex;
   gap: 0.8rem;
@@ -330,10 +335,23 @@
   margin: 0;
 }
 
+.phase7-muted {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.phase7-error {
+  color: #dc2626;
+  font-size: 0.9rem;
+}
+
 .phase7-summary-chart {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
   border: 1px dashed #cbd5f5;
   border-radius: 12px;
   color: #94a3b8;
@@ -345,6 +363,16 @@
 .phase7-summary-chart canvas {
   width: 100% !important;
   height: 200px !important;
+}
+
+.phase7-chart-extremes {
+  width: 100%;
+  font-size: 0.8rem;
+  color: #475569;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .phase7-metric-grid {
@@ -428,7 +456,7 @@
   gap: 0.6rem;
 }
 
-.phase7-history li {
+.phase7-history-item {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
@@ -436,6 +464,12 @@
   padding: 0.75rem 1rem;
   border-radius: 12px;
   background: #f9fafb;
+  border: 1px solid transparent;
+}
+
+.phase7-history-item.active {
+  background: #eef2ff;
+  border-color: #c7d2fe;
 }
 
 .phase7-hash {
@@ -463,6 +497,29 @@
   gap: 1rem;
 }
 
+.phase7-compare-chart {
+  margin: 0.75rem 0 1rem;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  padding: 0.75rem;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.phase7-compare-chart canvas {
+  width: 100% !important;
+  height: 200px !important;
+}
+
+.phase7-compare-period {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
 .phase7-compare-card {
   background: #ffffff;
   border: 1px solid #e5e7eb;
@@ -485,6 +542,10 @@
 
 .phase7-disclaimer {
   margin-top: 1.5rem;
+}
+
+.phase7-disclaimer-bottom {
+  margin-top: 2rem;
 }
 
 @media (max-width: 720px) {

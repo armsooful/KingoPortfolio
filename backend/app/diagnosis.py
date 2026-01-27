@@ -181,6 +181,8 @@ def build_diagnosis_response(
     """
     profile = get_diagnosis_profile(investment_type)
     
+    reference_only = profile.reference_only
+    expected_annual_return = getattr(reference_only, "historical_avg_return", "")
     return {
         "diagnosis_id": diagnosis_id,
         "investment_type": investment_type,
@@ -190,6 +192,7 @@ def build_diagnosis_response(
         "description": profile.description,
         "characteristics": profile.characteristics,
         "scenario_ratio": profile.scenario_ratio,
+        "expected_annual_return": expected_annual_return,
         "reference_only": profile.reference_only,
         "created_at": created_at
     }

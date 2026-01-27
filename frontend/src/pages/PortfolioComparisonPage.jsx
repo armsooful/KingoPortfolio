@@ -308,7 +308,8 @@ export default function PortfolioComparisonPage() {
                 background: 'white',
                 borderRadius: '12px',
                 border: '1px solid #e0e0e0',
-                marginBottom: '24px'
+                marginBottom: '24px',
+                height: '400px'
               }}>
                 <h2 style={{ fontSize: '1.5rem', marginBottom: '20px', color: '#667eea' }}>
                   📈 수익률 추이 ({days}일)
@@ -317,8 +318,7 @@ export default function PortfolioComparisonPage() {
                   data={getPerformanceChartData()}
                   options={{
                     responsive: true,
-                    maintainAspectRatio: true,
-                    aspectRatio: 2.5,
+                    maintainAspectRatio: false,
                     plugins: {
                       legend: {
                         display: true,
@@ -361,7 +361,8 @@ export default function PortfolioComparisonPage() {
                 background: 'white',
                 borderRadius: '12px',
                 border: '1px solid #e0e0e0',
-                marginBottom: '24px'
+                marginBottom: '24px',
+                height: '400px'
               }}>
                 <h2 style={{ fontSize: '1.5rem', marginBottom: '20px', color: '#667eea' }}>
                   📊 기간 수익률 비교
@@ -370,8 +371,7 @@ export default function PortfolioComparisonPage() {
                   data={getTotalReturnChartData()}
                   options={{
                     responsive: true,
-                    maintainAspectRatio: true,
-                    aspectRatio: 3,
+                    maintainAspectRatio: false,
                     plugins: {
                       legend: {
                         display: false
