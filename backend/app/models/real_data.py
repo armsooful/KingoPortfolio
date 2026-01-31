@@ -334,9 +334,21 @@ class DividendHistory(Base):
     """배당 이력 (DART)"""
     __tablename__ = "dividend_history"
 
-    dividend_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    dividend_id = Column(Integer, primary_key=True, autoincrement=True)
     ticker = Column(String(10), nullable=False)
     fiscal_year = Column(Integer, nullable=False)
+
+    # DART 원본 필드
+    rcept_no = Column(String(14))  # 접수번호
+    corp_cls = Column(String(1))  # 법인구분
+    corp_code = Column(String(8))
+    corp_name = Column(String(100))
+    se = Column(String(200))  # 구분
+    stock_knd = Column(String(50))  # 주식 종류
+    thstrm = Column(Numeric(18, 2))  # 당기
+    frmtrm = Column(Numeric(18, 2))  # 전기
+    lwfr = Column(Numeric(18, 2))  # 전전기
+    stlm_dt = Column(Date)  # 결산기준일
 
     # 배당 정보
     dividend_type = Column(String(20), nullable=False)  # 'CASH', 'STOCK', 'INTERIM'
@@ -361,6 +373,7 @@ class DividendHistory(Base):
                         name='uq_dividend_history'),
         Index('idx_dividend_ticker', 'ticker'),
         Index('idx_dividend_year', 'fiscal_year'),
+        Index('idx_dividend_rcept', 'rcept_no'),
     )
 
     def __repr__(self):
@@ -368,42 +381,45 @@ class DividendHistory(Base):
 
 
 # ============================================================================
-# Level 2: 시장 데이터 (KRX)
+# Level 2: 기업 액션 (분할/합병 등)
 # ============================================================================
 
-class SectorClassification(Base):
-    """업종 분류 (KRX)"""
-    __tablename__ = "sector_classification"
+class CorporateAction(Base):
+    """기업 액션 이력"""
+    __tablename__ = "corporate_action"
 
-    classification_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    action_id = Column(Integer, primary_key=True, autoincrement=True)
     ticker = Column(String(10), nullable=False)
-    as_of_date = Column(Date, nullable=False)
+    action_type = Column(String(20), nullable=False)  # SPLIT, REVERSE_SPLIT, MERGER, SPINOFF
+    ratio = Column(Numeric(12, 6))  # 분할/합병 비율 (예: 2.0 = 1:2)
+    effective_date = Column(Date, nullable=True)
 
-    # KRX 업종 분류
-    krx_sector_code = Column(String(10))
-    krx_sector_name = Column(String(100))
-
-    # GICS 분류 (선택)
-    gics_sector_code = Column(String(10))
-    gics_sector_name = Column(String(100))
-    gics_industry_code = Column(String(10))
-    gics_industry_name = Column(String(100))
+    # 참고 정보
+    report_name = Column(String(200))
+    reference_doc = Column(String(50))  # 공시 번호 등
 
     # 데이터 거버넌스
     source_id = Column(String(20), ForeignKey("data_source.source_id"), nullable=False)
     batch_id = Column(Integer, ForeignKey("data_load_batch.batch_id"))
+    as_of_date = Column(Date, nullable=False)
 
     created_at = Column(DateTime, default=kst_now)
 
     __table_args__ = (
-        UniqueConstraint('ticker', 'as_of_date', 'source_id', name='uq_sector_class'),
-        Index('idx_sector_ticker', 'ticker'),
-        Index('idx_sector_code', 'krx_sector_code'),
+        Index('idx_action_ticker', 'ticker'),
+        Index('idx_action_date', 'effective_date'),
+        Index('idx_action_type', 'action_type'),
+        UniqueConstraint('ticker', 'action_type', 'effective_date', 'reference_doc', 'source_id',
+                        name='uq_corporate_action'),
     )
 
     def __repr__(self):
-        return f"<SectorClassification {self.ticker} {self.krx_sector_name}>"
+        return f"<CorporateAction {self.ticker} {self.action_type} {self.effective_date}>"
 
+
+# ============================================================================
+# Level 2: 시장 데이터 (KRX)
+# ============================================================================
 
 class InstitutionTrade(Base):
     """기관/외국인 매매 (KRX)"""

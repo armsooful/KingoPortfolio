@@ -314,6 +314,14 @@ export const loadETFs = () => {
   return api.post('/admin/load-etfs');
 };
 
+export const loadDartDividends = (payload) => {
+  return api.post('/admin/dart/load-dividends', payload);
+};
+
+export const loadDartCorporateActions = (payload) => {
+  return api.post('/admin/dart/load-corporate-actions', payload);
+};
+
 /**
  * DB 데이터 현황 조회
  */

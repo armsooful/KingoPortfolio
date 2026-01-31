@@ -43,6 +43,7 @@ class OHLCVRecord:
     low_price: Decimal
     close_price: Decimal
     volume: int
+    adj_close_price: Optional[Decimal] = None
     trading_value: Optional[int] = None
     market_cap: Optional[int] = None
     shares_outstanding: Optional[int] = None
@@ -198,6 +199,7 @@ class PykrxFetcher:
                         high_price=high_price,
                         low_price=low_price,
                         close_price=close_price,
+                        adj_close_price=close_price,
                         volume=volume,
                         trading_value=trading_value,
                         market_cap=market_cap,

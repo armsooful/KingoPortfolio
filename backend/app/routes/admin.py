@@ -2,16 +2,18 @@
 
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
+from datetime import date
+from pydantic import BaseModel, Field
 from app.database import get_db
 from app.services.data_loader import DataLoaderService
 from app.services.alpha_vantage_loader import AlphaVantageDataLoader
 from app.services.pykrx_loader import PyKrxDataLoader
 from app.services.financial_analyzer import FinancialAnalyzer
+from app.services.real_data_loader import RealDataLoader
 from app.models import User
 from app.auth import get_current_user, require_admin_permission
 from app.progress_tracker import progress_tracker
-from typing import List
 import logging
 import uuid
 from app.utils.request_meta import require_idempotency
@@ -23,6 +25,19 @@ router = APIRouter(
     tags=["Admin"],
     dependencies=[Depends(require_idempotency)],
 )
+
+
+class DividendLoadRequest(BaseModel):
+    tickers: List[str] = Field(..., min_items=1)
+    fiscal_year: int = Field(..., ge=1900, le=2100)
+    as_of_date: Optional[date] = None
+
+
+class CorporateActionLoadRequest(BaseModel):
+    start_date: date
+    end_date: date
+    as_of_date: Optional[date] = None
+    corp_cls: Optional[str] = Field(None, regex="^[YKNE]$")
 
 @router.post("/load-data")
 async def load_all_data(
@@ -84,6 +99,57 @@ async def load_etfs(
             "message": "ETF 데이터 적재 완료",
             "result": result,
             "task_id": task_id
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/dart/load-dividends")
+async def load_dividend_history(
+    payload: DividendLoadRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
+):
+    """DART 배당 이력 적재"""
+    try:
+        loader = RealDataLoader(db)
+        result = loader.load_dividend_history(
+            tickers=payload.tickers,
+            fiscal_year=payload.fiscal_year,
+            as_of_date=payload.as_of_date or date.today(),
+            operator_id=str(current_user.id),
+            operator_reason=f"DART 배당 이력 적재 ({payload.fiscal_year})",
+        )
+        return {
+            "status": "success",
+            "message": "배당 이력 적재 완료",
+            "result": result.__dict__,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/dart/load-corporate-actions")
+async def load_corporate_actions(
+    payload: CorporateActionLoadRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
+):
+    """DART 기업 액션(분할/합병) 적재"""
+    try:
+        loader = RealDataLoader(db)
+        result = loader.load_corporate_actions(
+            start_date=payload.start_date,
+            end_date=payload.end_date,
+            as_of_date=payload.as_of_date or date.today(),
+            corp_cls=payload.corp_cls,
+            operator_id=str(current_user.id),
+            operator_reason="DART 기업 액션 적재",
+        )
+        return {
+            "status": "success",
+            "message": "기업 액션 적재 완료",
+            "result": result.__dict__,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

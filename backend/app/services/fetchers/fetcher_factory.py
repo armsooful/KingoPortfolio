@@ -38,7 +38,6 @@ class FetcherFactory:
         DataType.FINANCIAL_STATEMENT: ["DART"],
         DataType.DIVIDEND_HISTORY: ["DART"],
         DataType.DISCLOSURE: ["DART"],
-        DataType.SECTOR_CLASSIFICATION: ["KRX_INFO", "DART"],
         DataType.INSTITUTION_TRADE: ["KRX_INFO"],
         DataType.ETF_PORTFOLIO: ["KRX_INFO"],
     }

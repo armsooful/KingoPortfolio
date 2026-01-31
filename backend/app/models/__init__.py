@@ -2,6 +2,7 @@ from .user import User
 from .securities import KrxTimeSeries
 from .portfolio import Portfolio, PortfolioHistory, SimulationCache
 from .bookmark import Bookmark
+from .custom_portfolio import CustomPortfolio
 from .user_preferences import UserPreset, UserNotificationSetting, UserActivityEvent
 from .event_log import UserEventLog
 from .consent import ConsentAgreement
@@ -28,7 +29,7 @@ from .real_data import (
     DataSource, DataLoadBatch, StockPriceDaily, IndexPriceDaily,
     StockInfo, DataQualityLog,
     # Level 2
-    FinancialStatement, DividendHistory, SectorClassification, InstitutionTrade
+    FinancialStatement, DividendHistory, CorporateAction, InstitutionTrade
 )
 # app/models.py의 모델들을 직접 import하지 않고 lazy import 허용
 
@@ -47,7 +48,7 @@ __all__ = ['User', 'KrxTimeSeries', 'Portfolio', 'PortfolioHistory', 'Simulation
            'AdminApproval', 'AdminAdjustment',
            'DataSource', 'DataLoadBatch', 'StockPriceDaily', 'IndexPriceDaily',
            'StockInfo', 'DataQualityLog',
-           'FinancialStatement', 'DividendHistory', 'SectorClassification', 'InstitutionTrade']
+           'FinancialStatement', 'DividendHistory', 'CorporateAction', 'InstitutionTrade']
 # models.py에서 추가 모델 import
 import sys
 import os

@@ -14,6 +14,12 @@ export default function DataManagementPage() {
   const [currentTaskId, setCurrentTaskId] = useState(null);
   const [activeTab, setActiveTab] = useState('stocks');
   const [symbolInput, setSymbolInput] = useState('');
+  const [dividendTickers, setDividendTickers] = useState('');
+  const [dividendYear, setDividendYear] = useState(2018);
+  const [dividendAsOf, setDividendAsOf] = useState(new Date().toISOString().split('T')[0]);
+  const [actionStart, setActionStart] = useState('');
+  const [actionEnd, setActionEnd] = useState('');
+  const [actionAsOf, setActionAsOf] = useState(new Date().toISOString().split('T')[0]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -838,6 +844,120 @@ export default function DataManagementPage() {
               <div style={{ marginTop: '10px', fontSize: '0.85rem', color: '#666' }}>
                 💡 최근 거래일 기준 PER, PBR, EPS, BPS, 배당수익률 등을 수집하여 ROE, ROA, 부채비율 등을 추정합니다.
               </div>
+            </div>
+          </div>
+
+          <div className="description-section" style={{ marginTop: '40px', borderTop: '2px solid #e0e0e0', paddingTop: '30px' }}>
+            <h2>📦 배당/기업액션 적재</h2>
+
+            <div style={{ marginTop: '15px', padding: '15px', background: '#e3f2fd', borderRadius: '8px', borderLeft: '4px solid #2196f3' }}>
+              <p style={{ margin: 0, color: '#333', fontSize: '0.9rem' }}>
+                🔑 DART API Key가 필요합니다. 배당/기업액션 데이터는 DART 공시 기반으로 적재됩니다.
+              </p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '15px', marginTop: '20px' }}>
+              <div style={{ padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#ffffff' }}>
+                <h3 style={{ marginBottom: '10px', fontSize: '1rem' }}>배당 이력 (DART)</h3>
+                <input
+                  type="text"
+                  value={dividendTickers}
+                  onChange={(e) => setDividendTickers(e.target.value)}
+                  placeholder="종목 코드 (쉼표로 구분) 예: 005930,000660"
+                  style={{ width: '100%', padding: '10px', fontSize: '0.9rem', border: '1px solid #ddd', borderRadius: '6px', marginBottom: '8px' }}
+                />
+                <input
+                  type="number"
+                  value={dividendYear}
+                  onChange={(e) => setDividendYear(Number(e.target.value))}
+                  placeholder="기준 사업연도"
+                  style={{ width: '100%', padding: '10px', fontSize: '0.9rem', border: '1px solid #ddd', borderRadius: '6px', marginBottom: '8px' }}
+                />
+                <input
+                  type="date"
+                  value={dividendAsOf}
+                  onChange={(e) => setDividendAsOf(e.target.value)}
+                  style={{ width: '100%', padding: '10px', fontSize: '0.9rem', border: '1px solid #ddd', borderRadius: '6px', marginBottom: '10px' }}
+                />
+                <button
+                  onClick={async () => {
+                    const tickers = dividendTickers.split(',').map((t) => t.trim()).filter(Boolean);
+                    if (tickers.length === 0) {
+                      alert('종목 코드를 입력하세요');
+                      return;
+                    }
+                    setLoading(true);
+                    setError(null);
+                    try {
+                      const response = await api.loadDartDividends({
+                        tickers,
+                        fiscal_year: dividendYear,
+                        as_of_date: dividendAsOf,
+                      });
+                      alert('✅ ' + response.data.message);
+                    } catch (err) {
+                      alert('❌ ' + (err.response?.data?.detail || '배당 이력 적재 실패'));
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  disabled={loading}
+                  className="btn btn-primary"
+                  style={{ width: '100%', padding: '10px', fontSize: '0.95rem' }}
+                >
+                  배당 이력 적재
+                </button>
+              </div>
+
+              <div style={{ padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#ffffff' }}>
+                <h3 style={{ marginBottom: '10px', fontSize: '1rem' }}>기업 액션 (DART 공시)</h3>
+                <input
+                  type="date"
+                  value={actionStart}
+                  onChange={(e) => setActionStart(e.target.value)}
+                  style={{ width: '100%', padding: '10px', fontSize: '0.9rem', border: '1px solid #ddd', borderRadius: '6px', marginBottom: '8px' }}
+                />
+                <input
+                  type="date"
+                  value={actionEnd}
+                  onChange={(e) => setActionEnd(e.target.value)}
+                  style={{ width: '100%', padding: '10px', fontSize: '0.9rem', border: '1px solid #ddd', borderRadius: '6px', marginBottom: '8px' }}
+                />
+                <input
+                  type="date"
+                  value={actionAsOf}
+                  onChange={(e) => setActionAsOf(e.target.value)}
+                  style={{ width: '100%', padding: '10px', fontSize: '0.9rem', border: '1px solid #ddd', borderRadius: '6px', marginBottom: '10px' }}
+                />
+                <button
+                  onClick={async () => {
+                    if (!actionStart || !actionEnd) {
+                      alert('시작일/종료일을 입력하세요');
+                      return;
+                    }
+                    setLoading(true);
+                    setError(null);
+                    try {
+                      const response = await api.loadDartCorporateActions({
+                        start_date: actionStart,
+                        end_date: actionEnd,
+                        as_of_date: actionAsOf,
+                      });
+                      alert('✅ ' + response.data.message);
+                    } catch (err) {
+                      alert('❌ ' + (err.response?.data?.detail || '기업 액션 적재 실패'));
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  disabled={loading}
+                  className="btn btn-primary"
+                  style={{ width: '100%', padding: '10px', fontSize: '0.95rem' }}
+                >
+                  기업 액션 적재
+                </button>
+              </div>
+
             </div>
           </div>
 

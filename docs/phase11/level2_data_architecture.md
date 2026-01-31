@@ -22,9 +22,9 @@
 │ └─────────────┘  └─────────────┘  └─────────────┘                   │
 │        │                │                │                           │
 │        ▼                ▼                ▼                           │
-│    일별 시세        재무제표          업종 분류                       │
-│    지수             공시 정보         기관/외국인                     │
-│    기본 지표        배당 이력         ETF 구성종목                    │
+│    일별 시세        재무제표          기관/외국인                     │
+│    지수             공시 정보         ETF 구성종목                    │
+│    기본 지표        배당 이력                                           │
 ├──────────────────────────────────────────────────────────────────────┤
 │ Level 3 (향후)                                                        │
 │ ┌─────────────┐  ┌─────────────┐                                    │
@@ -116,7 +116,7 @@ class DartFetcher(BaseFetcher):
 # app/services/fetchers/krx_info_fetcher.py
 class KrxInfoFetcher(BaseFetcher):
     source_id = "KRX_INFO"
-    supported_data_types = ["SECTOR_INFO", "INSTITUTION_TRADE", "ETF_PORTFOLIO"]
+    supported_data_types = ["INSTITUTION_TRADE", "ETF_PORTFOLIO"]
 ```
 
 ### 2.3 Fetcher Factory 패턴
@@ -236,38 +236,7 @@ CREATE INDEX idx_dividend_ticker ON dividend_history(ticker);
 CREATE INDEX idx_dividend_year ON dividend_history(fiscal_year);
 ```
 
-### 3.3 업종 분류 (KRX)
-
-```sql
-CREATE TABLE sector_classification (
-    classification_id  BIGSERIAL    PRIMARY KEY,
-    ticker             VARCHAR(10)  NOT NULL,
-    as_of_date         DATE         NOT NULL,
-
-    -- KRX 업종 분류
-    krx_sector_code    VARCHAR(10),
-    krx_sector_name    VARCHAR(100),
-
-    -- GICS 분류 (선택)
-    gics_sector_code   VARCHAR(10),
-    gics_sector_name   VARCHAR(100),
-    gics_industry_code VARCHAR(10),
-    gics_industry_name VARCHAR(100),
-
-    -- 데이터 거버넌스
-    source_id       VARCHAR(20)  NOT NULL REFERENCES data_source(source_id),
-    batch_id        INTEGER      REFERENCES data_load_batch(batch_id),
-
-    created_at      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT uq_sector_class UNIQUE (ticker, as_of_date, source_id)
-);
-
-CREATE INDEX idx_sector_ticker ON sector_classification(ticker);
-CREATE INDEX idx_sector_code ON sector_classification(krx_sector_code);
-```
-
-### 3.4 기관/외국인 매매 (KRX)
+### 3.3 기관/외국인 매매 (KRX)
 
 ```sql
 CREATE TABLE institution_trade (
@@ -428,7 +397,6 @@ class DataSourcePriority:
         "STOCK_OHLCV": ["PYKRX", "KRX_INFO", "NAVER"],
         "FINANCIAL_STATEMENT": ["DART", "PYKRX"],
         "DIVIDEND": ["DART", "PYKRX"],
-        "SECTOR": ["KRX_INFO", "DART"],
         "INSTITUTION_TRADE": ["KRX_INFO"],
     }
 

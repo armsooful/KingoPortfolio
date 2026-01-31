@@ -6,7 +6,7 @@ Phase 11 Level 2: 데이터 Fetcher 모듈
 지원 데이터 소스:
 - PYKRX: 주식/지수 일별 시세, 기본 지표
 - DART: 재무제표, 배당, 공시 정보
-- KRX_INFO: 업종 분류, 기관/외인 매매, ETF 포트폴리오
+- KRX_INFO: 기관/외인 매매, ETF 포트폴리오
 """
 
 import os

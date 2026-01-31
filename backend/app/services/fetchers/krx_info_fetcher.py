@@ -5,12 +5,12 @@ Phase 11 Level 2: KRX 정보데이터시스템 Fetcher
 작성일: 2026-01-24
 
 지원 데이터:
-- 업종 분류 (SECTOR_CLASSIFICATION)
 - 기관/외국인 매매 (INSTITUTION_TRADE)
 - ETF 포트폴리오 (ETF_PORTFOLIO)
 """
 
 import time
+import logging
 from datetime import date
 from typing import Any, Dict, List, Optional
 
@@ -31,11 +31,11 @@ class KrxApiError(Exception):
 
 
 # KRX OTP 생성 URL
-OTP_URL = "http://data.krx.co.kr/comm/fileDn/GenerateOTP/generate.cmd"
+OTP_URL = "https://data.krx.co.kr/comm/fileDn/GenerateOTP/generate.cmd"
 # KRX 데이터 다운로드 URL
-DOWNLOAD_URL = "http://data.krx.co.kr/comm/fileDn/download_csv/download.cmd"
+DOWNLOAD_URL = "https://data.krx.co.kr/comm/fileDn/download_csv/download.cmd"
 # KRX JSON 데이터 URL
-JSON_URL = "http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd"
+JSON_URL = "https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd"
 
 # 시장 구분
 MARKET_CODES = {
@@ -51,7 +51,6 @@ class KrxInfoFetcher(BaseFetcher):
     KRX 정보데이터시스템 Fetcher
 
     한국거래소 정보데이터시스템에서 데이터를 조회합니다.
-    - 업종 분류 (KRX, GICS 분류)
     - 기관/외국인 매매 동향
     - ETF 포트폴리오 구성
 
@@ -63,15 +62,16 @@ class KrxInfoFetcher(BaseFetcher):
     source_id = "KRX_INFO"
     source_name = "KRX 정보데이터시스템"
     supported_data_types = [
-        DataType.SECTOR_CLASSIFICATION,
         DataType.INSTITUTION_TRADE,
         DataType.ETF_PORTFOLIO,
         DataType.STOCK_INFO,
     ]
+    logger = logging.getLogger(__name__)
 
     def __init__(self):
         """초기화"""
         self._session = self._create_session()
+        self._warmed_up = False
 
         # Rate limiting
         self._last_call_time: float = 0
@@ -97,11 +97,35 @@ class KrxInfoFetcher(BaseFetcher):
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
                 "Accept": "application/json, text/javascript, */*; q=0.01",
                 "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
-                "Referer": "http://data.krx.co.kr/",
+                "Referer": "https://data.krx.co.kr/",
+                "X-Requested-With": "XMLHttpRequest",
             }
         )
 
         return session
+
+    def _warmup_session(self, force: bool = False) -> bool:
+        """KRX 세션 쿠키 확보 (LOGOUT 방지)"""
+        if self._warmed_up and not force:
+            return True
+        try:
+            # 메인 페이지 방문으로 기본 쿠키 확보
+            self._session.get(
+                "https://data.krx.co.kr/",
+                timeout=10,
+            )
+            time.sleep(0.3)
+            # 데이터 페이지 방문으로 세션 쿠키 활성화
+            self._session.get(
+                "https://data.krx.co.kr/contents/MDC/MDI/mdiLoader/index.cmd?menuId=MDC0201",
+                timeout=10,
+            )
+            self._warmed_up = True
+            self.logger.info("KRX 세션 워밍업 완료")
+            return True
+        except requests.RequestException as e:
+            self.logger.warning("KRX 세션 워밍업 실패: %s", e)
+            return False
 
     def fetch(
         self,
@@ -120,9 +144,7 @@ class KrxInfoFetcher(BaseFetcher):
             )
 
         try:
-            if data_type == DataType.SECTOR_CLASSIFICATION:
-                return self._fetch_sector_classification(params)
-            elif data_type == DataType.INSTITUTION_TRADE:
+            if data_type == DataType.INSTITUTION_TRADE:
                 return self._fetch_institution_trade(params)
             elif data_type == DataType.ETF_PORTFOLIO:
                 return self._fetch_etf_portfolio(params)
@@ -166,13 +188,7 @@ class KrxInfoFetcher(BaseFetcher):
         """파라미터 검증"""
         errors = super().validate_params(data_type, params)
 
-        if data_type == DataType.SECTOR_CLASSIFICATION:
-            required = ["as_of_date"]
-            for key in required:
-                if key not in params:
-                    errors.append(f"필수 파라미터 누락: {key}")
-
-        elif data_type == DataType.INSTITUTION_TRADE:
+        if data_type == DataType.INSTITUTION_TRADE:
             required = ["trade_date", "as_of_date"]
             for key in required:
                 if key not in params:
@@ -188,9 +204,7 @@ class KrxInfoFetcher(BaseFetcher):
 
     def get_required_params(self, data_type: DataType) -> List[str]:
         """데이터 유형별 필수 파라미터"""
-        if data_type == DataType.SECTOR_CLASSIFICATION:
-            return ["as_of_date"]
-        elif data_type == DataType.INSTITUTION_TRADE:
+        if data_type == DataType.INSTITUTION_TRADE:
             return ["trade_date", "as_of_date"]
         elif data_type == DataType.ETF_PORTFOLIO:
             return ["etf_ticker", "as_of_date"]
@@ -226,87 +240,61 @@ class KrxInfoFetcher(BaseFetcher):
         self._rate_limit_wait()
 
         params["bld"] = bld
+        self._warmup_session()
+        self.logger.info("KRX JSON API 호출 url=%s params=%s", JSON_URL, params)
 
-        response = self._session.post(JSON_URL, data=params, timeout=30)
-        response.raise_for_status()
+        max_retries = 3
+        for attempt in range(max_retries):
+            response = self._session.post(JSON_URL, data=params, timeout=30)
 
-        data = response.json()
-
-        if not data:
-            raise KrxApiError("빈 응답")
-
-        return data
-
-    def _fetch_sector_classification(self, params: Dict[str, Any]) -> FetchResult:
-        """업종 분류 조회"""
-        as_of_date = params["as_of_date"]
-        market = params.get("market", "ALL")
-        ticker = params.get("ticker")
-
-        # 날짜 형식 변환
-        if isinstance(as_of_date, date):
-            date_str = as_of_date.strftime("%Y%m%d")
-        else:
-            date_str = as_of_date.replace("-", "")
-
-        market_code = MARKET_CODES.get(market, "ALL")
-
-        api_params = {
-            "mktId": market_code,
-            "trdDd": date_str,
-        }
-
-        # KOSPI 업종별 시세 조회
-        bld = "dbms/MDC/STAT/standard/MDCSTAT03901"
-        data = self._call_json_api(bld, api_params)
-
-        items = data.get("OutBlock_1", [])
-        records = []
-
-        for item in items:
-            stock_code = item.get("ISU_SRT_CD", "")
-
-            # 특정 종목만 필터링
-            if ticker and stock_code != ticker:
+            # KRX는 세션 만료 시 LOGOUT 문자열을 내려줌 (200 OK지만 body가 LOGOUT)
+            if response.text.strip() == "LOGOUT" or (
+                response.status_code == 400 and "LOGOUT" in response.text
+            ):
+                self.logger.warning(
+                    "KRX 세션 만료(LOGOUT) 감지 (시도 %d/%d) - 세션 재생성",
+                    attempt + 1,
+                    max_retries,
+                )
+                self._session = self._create_session()
+                self._warmed_up = False
+                time.sleep(1.0)  # 재시도 전 대기
+                if not self._warmup_session(force=True):
+                    continue
                 continue
 
-            record = {
-                "ticker": stock_code,
-                "stock_name": item.get("ISU_ABBRV", ""),
-                "market_type": "KOSPI" if market_code == "STK" else market,
-                "krx_sector_code": item.get("IDX_IND_CD", ""),
-                "krx_sector_name": item.get("IDX_IND_NM", ""),
-                "as_of_date": as_of_date.isoformat() if isinstance(as_of_date, date) else as_of_date,
-            }
-            records.append(record)
+            if response.status_code >= 400:
+                self.logger.warning(
+                    "KRX JSON API 응답 오류 status=%s body=%s",
+                    response.status_code,
+                    response.text[:500],
+                )
+                response.raise_for_status()
 
-        # KOSDAQ도 조회
-        if market in ["ALL", "KOSDAQ"]:
-            api_params["mktId"] = "KSQ"
-            data = self._call_json_api(bld, api_params)
-            items = data.get("OutBlock_1", [])
+            try:
+                data = response.json()
+            except ValueError:
+                self.logger.warning("KRX JSON 파싱 실패: %s", response.text[:200])
+                raise KrxApiError("JSON 파싱 실패")
 
-            for item in items:
-                stock_code = item.get("ISU_SRT_CD", "")
-                if ticker and stock_code != ticker:
-                    continue
+            if not data:
+                raise KrxApiError("빈 응답")
 
-                record = {
-                    "ticker": stock_code,
-                    "stock_name": item.get("ISU_ABBRV", ""),
-                    "market_type": "KOSDAQ",
-                    "krx_sector_code": item.get("IDX_IND_CD", ""),
-                    "krx_sector_name": item.get("IDX_IND_NM", ""),
-                    "as_of_date": as_of_date.isoformat() if isinstance(as_of_date, date) else as_of_date,
-                }
-                records.append(record)
+            return data
 
-        return FetchResult.success_result(
-            data=records,
-            source_id=self.source_id,
-            data_type=DataType.SECTOR_CLASSIFICATION,
-            params=params,
+        raise KrxApiError("최대 재시도 횟수 초과 (LOGOUT)")
+
+    def _download_csv(self, otp: str) -> str:
+        """OTP로 CSV 다운로드"""
+        self._rate_limit_wait()
+        response = self._session.post(
+            DOWNLOAD_URL,
+            data={"code": otp},
+            timeout=60,
         )
+        response.raise_for_status()
+        # KRX CSV는 EUC-KR 인코딩
+        return response.content.decode("euc-kr", errors="replace")
 
     def _fetch_institution_trade(self, params: Dict[str, Any]) -> FetchResult:
         """기관/외국인 매매 동향 조회"""

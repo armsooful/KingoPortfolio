@@ -34,6 +34,8 @@ class BatchType(str, Enum):
     PRICE = "PRICE"  # 주식 가격
     INDEX = "INDEX"  # 지수 가격
     INFO = "INFO"  # 종목 정보
+    DIVIDEND = "DIVIDEND"  # 배당 이력
+    ACTION = "ACTION"  # 기업 액션 (분할/합병)
 
 
 @dataclass

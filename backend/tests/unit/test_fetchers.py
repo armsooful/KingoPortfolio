@@ -268,21 +268,8 @@ class TestKrxInfoFetcher:
 
     def test_supported_data_types(self, fetcher):
         """지원 데이터 유형"""
-        assert DataType.SECTOR_CLASSIFICATION in fetcher.supported_data_types
         assert DataType.INSTITUTION_TRADE in fetcher.supported_data_types
         assert DataType.ETF_PORTFOLIO in fetcher.supported_data_types
-
-    def test_validate_params_sector(self, fetcher):
-        """SECTOR_CLASSIFICATION 파라미터 검증"""
-        # 필수 파라미터 누락
-        errors = fetcher.validate_params(DataType.SECTOR_CLASSIFICATION, {})
-        assert len(errors) > 0
-        assert any("as_of_date" in e for e in errors)
-
-        # 올바른 파라미터
-        params = {"as_of_date": date.today()}
-        errors = fetcher.validate_params(DataType.SECTOR_CLASSIFICATION, params)
-        assert len(errors) == 0
 
     def test_validate_params_institution(self, fetcher):
         """INSTITUTION_TRADE 파라미터 검증"""
@@ -335,7 +322,6 @@ class TestDataType:
         assert DataType.FINANCIAL_STATEMENT.value == "FINANCIAL_STATEMENT"
         assert DataType.DIVIDEND_HISTORY.value == "DIVIDEND_HISTORY"
         assert DataType.DISCLOSURE.value == "DISCLOSURE"
-        assert DataType.SECTOR_CLASSIFICATION.value == "SECTOR_CLASSIFICATION"
         assert DataType.INSTITUTION_TRADE.value == "INSTITUTION_TRADE"
         assert DataType.ETF_PORTFOLIO.value == "ETF_PORTFOLIO"
 
@@ -356,9 +342,3 @@ class TestSourcePriority:
         priority = FetcherFactory._source_priority.get(DataType.FINANCIAL_STATEMENT, [])
 
         assert "DART" in priority
-
-    def test_sector_priority(self):
-        """SECTOR_CLASSIFICATION 소스 우선순위"""
-        priority = FetcherFactory._source_priority.get(DataType.SECTOR_CLASSIFICATION, [])
-
-        assert "KRX_INFO" in priority

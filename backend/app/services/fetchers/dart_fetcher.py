@@ -20,6 +20,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
+import logging
 import requests
 
 from .base_fetcher import BaseFetcher, DataType, FetcherError, FetchResult
@@ -82,6 +83,8 @@ class DartFetcher(BaseFetcher):
         DataType.DISCLOSURE,
         DataType.CORP_CODE,
     ]
+
+    logger = logging.getLogger(__name__)
 
     def __init__(self, api_key: Optional[str] = None):
         """
@@ -188,6 +191,9 @@ class DartFetcher(BaseFetcher):
             for key in required:
                 if key not in params:
                     errors.append(f"필수 파라미터 누락: {key}")
+            corp_cls = params.get("corp_cls")
+            if corp_cls and corp_cls not in ["Y", "K", "N", "E"]:
+                errors.append("corp_cls는 Y, K, N, E 중 하나여야 합니다.")
 
         return errors
 
@@ -414,6 +420,13 @@ class DartFetcher(BaseFetcher):
             "reprt_code": "11011",  # 사업보고서
         }
 
+        request_url = (
+            f"{self.BASE_URL}/alotMatter.json?"
+            f"crtfc_key={self.api_key}&corp_code={corp_code}"
+            f"&bsns_year={fiscal_year}&reprt_code=11011"
+        )
+        self.logger.info(request_url)
+
         data = self._call_api("alotMatter.json", api_params)
 
         # 응답 파싱
@@ -441,32 +454,50 @@ class DartFetcher(BaseFetcher):
         records = []
 
         for item in items:
-            # 주당배당금(원)
             se = item.get("se", "")
-            if "주당" not in se and "배당" not in se:
-                continue
-
-            # 당기 값
-            thstrm = item.get("thstrm", "").replace(",", "").replace("-", "")
-            if not thstrm:
-                continue
-
-            try:
-                dividend_per_share = Decimal(thstrm)
-            except Exception:
-                continue
-
             stock_kind = item.get("stock_knd", "보통주")
             dividend_type = "CASH"
             if "주식" in se:
                 dividend_type = "STOCK"
 
+            def _parse_decimal(value: str) -> Optional[Decimal]:
+                if not value:
+                    return None
+                cleaned = str(value).replace(",", "").replace("-", "").strip()
+                if not cleaned:
+                    return None
+                try:
+                    return Decimal(cleaned)
+                except Exception:
+                    return None
+
+            thstrm = _parse_decimal(item.get("thstrm", ""))
+            frmtrm = _parse_decimal(item.get("frmtrm", ""))
+            lwfr = _parse_decimal(item.get("lwfr", ""))
+
+            stlm_raw = item.get("stlm_dt")
+            stlm_dt = None
+            if stlm_raw:
+                try:
+                    stlm_dt = date.fromisoformat(stlm_raw)
+                except Exception:
+                    stlm_dt = None
+
             record = {
                 "ticker": ticker,
                 "fiscal_year": fiscal_year,
+                "rcept_no": item.get("rcept_no"),
+                "corp_cls": item.get("corp_cls"),
+                "corp_code": item.get("corp_code"),
+                "corp_name": item.get("corp_name"),
+                "se": se,
+                "stock_knd": stock_kind,
+                "thstrm": thstrm,
+                "frmtrm": frmtrm,
+                "lwfr": lwfr,
+                "stlm_dt": stlm_dt,
                 "dividend_type": dividend_type,
-                "dividend_per_share": float(dividend_per_share),
-                "stock_kind": stock_kind,
+                "dividend_per_share": float(thstrm) if thstrm is not None else None,
                 "as_of_date": as_of_date.isoformat() if isinstance(as_of_date, date) else as_of_date,
             }
             records.append(record)
@@ -489,12 +520,30 @@ class DartFetcher(BaseFetcher):
         api_params = {
             "bgn_de": start_date.replace("-", ""),
             "end_de": end_date.replace("-", ""),
+            "page_no": 1,
             "page_count": 100,
         }
+
+        # DART 공시 목록 호출 URL 로그 (디버그/검증용)
+        request_url_parts = [
+            f"crtfc_key={self.api_key}",
+            f"bgn_de={api_params['bgn_de']}",
+            f"end_de={api_params['end_de']}",
+            "page_no=1",
+            f"page_count={api_params['page_count']}",
+        ]
 
         if ticker:
             corp_code = self._get_corp_code(ticker)
             api_params["corp_code"] = corp_code
+
+        corp_cls = params.get("corp_cls")
+        if corp_cls:
+            api_params["corp_cls"] = corp_cls
+            request_url_parts.append(f"corp_cls={corp_cls}")
+
+        request_url = f"{self.BASE_URL}/list.json?" + "&".join(request_url_parts)
+        self.logger.info(request_url)
 
         data = self._call_api("list.json", api_params)
 

@@ -20,9 +20,12 @@ from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.models.real_data import (
+    DataSource,
     StockPriceDaily,
     IndexPriceDaily,
     StockInfo,
+    DividendHistory,
+    CorporateAction,
 )
 from app.services.batch_manager import BatchManager, BatchStats, BatchType
 from app.services.data_quality_validator import (
@@ -35,6 +38,8 @@ from app.services.pykrx_fetcher import (
     OHLCVRecord,
     IndexOHLCVRecord,
 )
+from app.services.fetchers.base_fetcher import DataType, FetcherError
+from app.services.fetchers.dart_fetcher import DartFetcher
 from app.utils.structured_logging import get_structured_logger
 
 logger = get_structured_logger(__name__)
@@ -73,8 +78,46 @@ class RealDataLoader:
     def __init__(self, db: Session):
         self.db = db
         self.fetcher = PykrxFetcher()
+        self.dart_fetcher: Optional[DartFetcher] = None
         self.batch_manager = BatchManager(db)
         self.validator = DataQualityValidator(db)
+
+    def _ensure_data_source(
+        self,
+        source_id: str,
+        source_name: str,
+        source_type: str = "VENDOR",
+        api_type: Optional[str] = None,
+        update_frequency: Optional[str] = None,
+        license_type: Optional[str] = None,
+        base_url: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> None:
+        existing = (
+            self.db.query(DataSource)
+            .filter(DataSource.source_id == source_id)
+            .first()
+        )
+        if existing:
+            if not existing.is_active:
+                existing.is_active = True
+                self.db.commit()
+            return
+
+        self.db.add(
+            DataSource(
+                source_id=source_id,
+                source_name=source_name,
+                source_type=source_type,
+                api_type=api_type,
+                update_frequency=update_frequency,
+                license_type=license_type,
+                base_url=base_url,
+                description=description,
+                is_active=True,
+            )
+        )
+        self.db.commit()
 
     def load_stock_prices(
         self,
@@ -440,6 +483,228 @@ class RealDataLoader:
                 batch_id=batch.batch_id,
             ) from e
 
+    def load_dividend_history(
+        self,
+        tickers: List[str],
+        fiscal_year: int,
+        as_of_date: date,
+        operator_id: Optional[str] = None,
+        operator_reason: Optional[str] = None,
+    ) -> LoadResult:
+        """
+        배당 이력 적재 (DART)
+
+        Args:
+            tickers: 종목 코드 리스트
+            fiscal_year: 기준 사업연도
+            as_of_date: 데이터 기준일
+        """
+        if not self.dart_fetcher:
+            self.dart_fetcher = DartFetcher()
+        self._ensure_data_source(
+            self.dart_fetcher.source_id,
+            self.dart_fetcher.source_name,
+            source_type="VENDOR",
+            api_type="REST",
+            update_frequency="MANUAL",
+            license_type="PUBLIC",
+            base_url=self.dart_fetcher.BASE_URL,
+            description="DART OpenAPI",
+        )
+
+        target_start = date(fiscal_year, 1, 1)
+        target_end = date(fiscal_year, 12, 31)
+
+        batch = self.batch_manager.create_batch(
+            batch_type=BatchType.DIVIDEND,
+            source_id=self.dart_fetcher.source_id,
+            as_of_date=as_of_date,
+            target_start=target_start,
+            target_end=target_end,
+            operator_id=operator_id,
+            operator_reason=operator_reason or f"배당 이력 적재: {len(tickers)}종목",
+        )
+
+        logger.info(
+            "배당 이력 적재 시작",
+            {"batch_id": batch.batch_id, "tickers": len(tickers), "fiscal_year": fiscal_year},
+        )
+
+        self.batch_manager.start_batch(batch.batch_id)
+        stats = BatchStats()
+
+        try:
+            for ticker in tickers:
+                try:
+                    result = self.dart_fetcher.fetch(
+                        DataType.DIVIDEND_HISTORY,
+                        {
+                            "ticker": ticker,
+                            "fiscal_year": fiscal_year,
+                            "as_of_date": as_of_date,
+                        },
+                    )
+                    if not result.success:
+                        logger.warning(
+                            "배당 이력 조회 실패",
+                            {"ticker": ticker, "error": result.error_message},
+                        )
+                        stats.failed_records += 1
+                        continue
+
+                    if not result.data:
+                        stats.skipped_records += 1
+                        continue
+
+                    for record in result.data:
+                        stats.total_records += 1
+                        inserted = self._insert_dividend_history(
+                            record=record,
+                            batch_id=batch.batch_id,
+                            as_of_date=as_of_date,
+                            source_id=result.source_id,
+                        )
+                        if inserted:
+                            stats.success_records += 1
+                        else:
+                            stats.skipped_records += 1
+                except FetcherError as e:
+                    logger.warning(
+                        "배당 이력 조회 실패",
+                        {"ticker": ticker, "error": str(e)},
+                    )
+                    stats.failed_records += 1
+
+            self.batch_manager.complete_batch(batch.batch_id, stats)
+
+            return LoadResult(
+                batch_id=batch.batch_id,
+                success=True,
+                total_records=stats.total_records,
+                success_records=stats.success_records,
+                failed_records=stats.failed_records,
+                skipped_records=stats.skipped_records,
+            )
+
+        except Exception as e:
+            logger.error(
+                "배당 이력 적재 실패",
+                {"batch_id": batch.batch_id, "error": str(e)},
+            )
+            self.batch_manager.fail_batch(batch.batch_id, str(e), stats)
+            raise DataLoadError(
+                f"배당 이력 적재 실패: {e}",
+                batch_id=batch.batch_id,
+            ) from e
+
+    def load_corporate_actions(
+        self,
+        start_date: date,
+        end_date: date,
+        as_of_date: date,
+        corp_cls: Optional[str] = None,
+        operator_id: Optional[str] = None,
+        operator_reason: Optional[str] = None,
+    ) -> LoadResult:
+        """
+        기업 액션 적재 (DART 공시 기반)
+        """
+        if not self.dart_fetcher:
+            self.dart_fetcher = DartFetcher()
+        self._ensure_data_source(
+            self.dart_fetcher.source_id,
+            self.dart_fetcher.source_name,
+            source_type="VENDOR",
+            api_type="REST",
+            update_frequency="MANUAL",
+            license_type="PUBLIC",
+            base_url=self.dart_fetcher.BASE_URL,
+            description="DART OpenAPI",
+        )
+
+        batch = self.batch_manager.create_batch(
+            batch_type=BatchType.ACTION,
+            source_id=self.dart_fetcher.source_id,
+            as_of_date=as_of_date,
+            target_start=start_date,
+            target_end=end_date,
+            operator_id=operator_id,
+            operator_reason=operator_reason or "기업 액션 적재",
+        )
+
+        logger.info(
+            "기업 액션 적재 시작",
+            {"batch_id": batch.batch_id, "start": str(start_date), "end": str(end_date)},
+        )
+
+        self.batch_manager.start_batch(batch.batch_id)
+        stats = BatchStats()
+
+        try:
+            result = self.dart_fetcher.fetch(
+                DataType.DISCLOSURE,
+                {
+                    "start_date": start_date,
+                    "end_date": end_date,
+                    "as_of_date": as_of_date,
+                    "corp_cls": corp_cls,
+                },
+            )
+            if not result.success:
+                raise DataLoadError(result.error_message or "기업 액션 조회 실패", batch_id=batch.batch_id)
+
+            action_keywords = {
+                "주식분할": "SPLIT",
+                "액면분할": "SPLIT",
+                "감자": "REVERSE_SPLIT",
+                "합병": "MERGER",
+                "분할": "SPINOFF",
+            }
+
+            for record in result.data:
+                report_name = record.get("report_nm", "") or ""
+                action_type = None
+                for keyword, mapped in action_keywords.items():
+                    if keyword in report_name:
+                        action_type = mapped
+                        break
+                if not action_type:
+                    continue
+
+                stats.total_records += 1
+                inserted = self._insert_corporate_action(
+                    record=record,
+                    action_type=action_type,
+                    batch_id=batch.batch_id,
+                    as_of_date=as_of_date,
+                    source_id=result.source_id,
+                )
+                if inserted:
+                    stats.success_records += 1
+                else:
+                    stats.skipped_records += 1
+
+            self.batch_manager.complete_batch(batch.batch_id, stats)
+
+            return LoadResult(
+                batch_id=batch.batch_id,
+                success=True,
+                total_records=stats.total_records,
+                success_records=stats.success_records,
+                failed_records=stats.failed_records,
+                skipped_records=stats.skipped_records,
+            )
+        except Exception as e:
+            logger.error(
+                "기업 액션 적재 실패",
+                {"batch_id": batch.batch_id, "error": str(e)},
+            )
+            self.batch_manager.fail_batch(batch.batch_id, str(e), stats)
+            raise DataLoadError(
+                f"기업 액션 적재 실패: {e}",
+                batch_id=batch.batch_id,
+            ) from e
+
     def _insert_stock_price(
         self,
         record: OHLCVRecord,
@@ -455,6 +720,8 @@ class RealDataLoader:
             high_price=record.high_price,
             low_price=record.low_price,
             close_price=record.close_price,
+            # KRX 기본 소스는 수정종가가 없으므로 종가를 기본값으로 사용
+            adj_close_price=record.adj_close_price or record.close_price,
             volume=record.volume,
             trading_value=record.trading_value,
             market_cap=record.market_cap,
@@ -481,6 +748,113 @@ class RealDataLoader:
         if not existing:
             self.db.add(price_data)
             self.db.commit()
+
+    def _insert_dividend_history(
+        self,
+        record: Dict[str, any],
+        batch_id: int,
+        as_of_date: date,
+        source_id: str,
+    ) -> bool:
+        """배당 이력 레코드 삽입 (중복 시 스킵)"""
+        existing = (
+            self.db.query(DividendHistory)
+            .filter(
+                DividendHistory.ticker == record.get("ticker"),
+                DividendHistory.fiscal_year == record.get("fiscal_year"),
+                DividendHistory.dividend_type == record.get("dividend_type"),
+                DividendHistory.source_id == source_id,
+            )
+            .first()
+        )
+        if existing:
+            return False
+
+        dividend_data = DividendHistory(
+            ticker=record.get("ticker"),
+            fiscal_year=record.get("fiscal_year"),
+            rcept_no=record.get("rcept_no"),
+            corp_cls=record.get("corp_cls"),
+            corp_code=record.get("corp_code"),
+            corp_name=record.get("corp_name"),
+            se=record.get("se"),
+            stock_knd=record.get("stock_knd"),
+            thstrm=record.get("thstrm"),
+            frmtrm=record.get("frmtrm"),
+            lwfr=record.get("lwfr"),
+            stlm_dt=record.get("stlm_dt"),
+            dividend_type=record.get("dividend_type"),
+            dividend_per_share=record.get("dividend_per_share"),
+            dividend_rate=record.get("dividend_rate"),
+            dividend_yield=record.get("dividend_yield"),
+            record_date=record.get("record_date"),
+            payment_date=record.get("payment_date"),
+            ex_dividend_date=record.get("ex_dividend_date"),
+            source_id=source_id,
+            batch_id=batch_id,
+            as_of_date=as_of_date,
+        )
+        self.db.add(dividend_data)
+        try:
+            self.db.commit()
+            return True
+        except Exception:
+            self.db.rollback()
+            raise
+
+    def _insert_corporate_action(
+        self,
+        record: Dict[str, any],
+        action_type: str,
+        batch_id: int,
+        as_of_date: date,
+        source_id: str,
+    ) -> bool:
+        """기업 액션 레코드 삽입 (중복 시 스킵)"""
+        ticker = record.get("stock_code") or record.get("ticker")
+        if not ticker:
+            return False
+        report_date = record.get("rcept_dt")
+        effective_date = None
+        if report_date:
+            try:
+                if "-" in report_date or "." in report_date:
+                    effective_date = date.fromisoformat(report_date.replace(".", "-"))
+                else:
+                    effective_date = date.fromisoformat(
+                        f"{report_date[0:4]}-{report_date[4:6]}-{report_date[6:8]}"
+                    )
+            except Exception:
+                effective_date = None
+
+        existing = (
+            self.db.query(CorporateAction)
+            .filter(
+                CorporateAction.ticker == ticker,
+                CorporateAction.action_type == action_type,
+                CorporateAction.effective_date == effective_date,
+                CorporateAction.reference_doc == record.get("rcept_no"),
+                CorporateAction.source_id == source_id,
+            )
+            .first()
+        )
+        if existing:
+            return False
+
+        action = CorporateAction(
+            ticker=ticker,
+            action_type=action_type,
+            ratio=None,
+            effective_date=effective_date,
+            report_name=record.get("report_nm"),
+            reference_doc=record.get("rcept_no"),
+            source_id=source_id,
+            batch_id=batch_id,
+            as_of_date=as_of_date,
+        )
+        self.db.add(action)
+        self.db.commit()
+        return True
 
     def _insert_index_price(
         self,
