@@ -243,6 +243,42 @@ class StockInfo(Base):
 
 
 # ============================================================================
+# FinanceDataReader 종목 마스터
+# ============================================================================
+
+class FdrStockListing(Base):
+    """FinanceDataReader 종목 마스터"""
+    __tablename__ = "fdr_stock_listing"
+
+    listing_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    ticker = Column(String(10), nullable=False)  # 종목코드
+    name = Column(String(100), nullable=False)  # 종목명
+    market = Column(String(20), nullable=False)  # KOSPI/KOSDAQ/KONEX/KRX
+    sector = Column(String(100))
+    industry = Column(String(100))
+    listing_date = Column(Date)
+    shares = Column(BigInteger)
+    par_value = Column(Numeric(18, 2))
+
+    # 데이터 거버넌스
+    as_of_date = Column(Date, nullable=False)
+    source_id = Column(String(20), ForeignKey("data_source.source_id"), nullable=False)
+    batch_id = Column(Integer, ForeignKey("data_load_batch.batch_id"))
+
+    created_at = Column(DateTime, default=kst_now)
+
+    __table_args__ = (
+        UniqueConstraint('ticker', 'as_of_date', 'source_id', name='uq_fdr_stock_listing'),
+        Index('idx_fdr_stock_ticker', 'ticker'),
+        Index('idx_fdr_stock_market', 'market'),
+        Index('idx_fdr_stock_asof', 'as_of_date'),
+    )
+
+    def __repr__(self):
+        return f"<FdrStockListing {self.ticker} ({self.name}) {self.market}>"
+
+
+# ============================================================================
 # 데이터 품질
 # ============================================================================
 
@@ -331,53 +367,72 @@ class FinancialStatement(Base):
 
 
 class DividendHistory(Base):
-    """배당 이력 (DART)"""
+    """배당 이력 (FSC_DATA_GO_KR API 기준)
+
+    데이터 출처: 금융위원회 주식배당정보 API
+    - isin_cd + dvdn_bas_dt + scrs_itms_kcd를 복합키로 사용
+    - 보통주/우선주 구분하여 저장
+    """
     __tablename__ = "dividend_history"
 
     dividend_id = Column(Integer, primary_key=True, autoincrement=True)
-    ticker = Column(String(10), nullable=False)
-    fiscal_year = Column(Integer, nullable=False)
 
-    # DART 원본 필드
-    rcept_no = Column(String(14))  # 접수번호
-    corp_cls = Column(String(1))  # 법인구분
-    corp_code = Column(String(8))
-    corp_name = Column(String(100))
-    se = Column(String(200))  # 구분
-    stock_knd = Column(String(50))  # 주식 종류
-    thstrm = Column(Numeric(18, 2))  # 당기
-    frmtrm = Column(Numeric(18, 2))  # 전기
-    lwfr = Column(Numeric(18, 2))  # 전전기
-    stlm_dt = Column(Date)  # 결산기준일
+    # 종목 식별 (FSC API 기준)
+    isin_cd = Column(String(12), nullable=False)  # ISIN 코드 (KR7005930003)
+    isin_cd_nm = Column(String(200))  # ISIN 코드명 (삼성전자)
+    crno = Column(String(13))  # 법인등록번호
+    ticker = Column(String(10))  # 종목코드 (005930) - 레거시 호환용
 
-    # 배당 정보
-    dividend_type = Column(String(20), nullable=False)  # 'CASH', 'STOCK', 'INTERIM'
-    dividend_per_share = Column(Numeric(18, 2))  # 주당 배당금
-    dividend_rate = Column(Numeric(8, 4))  # 배당률 (%)
-    dividend_yield = Column(Numeric(8, 4))  # 배당수익률 (%)
+    # 배당 일정 (FSC API 필드)
+    dvdn_bas_dt = Column(Date, nullable=False)  # 배당기준일자 (주주확정일)
+    cash_dvdn_pay_dt = Column(Date)  # 현금배당지급일자
+    stck_stac_md = Column(String(4))  # 주식결산월일 (12/31 형식)
 
-    # 배당 일정
-    record_date = Column(Date)  # 배당 기준일
-    payment_date = Column(Date)  # 배당 지급일
-    ex_dividend_date = Column(Date)  # 배당락일
+    # 유가증권 종류 (보통주/우선주 구분)
+    scrs_itms_kcd = Column(String(4))  # 유가증권종목종류코드 (0101=보통주, 0201=우선주)
+    scrs_itms_kcd_nm = Column(String(100))  # 유가증권종목종류코드명
+
+    # 배당 사유
+    stck_dvdn_rcd = Column(String(2))  # 주식배당사유코드 (00=무배당, 01=현금배당 등)
+    stck_dvdn_rcd_nm = Column(String(100))  # 주식배당사유코드명
+
+    # 배당금액 (1주당)
+    stck_genr_dvdn_amt = Column(Numeric(22, 3))  # 주식일반배당금액 (현금배당)
+    stck_grdn_dvdn_amt = Column(Numeric(22, 3))  # 주식차등배당금액
+
+    # 배당률
+    stck_genr_cash_dvdn_rt = Column(Numeric(26, 10))  # 주식일반현금배당률
+    stck_genr_dvdn_rt = Column(Numeric(26, 10))  # 주식일반배당률 (액면가 대비)
+    cash_grdn_dvdn_rt = Column(Numeric(26, 10))  # 현금차등배당률
+    stck_grdn_dvdn_rt = Column(Numeric(26, 10))  # 주식차등배당률
+
+    # 주식 정보
+    stck_par_prc = Column(Numeric(22, 3))  # 주식액면가
+
+    # 명의개서대리인 정보
+    trsnm_dpty_dcd = Column(String(2))  # 명의개서대리인구분코드
+    trsnm_dpty_dcd_nm = Column(String(100))  # 명의개서대리인구분코드명
 
     # 데이터 거버넌스
+    bas_dt = Column(String(8))  # API 조회 기준일자 (YYYYMMDD)
     source_id = Column(String(20), ForeignKey("data_source.source_id"), nullable=False)
     batch_id = Column(Integer, ForeignKey("data_load_batch.batch_id"))
-    as_of_date = Column(Date, nullable=False)
+    as_of_date = Column(Date, nullable=False)  # 데이터 기준일
 
     created_at = Column(DateTime, default=kst_now)
 
     __table_args__ = (
-        UniqueConstraint('ticker', 'fiscal_year', 'dividend_type', 'source_id',
+        # isin_cd + 배당기준일 + 주식종류 + 소스로 유일성 보장
+        UniqueConstraint('isin_cd', 'dvdn_bas_dt', 'scrs_itms_kcd', 'source_id',
                         name='uq_dividend_history'),
+        Index('idx_dividend_isin', 'isin_cd'),
         Index('idx_dividend_ticker', 'ticker'),
-        Index('idx_dividend_year', 'fiscal_year'),
-        Index('idx_dividend_rcept', 'rcept_no'),
+        Index('idx_dividend_dvdn_bas_dt', 'dvdn_bas_dt'),
+        Index('idx_dividend_asof', 'as_of_date'),
     )
 
     def __repr__(self):
-        return f"<DividendHistory {self.ticker} {self.fiscal_year} {self.dividend_type}>"
+        return f"<DividendHistory {self.isin_cd} {self.dvdn_bas_dt} {self.stck_dvdn_rcd_nm}>"
 
 
 # ============================================================================
@@ -463,3 +518,118 @@ class InstitutionTrade(Base):
 
     def __repr__(self):
         return f"<InstitutionTrade {self.ticker} {self.trade_date}>"
+
+
+# ============================================================================
+# Phase 11: 주식 일별 시세 (stocks_daily_prices DDL 기준)
+# ============================================================================
+
+class StocksDailyPrice(Base):
+    """주식 일별 시세 (stocks_daily_prices 테이블)
+
+    참조: db/ddl/phase11_stocks_daily_prices_ddl.sql
+    - stocks_meta 테이블과 FK 관계
+    - pykrx API를 통해 적재
+    """
+    __tablename__ = "stocks_daily_prices"
+
+    code = Column(String(10), primary_key=True)  # 종목코드 (FK: stocks_meta.code)
+    date = Column(Date, primary_key=True)  # 거래일
+
+    # OHLCV
+    open_price = Column(Numeric(18, 2))
+    high_price = Column(Numeric(18, 2))
+    low_price = Column(Numeric(18, 2))
+    close_price = Column(Numeric(18, 2))
+    volume = Column(BigInteger)
+
+    # 등락률
+    change_rate = Column(Numeric(8, 4))  # 전일 대비 등락률 (%)
+
+    __table_args__ = (
+        Index('idx_daily_prices_date', 'date'),
+    )
+
+    def __repr__(self):
+        return f"<StocksDailyPrice {self.code} {self.date}: {self.close_price}>"
+
+
+# ============================================================================
+# Level 2: 채권 기본 정보 (FSC OpenAPI)
+# ============================================================================
+
+class BondBasicInfo(Base):
+    """채권 기본 정보 (금융위원회 OpenAPI)
+
+    데이터 출처: 금융위원회 채권기본정보 API (GetBondIssuInfoService)
+    - isin_cd + bas_dt + source_id 복합키로 유일성 보장
+    - 기존 bonds 테이블(교육용)과 독립 구조
+    """
+    __tablename__ = "bond_basic_info"
+
+    bond_info_id = Column(Integer, primary_key=True, autoincrement=True)
+
+    # 식별
+    isin_cd = Column(String(12), nullable=False)  # ISIN 코드
+    bas_dt = Column(String(8))  # API 조회 기준일 (YYYYMMDD)
+    crno = Column(String(13))  # 법인등록번호
+
+    # 종목
+    isin_cd_nm = Column(String(200))  # 채권명
+    scrs_itms_kcd = Column(String(4))  # 유가증권종목종류코드
+    scrs_itms_kcd_nm = Column(String(100))  # 유가증권종목종류코드명
+    bond_isur_nm = Column(String(200))  # 발행인명
+
+    # 발행
+    bond_issu_dt = Column(Date)  # 발행일
+    bond_expr_dt = Column(Date)  # 만기일
+
+    # 금액
+    bond_issu_amt = Column(Numeric(22, 3))  # 발행금액
+    bond_bal = Column(Numeric(22, 3))  # 잔액
+
+    # 금리
+    bond_srfc_inrt = Column(Numeric(15, 10))  # 표면이율
+    irt_chng_dcd = Column(String(1))  # 금리변동구분: Y=변동, N=고정
+    bond_int_tcd = Column(String(1))  # 이자유형코드
+    int_pay_cycl_ctt = Column(String(100))  # 이자지급주기
+
+    # 이표
+    nxtm_copn_dt = Column(Date)  # 차기이표일
+    rbf_copn_dt = Column(Date)  # 직전이표일
+
+    # 보증/순위
+    grn_dcd = Column(String(1))  # 보증구분코드
+    bond_rnkn_dcd = Column(String(1))  # 순위구분코드
+
+    # 신용등급
+    kis_scrs_itms_kcd = Column(String(4))  # KIS 신용등급
+    kbp_scrs_itms_kcd = Column(String(4))  # KBP 신용등급
+    nice_scrs_itms_kcd = Column(String(4))  # NICE 신용등급
+    fn_scrs_itms_kcd = Column(String(4))  # FN 신용등급
+
+    # 모집/상장
+    bond_offr_mcd = Column(String(2))  # 모집방법코드
+    lstg_dt = Column(Date)  # 상장일
+
+    # 특이
+    prmnc_bond_yn = Column(String(1))  # 영구채권여부
+    strips_psbl_yn = Column(String(1))  # 스트립스가능여부
+
+    # 데이터 거버넌스
+    source_id = Column(String(20), ForeignKey("data_source.source_id"), nullable=False)
+    batch_id = Column(Integer, ForeignKey("data_load_batch.batch_id"))
+    as_of_date = Column(Date, nullable=False)  # 데이터 기준일
+
+    created_at = Column(DateTime, default=kst_now)
+
+    __table_args__ = (
+        UniqueConstraint('isin_cd', 'bas_dt', 'source_id', name='uq_bond_basic_info'),
+        Index('idx_bond_info_isin', 'isin_cd'),
+        Index('idx_bond_info_isur', 'bond_isur_nm'),
+        Index('idx_bond_info_expr_dt', 'bond_expr_dt'),
+        Index('idx_bond_info_asof', 'as_of_date'),
+    )
+
+    def __repr__(self):
+        return f"<BondBasicInfo {self.isin_cd} ({self.isin_cd_nm}) expr={self.bond_expr_dt}>"

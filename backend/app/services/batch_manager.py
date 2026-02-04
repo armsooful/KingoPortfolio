@@ -36,6 +36,7 @@ class BatchType(str, Enum):
     INFO = "INFO"  # 종목 정보
     DIVIDEND = "DIVIDEND"  # 배당 이력
     ACTION = "ACTION"  # 기업 액션 (분할/합병)
+    BOND_INFO = "BOND_INFO"  # 채권기본정보
 
 
 @dataclass

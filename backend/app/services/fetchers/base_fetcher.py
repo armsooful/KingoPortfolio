@@ -27,6 +27,9 @@ class DataType(str, Enum):
     DISCLOSURE = "DISCLOSURE"
     CORP_CODE = "CORP_CODE"
 
+    # Level 2: 채권 데이터
+    BOND_BASIC_INFO = "BOND_BASIC_INFO"
+
     # Level 2: 시장 데이터
     INSTITUTION_TRADE = "INSTITUTION_TRADE"
     ETF_PORTFOLIO = "ETF_PORTFOLIO"

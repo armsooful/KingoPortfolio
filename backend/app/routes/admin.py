@@ -33,6 +33,25 @@ class DividendLoadRequest(BaseModel):
     as_of_date: Optional[date] = None
 
 
+class FscDividendLoadRequest(BaseModel):
+    tickers: List[str] = Field(..., min_items=1)
+    bas_dt: Optional[str] = Field(None, regex="^[0-9]{8}$")
+    as_of_date: Optional[date] = None
+
+
+class FdrStockListingLoadRequest(BaseModel):
+    market: str = Field("KRX")
+    as_of_date: Optional[date] = None
+
+
+class BondInfoLoadRequest(BaseModel):
+    bas_dt: Optional[str] = Field(None, regex="^[0-9]{8}$")
+    crno: Optional[str] = Field(None, regex="^[0-9]{13}$")
+    bond_isur_nm: Optional[str] = None
+    limit: Optional[int] = Field(None, ge=1, le=10000)
+    as_of_date: Optional[date] = None
+
+
 class CorporateActionLoadRequest(BaseModel):
     start_date: date
     end_date: date
@@ -83,21 +102,31 @@ async def load_stocks(
 
 @router.post("/load-etfs")
 async def load_etfs(
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
 ):
-    """ETF 데이터만 적재"""
+    """ETF 데이터만 적재 (백그라운드)"""
     try:
-        # task_id 생성
         task_id = f"etfs_{uuid.uuid4().hex[:8]}"
 
-        # 백그라운드에서 실행하지 않고 즉시 실행 (나중에 백그라운드 태스크로 변경 가능)
-        result = DataLoaderService.load_etfs(db, task_id=task_id)
+        def run_etf_loading():
+            logger.info(f"Background task started for ETFs, task_id: {task_id}")
+            from app.database import SessionLocal
+            db = SessionLocal()
+            try:
+                result = DataLoaderService.load_etfs(db, task_id=task_id)
+                logger.info(f"Background task completed for ETFs: {result}")
+            except Exception as e:
+                logger.error(f"Background task failed for ETFs: {str(e)}", exc_info=True)
+            finally:
+                db.close()
+
+        background_tasks.add_task(run_etf_loading)
 
         return {
             "status": "success",
-            "message": "ETF 데이터 적재 완료",
-            "result": result,
+            "message": "ETF 데이터 수집 시작",
             "task_id": task_id
         }
     except Exception as e:
@@ -123,6 +152,87 @@ async def load_dividend_history(
         return {
             "status": "success",
             "message": "배당 이력 적재 완료",
+            "result": result.__dict__,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/fsc/load-dividends")
+async def load_dividend_history_fsc(
+    payload: FscDividendLoadRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
+):
+    """금융위원회_주식배당정보 배당 이력 적재"""
+    try:
+        loader = RealDataLoader(db)
+        result = loader.load_dividend_history_fsc(
+            tickers=payload.tickers,
+            bas_dt=payload.bas_dt,
+            as_of_date=payload.as_of_date or date.today(),
+            operator_id=str(current_user.id),
+            operator_reason=f"FSC 배당 이력 적재 ({payload.bas_dt or 'company'})",
+        )
+        return {
+            "status": "success",
+            "message": "FSC 배당 이력 적재 완료",
+            "result": result.__dict__,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/fsc/load-bonds")
+async def load_bond_basic_info(
+    payload: BondInfoLoadRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
+):
+    """금융위원회_채권기본정보 적재"""
+    if not (payload.bas_dt or payload.crno or payload.bond_isur_nm):
+        raise HTTPException(
+            status_code=422,
+            detail="bas_dt, crno, bond_isur_nm 중 하나라도 필수입니다."
+        )
+    try:
+        loader = RealDataLoader(db)
+        result = loader.load_bond_basic_info(
+            crno=payload.crno,
+            bond_isur_nm=payload.bond_isur_nm,
+            bas_dt=payload.bas_dt,
+            limit=payload.limit,
+            as_of_date=payload.as_of_date or date.today(),
+            operator_id=str(current_user.id),
+            operator_reason=f"FSC 채권기본정보 적재 (bas_dt={payload.bas_dt}, crno={payload.crno})",
+        )
+        return {
+            "status": "success",
+            "message": "채권기본정보 적재 완료",
+            "result": result.__dict__,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/fdr/load-stock-listing")
+async def load_fdr_stock_listing(
+    payload: FdrStockListingLoadRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
+):
+    """FinanceDataReader 종목 마스터 적재"""
+    try:
+        loader = RealDataLoader(db)
+        result = loader.load_fdr_stock_listing(
+            market=payload.market,
+            as_of_date=payload.as_of_date or date.today(),
+            operator_id=str(current_user.id),
+            operator_reason=f"FDR 종목 마스터 적재 ({payload.market})",
+        )
+        return {
+            "status": "success",
+            "message": "FDR 종목 마스터 적재 완료",
             "result": result.__dict__,
         }
     except Exception as e:
@@ -163,10 +273,10 @@ async def get_data_status(
     from sqlalchemy import func
     from app.models.securities import Stock, ETF, Bond, DepositProduct
     
-    stock_count = db.query(func.count(Stock.id)).scalar()
-    etf_count = db.query(func.count(ETF.id)).scalar()
-    bond_count = db.query(func.count(Bond.id)).scalar()
-    deposit_count = db.query(func.count(DepositProduct.id)).scalar()
+    stock_count = db.query(func.count(Stock.ticker)).scalar()
+    etf_count = db.query(func.count(ETF.ticker)).scalar()
+    bond_count = db.query(func.count(Bond.name)).scalar()
+    deposit_count = db.query(func.count(DepositProduct.name)).scalar()
     
     return {
         "stocks": stock_count,
@@ -225,7 +335,6 @@ async def get_stocks(
         "total": total,
         "items": [
             {
-                "id": s.id,
                 "ticker": s.ticker,
                 "name": s.name,
                 "current_price": float(s.current_price) if s.current_price else None,
@@ -254,7 +363,6 @@ async def get_etfs(
         "total": total,
         "items": [
             {
-                "id": e.id,
                 "ticker": e.ticker,
                 "name": e.name,
                 "current_price": float(e.current_price) if e.current_price else None,
@@ -893,7 +1001,7 @@ async def load_all_pykrx_etfs(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
 ):
-    """pykrx: 인기 한국 ETF 전체 적재"""
+    """pykrx: 한국 ETF 전체 종목 적재"""
     try:
         task_id = f"pykrx_etfs_{uuid.uuid4().hex[:8]}"
 
@@ -917,7 +1025,7 @@ async def load_all_pykrx_etfs(
 
         return {
             "status": "success",
-            "message": "pykrx 한국 ETF 데이터 수집 시작",
+            "message": "pykrx 한국 ETF 전체 종목 수집 시작",
             "task_id": task_id
         }
     except Exception as e:

@@ -26,6 +26,8 @@ from app.models.real_data import (
     StockInfo,
     DividendHistory,
     CorporateAction,
+    FdrStockListing,
+    BondBasicInfo,
 )
 from app.services.batch_manager import BatchManager, BatchStats, BatchType
 from app.services.data_quality_validator import (
@@ -40,6 +42,8 @@ from app.services.pykrx_fetcher import (
 )
 from app.services.fetchers.base_fetcher import DataType, FetcherError
 from app.services.fetchers.dart_fetcher import DartFetcher
+from app.services.fetchers.fsc_dividend_fetcher import FscDividendFetcher
+from app.services.fetchers.bond_basic_info_fetcher import BondBasicInfoFetcher
 from app.utils.structured_logging import get_structured_logger
 
 logger = get_structured_logger(__name__)
@@ -79,6 +83,8 @@ class RealDataLoader:
         self.db = db
         self.fetcher = PykrxFetcher()
         self.dart_fetcher: Optional[DartFetcher] = None
+        self.fsc_dividend_fetcher: Optional[FscDividendFetcher] = None
+        self.bond_basic_info_fetcher: Optional[BondBasicInfoFetcher] = None
         self.batch_manager = BatchManager(db)
         self.validator = DataQualityValidator(db)
 
@@ -597,6 +603,415 @@ class RealDataLoader:
                 batch_id=batch.batch_id,
             ) from e
 
+    def load_dividend_history_fsc(
+        self,
+        tickers: List[str],
+        bas_dt: Optional[str],
+        as_of_date: date,
+        operator_id: Optional[str] = None,
+        operator_reason: Optional[str] = None,
+    ) -> LoadResult:
+        """
+        배당 이력 적재 (금융위원회_주식배당정보 OpenAPI)
+
+        Args:
+            tickers: 종목 코드 리스트
+            bas_dt: 기준일자(YYYYMMDD). None이면 회사명 기준 전체 조회
+            as_of_date: 데이터 기준일
+        """
+        if not self.fsc_dividend_fetcher:
+            self.fsc_dividend_fetcher = FscDividendFetcher()
+        self._ensure_data_source(
+            self.fsc_dividend_fetcher.source_id,
+            self.fsc_dividend_fetcher.source_name,
+            source_type="GOV",
+            api_type="REST",
+            update_frequency="DAILY",
+            license_type="PUBLIC",
+            base_url=self.fsc_dividend_fetcher.BASE_URL,
+            description="금융위원회_주식배당정보(OpenAPI)",
+        )
+
+        batch = self.batch_manager.create_batch(
+            batch_type=BatchType.DIVIDEND,
+            source_id=self.fsc_dividend_fetcher.source_id,
+            as_of_date=as_of_date,
+            target_start=as_of_date,
+            target_end=as_of_date,
+            operator_id=operator_id,
+            operator_reason=operator_reason or f"FSC 배당 이력 적재 ({bas_dt or 'company'})",
+        )
+
+        logger.info(
+            "FSC 배당 이력 적재 시작",
+            {"batch_id": batch.batch_id, "bas_dt": bas_dt, "tickers": len(tickers)},
+        )
+
+        self.batch_manager.start_batch(batch.batch_id)
+        stats = BatchStats()
+
+        from app.models.securities import Stock
+
+        try:
+            for ticker in tickers:
+                stock = self.db.query(Stock).filter(Stock.ticker == ticker).first()
+                base_params = {
+                    "basDt": bas_dt,
+                    "as_of_date": as_of_date,
+                    "ticker": ticker,
+                }
+
+                if not stock:
+                    logger.warning(
+                        "종목 정보 없음 - FSC 배당 조회 스킵",
+                        {"ticker": ticker},
+                    )
+                    stats.skipped_records += 1
+                    continue
+
+                if stock.name:
+                    result = self.fsc_dividend_fetcher.fetch(
+                        DataType.DIVIDEND_HISTORY,
+                        {**base_params, "stckIssuCmpyNm": stock.name},
+                    )
+
+                    # 회사명 조회 결과가 없으면 crno로 재시도
+                    if result.success and not result.data and stock.crno:
+                        logger.info(
+                            "FSC 배당 회사명 조회 결과 없음 - crno 재시도",
+                            {"ticker": ticker, "crno": stock.crno},
+                        )
+                        result = self.fsc_dividend_fetcher.fetch(
+                            DataType.DIVIDEND_HISTORY,
+                            {**base_params, "crno": stock.crno},
+                        )
+                elif stock.crno:
+                    logger.info(
+                        "종목명 없음 - crno로 FSC 배당 조회",
+                        {"ticker": ticker, "crno": stock.crno},
+                    )
+                    result = self.fsc_dividend_fetcher.fetch(
+                        DataType.DIVIDEND_HISTORY,
+                        {**base_params, "crno": stock.crno},
+                    )
+                else:
+                    logger.warning(
+                        "종목명/법인번호 없음 - FSC 배당 조회 스킵",
+                        {"ticker": ticker},
+                    )
+                    stats.skipped_records += 1
+                    continue
+                if not result.success:
+                    raise DataLoadError(
+                        result.error_message or "배당 이력 조회 실패",
+                        batch_id=batch.batch_id,
+                    )
+
+                if not result.data:
+                    stats.skipped_records += 1
+                    continue
+
+                for record in result.data:
+                    stats.total_records += 1
+                    inserted = self._insert_dividend_history(
+                        record=record,
+                        batch_id=batch.batch_id,
+                        as_of_date=as_of_date,
+                        source_id=result.source_id,
+                    )
+                    if inserted:
+                        stats.success_records += 1
+                    else:
+                        stats.skipped_records += 1
+
+            self.batch_manager.complete_batch(batch.batch_id, stats)
+
+            return LoadResult(
+                batch_id=batch.batch_id,
+                success=True,
+                total_records=stats.total_records,
+                success_records=stats.success_records,
+                failed_records=stats.failed_records,
+                skipped_records=stats.skipped_records,
+            )
+
+        except Exception as e:
+            logger.error(
+                "FSC 배당 이력 적재 실패",
+                {"batch_id": batch.batch_id, "error": str(e)},
+            )
+            self.batch_manager.fail_batch(batch.batch_id, str(e), stats)
+            raise DataLoadError(
+                f"FSC 배당 이력 적재 실패: {e}",
+                batch_id=batch.batch_id,
+            ) from e
+
+    def load_bond_basic_info(
+        self,
+        crno: Optional[str] = None,
+        bond_isur_nm: Optional[str] = None,
+        bas_dt: Optional[str] = None,
+        limit: Optional[int] = None,
+        as_of_date: Optional[date] = None,
+        operator_id: Optional[str] = None,
+        operator_reason: Optional[str] = None,
+    ) -> LoadResult:
+        """
+        채권기본정보 적재 (금융위원회 OpenAPI)
+
+        Args:
+            crno: 법인등록번호
+            bond_isur_nm: 발행인명
+            bas_dt: 기준일자(YYYYMMDD)
+            limit: 조회 건수 제한
+            as_of_date: 데이터 기준일
+        """
+        if as_of_date is None:
+            as_of_date = date.today()
+
+        if not self.bond_basic_info_fetcher:
+            self.bond_basic_info_fetcher = BondBasicInfoFetcher()
+
+        self._ensure_data_source(
+            self.bond_basic_info_fetcher.source_id,
+            self.bond_basic_info_fetcher.source_name,
+            source_type="GOV",
+            api_type="REST",
+            update_frequency="DAILY",
+            license_type="PUBLIC",
+            base_url=self.bond_basic_info_fetcher.BASE_URL,
+            description="금융위원회 채권기본정보 OpenAPI",
+        )
+
+        batch = self.batch_manager.create_batch(
+            batch_type=BatchType.BOND_INFO,
+            source_id=self.bond_basic_info_fetcher.source_id,
+            as_of_date=as_of_date,
+            target_start=as_of_date,
+            target_end=as_of_date,
+            operator_id=operator_id,
+            operator_reason=operator_reason or "FSC 채권기본정보 적재",
+        )
+
+        logger.info(
+            "채권기본정보 적재 시작",
+            {"batch_id": batch.batch_id, "bas_dt": bas_dt, "crno": crno, "bond_isur_nm": bond_isur_nm, "limit": limit},
+        )
+
+        self.batch_manager.start_batch(batch.batch_id)
+        stats = BatchStats()
+
+        try:
+            fetch_params: Dict[str, any] = {"as_of_date": as_of_date}
+            if bas_dt:
+                fetch_params["basDt"] = bas_dt
+            if crno:
+                fetch_params["crno"] = crno
+            if bond_isur_nm:
+                fetch_params["bondIsurNm"] = bond_isur_nm
+            if limit is not None:
+                fetch_params["limit"] = limit
+
+            result = self.bond_basic_info_fetcher.fetch(
+                DataType.BOND_BASIC_INFO,
+                fetch_params,
+            )
+
+            if not result.success:
+                raise DataLoadError(
+                    result.error_message or "채권기본정보 조회 실패",
+                    batch_id=batch.batch_id,
+                )
+
+            for record in result.data:
+                stats.total_records += 1
+                inserted = self._insert_bond_basic_info(
+                    record=record,
+                    batch_id=batch.batch_id,
+                    as_of_date=as_of_date,
+                    source_id=result.source_id,
+                )
+                if inserted:
+                    stats.success_records += 1
+                else:
+                    stats.skipped_records += 1
+
+            self.batch_manager.complete_batch(batch.batch_id, stats)
+
+            return LoadResult(
+                batch_id=batch.batch_id,
+                success=True,
+                total_records=stats.total_records,
+                success_records=stats.success_records,
+                failed_records=stats.failed_records,
+                skipped_records=stats.skipped_records,
+            )
+
+        except Exception as e:
+            logger.error(
+                "채권기본정보 적재 실패",
+                {"batch_id": batch.batch_id, "error": str(e)},
+            )
+            self.batch_manager.fail_batch(batch.batch_id, str(e), stats)
+            raise DataLoadError(
+                f"채권기본정보 적재 실패: {e}",
+                batch_id=batch.batch_id,
+            ) from e
+
+    def load_fdr_stock_listing(
+        self,
+        market: str,
+        as_of_date: date,
+        operator_id: Optional[str] = None,
+        operator_reason: Optional[str] = None,
+    ) -> LoadResult:
+        """
+        FinanceDataReader 종목 마스터 적재
+        """
+        try:
+            import FinanceDataReader as fdr
+        except Exception as e:
+            raise DataLoadError(f"FinanceDataReader import 실패: {e}")
+
+        source_id = "FDR"
+        self._ensure_data_source(
+            source_id,
+            "FinanceDataReader",
+            source_type="VENDOR",
+            api_type="LIB",
+            update_frequency="DAILY",
+            license_type="OPEN",
+            base_url="https://github.com/FinanceData/FinanceDataReader",
+            description="FinanceDataReader 종목 마스터",
+        )
+
+        batch = self.batch_manager.create_batch(
+            batch_type=BatchType.INFO,
+            source_id=source_id,
+            as_of_date=as_of_date,
+            target_start=as_of_date,
+            target_end=as_of_date,
+            operator_id=operator_id,
+            operator_reason=operator_reason or f"FDR 종목 마스터 적재 ({market})",
+        )
+
+        logger.info(
+            "FDR 종목 마스터 적재 시작",
+            {"batch_id": batch.batch_id, "market": market},
+        )
+
+        self.batch_manager.start_batch(batch.batch_id)
+        stats = BatchStats()
+
+        try:
+            markets = [market]
+            if market.upper() == "KRX":
+                markets = ["KOSPI", "KOSDAQ", "KONEX"]
+
+            import pandas as pd
+
+            def normalize_str(value):
+                if value is None:
+                    return None
+                if isinstance(value, float) and pd.isna(value):
+                    return None
+                text = str(value).strip()
+                if not text or text.lower() == "nan":
+                    return None
+                return text
+
+            for mkt in markets:
+                df = fdr.StockListing(mkt)
+                if df is None or df.empty:
+                    logger.warning("FDR 종목 목록 비어있음", {"market": mkt})
+                    continue
+
+                for _, row in df.iterrows():
+                    ticker = normalize_str(row.get("Code"))
+                    name = normalize_str(row.get("Name"))
+                    if not ticker or not name:
+                        continue
+
+                    stats.total_records += 1
+                    existing = (
+                        self.db.query(FdrStockListing)
+                        .filter(
+                            FdrStockListing.ticker == ticker,
+                            FdrStockListing.as_of_date == as_of_date,
+                            FdrStockListing.source_id == source_id,
+                        )
+                        .first()
+                    )
+                    if existing:
+                        stats.skipped_records += 1
+                        continue
+
+                    listing_date = row.get("ListingDate")
+                    if hasattr(listing_date, "date"):
+                        listing_date = listing_date.date()
+                    elif isinstance(listing_date, str):
+                        try:
+                            listing_date = date.fromisoformat(listing_date.strip())
+                        except Exception:
+                            listing_date = None
+
+                    shares = row.get("Shares")
+                    try:
+                        if shares is None or (isinstance(shares, float) and pd.isna(shares)):
+                            shares = None
+                        else:
+                            shares = int(float(shares))
+                    except Exception:
+                        shares = None
+
+                    par_value = row.get("ParValue")
+                    try:
+                        if par_value is None or (isinstance(par_value, float) and pd.isna(par_value)):
+                            par_value = None
+                        else:
+                            par_value = Decimal(str(par_value))
+                    except Exception:
+                        par_value = None
+
+                    record = FdrStockListing(
+                        ticker=ticker,
+                        name=name,
+                        market=normalize_str(row.get("Market")) or mkt,
+                        sector=normalize_str(row.get("Sector")),
+                        industry=normalize_str(row.get("Industry")),
+                        listing_date=listing_date,
+                        shares=shares,
+                        par_value=par_value,
+                        as_of_date=as_of_date,
+                        source_id=source_id,
+                        batch_id=batch.batch_id,
+                    )
+                    self.db.add(record)
+                    stats.success_records += 1
+
+            self.db.commit()
+            self.batch_manager.complete_batch(batch.batch_id, stats)
+
+            return LoadResult(
+                batch_id=batch.batch_id,
+                success=True,
+                total_records=stats.total_records,
+                success_records=stats.success_records,
+                failed_records=stats.failed_records,
+                skipped_records=stats.skipped_records,
+            )
+        except Exception as e:
+            self.db.rollback()
+            logger.error(
+                "FDR 종목 마스터 적재 실패",
+                {"batch_id": batch.batch_id, "error": str(e)},
+            )
+            self.batch_manager.fail_batch(batch.batch_id, str(e), stats)
+            raise DataLoadError(
+                f"FDR 종목 마스터 적재 실패: {e}",
+                batch_id=batch.batch_id,
+            ) from e
+
     def load_corporate_actions(
         self,
         start_date: date,
@@ -757,12 +1172,13 @@ class RealDataLoader:
         source_id: str,
     ) -> bool:
         """배당 이력 레코드 삽입 (중복 시 스킵)"""
+        dvdn_bas_dt = record.get("dvdn_bas_dt") or record.get("record_date")
         existing = (
             self.db.query(DividendHistory)
             .filter(
-                DividendHistory.ticker == record.get("ticker"),
-                DividendHistory.fiscal_year == record.get("fiscal_year"),
-                DividendHistory.dividend_type == record.get("dividend_type"),
+                DividendHistory.isin_cd == record.get("isin_cd"),
+                DividendHistory.dvdn_bas_dt == dvdn_bas_dt,
+                DividendHistory.scrs_itms_kcd == record.get("scrs_itms_kcd"),
                 DividendHistory.source_id == source_id,
             )
             .first()
@@ -771,30 +1187,92 @@ class RealDataLoader:
             return False
 
         dividend_data = DividendHistory(
+            isin_cd=record.get("isin_cd"),
+            isin_cd_nm=record.get("isin_cd_nm"),
+            crno=record.get("crno"),
             ticker=record.get("ticker"),
-            fiscal_year=record.get("fiscal_year"),
-            rcept_no=record.get("rcept_no"),
-            corp_cls=record.get("corp_cls"),
-            corp_code=record.get("corp_code"),
-            corp_name=record.get("corp_name"),
-            se=record.get("se"),
-            stock_knd=record.get("stock_knd"),
-            thstrm=record.get("thstrm"),
-            frmtrm=record.get("frmtrm"),
-            lwfr=record.get("lwfr"),
-            stlm_dt=record.get("stlm_dt"),
-            dividend_type=record.get("dividend_type"),
-            dividend_per_share=record.get("dividend_per_share"),
-            dividend_rate=record.get("dividend_rate"),
-            dividend_yield=record.get("dividend_yield"),
-            record_date=record.get("record_date"),
-            payment_date=record.get("payment_date"),
-            ex_dividend_date=record.get("ex_dividend_date"),
+            dvdn_bas_dt=record.get("dvdn_bas_dt") or record.get("record_date"),
+            cash_dvdn_pay_dt=record.get("cash_dvdn_pay_dt") or record.get("payment_date"),
+            stck_stac_md=record.get("stck_stac_md"),
+            scrs_itms_kcd=record.get("scrs_itms_kcd"),
+            scrs_itms_kcd_nm=record.get("scrs_itms_kcd_nm"),
+            stck_dvdn_rcd=record.get("stck_dvdn_rcd"),
+            stck_dvdn_rcd_nm=record.get("stck_dvdn_rcd_nm"),
+            stck_genr_dvdn_amt=record.get("stck_genr_dvdn_amt"),
+            stck_grdn_dvdn_amt=record.get("stck_grdn_dvdn_amt"),
+            stck_genr_cash_dvdn_rt=record.get("stck_genr_cash_dvdn_rt"),
+            stck_genr_dvdn_rt=record.get("stck_genr_dvdn_rt"),
+            cash_grdn_dvdn_rt=record.get("cash_grdn_dvdn_rt"),
+            stck_grdn_dvdn_rt=record.get("stck_grdn_dvdn_rt"),
+            stck_par_prc=record.get("stck_par_prc"),
+            trsnm_dpty_dcd=record.get("trsnm_dpty_dcd"),
+            trsnm_dpty_dcd_nm=record.get("trsnm_dpty_dcd_nm"),
+            bas_dt=record.get("bas_dt"),
             source_id=source_id,
             batch_id=batch_id,
             as_of_date=as_of_date,
         )
         self.db.add(dividend_data)
+        try:
+            self.db.commit()
+            return True
+        except Exception:
+            self.db.rollback()
+            raise
+
+    def _insert_bond_basic_info(
+        self,
+        record: Dict[str, any],
+        batch_id: int,
+        as_of_date: date,
+        source_id: str,
+    ) -> bool:
+        """채권기본정보 레코드 삽입 (중복 시 스킵)"""
+        existing = (
+            self.db.query(BondBasicInfo)
+            .filter(
+                BondBasicInfo.isin_cd == record.get("isin_cd"),
+                BondBasicInfo.bas_dt == record.get("bas_dt"),
+                BondBasicInfo.source_id == source_id,
+            )
+            .first()
+        )
+        if existing:
+            return False
+
+        bond_info = BondBasicInfo(
+            isin_cd=record.get("isin_cd"),
+            bas_dt=record.get("bas_dt"),
+            crno=record.get("crno"),
+            isin_cd_nm=record.get("isin_cd_nm"),
+            scrs_itms_kcd=record.get("scrs_itms_kcd"),
+            scrs_itms_kcd_nm=record.get("scrs_itms_kcd_nm"),
+            bond_isur_nm=record.get("bond_isur_nm"),
+            bond_issu_dt=record.get("bond_issu_dt"),
+            bond_expr_dt=record.get("bond_expr_dt"),
+            bond_issu_amt=record.get("bond_issu_amt"),
+            bond_bal=record.get("bond_bal"),
+            bond_srfc_inrt=record.get("bond_srfc_inrt"),
+            irt_chng_dcd=record.get("irt_chng_dcd"),
+            bond_int_tcd=record.get("bond_int_tcd"),
+            int_pay_cycl_ctt=record.get("int_pay_cycl_ctt"),
+            nxtm_copn_dt=record.get("nxtm_copn_dt"),
+            rbf_copn_dt=record.get("rbf_copn_dt"),
+            grn_dcd=record.get("grn_dcd"),
+            bond_rnkn_dcd=record.get("bond_rnkn_dcd"),
+            kis_scrs_itms_kcd=record.get("kis_scrs_itms_kcd"),
+            kbp_scrs_itms_kcd=record.get("kbp_scrs_itms_kcd"),
+            nice_scrs_itms_kcd=record.get("nice_scrs_itms_kcd"),
+            fn_scrs_itms_kcd=record.get("fn_scrs_itms_kcd"),
+            bond_offr_mcd=record.get("bond_offr_mcd"),
+            lstg_dt=record.get("lstg_dt"),
+            prmnc_bond_yn=record.get("prmnc_bond_yn"),
+            strips_psbl_yn=record.get("strips_psbl_yn"),
+            source_id=source_id,
+            batch_id=batch_id,
+            as_of_date=as_of_date,
+        )
+        self.db.add(bond_info)
         try:
             self.db.commit()
             return True

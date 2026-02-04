@@ -36,8 +36,9 @@ class FetcherFactory:
         DataType.STOCK_INFO: ["PYKRX", "KRX_INFO"],
         DataType.FUNDAMENTAL: ["PYKRX", "DART"],
         DataType.FINANCIAL_STATEMENT: ["DART"],
-        DataType.DIVIDEND_HISTORY: ["DART"],
+        DataType.DIVIDEND_HISTORY: ["FSC_DATA_GO_KR", "DART"],
         DataType.DISCLOSURE: ["DART"],
+        DataType.BOND_BASIC_INFO: ["FSC_BOND_INFO"],
         DataType.INSTITUTION_TRADE: ["KRX_INFO"],
         DataType.ETF_PORTFOLIO: ["KRX_INFO"],
     }

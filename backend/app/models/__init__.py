@@ -29,7 +29,10 @@ from .real_data import (
     DataSource, DataLoadBatch, StockPriceDaily, IndexPriceDaily,
     StockInfo, DataQualityLog,
     # Level 2
-    FinancialStatement, DividendHistory, CorporateAction, InstitutionTrade
+    FinancialStatement, DividendHistory, CorporateAction, InstitutionTrade, FdrStockListing,
+    BondBasicInfo,
+    # Phase 11
+    StocksDailyPrice
 )
 # app/models.py의 모델들을 직접 import하지 않고 lazy import 허용
 
@@ -48,7 +51,8 @@ __all__ = ['User', 'KrxTimeSeries', 'Portfolio', 'PortfolioHistory', 'Simulation
            'AdminApproval', 'AdminAdjustment',
            'DataSource', 'DataLoadBatch', 'StockPriceDaily', 'IndexPriceDaily',
            'StockInfo', 'DataQualityLog',
-           'FinancialStatement', 'DividendHistory', 'CorporateAction', 'InstitutionTrade']
+           'FinancialStatement', 'DividendHistory', 'CorporateAction', 'InstitutionTrade',
+           'FdrStockListing', 'BondBasicInfo', 'StocksDailyPrice']
 # models.py에서 추가 모델 import
 import sys
 import os

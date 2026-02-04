@@ -11,10 +11,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from sqlalchemy.orm import Session
 from app.database import SessionLocal, engine
+from app.config import settings
 from app.models.real_data import DataSource, Base
 
-# 테이블 생성 (없는 경우)
-Base.metadata.create_all(bind=engine)
+if not settings.database_url.startswith("postgresql"):
+    # 테이블 생성 (없는 경우)
+    Base.metadata.create_all(bind=engine)
 
 
 def seed_data_sources(db: Session):
@@ -85,6 +87,17 @@ def seed_data_sources(db: Session):
             "update_frequency": "ON_DEMAND",
             "license_type": "INTERNAL",
             "description": "시스템 내부에서 계산된 파생 데이터 (수정 주가, 수익률 등).",
+            "is_active": True
+        },
+        {
+            "source_id": "FSC_BOND_INFO",
+            "source_name": "금융위원회_채권기본정보(OpenAPI)",
+            "source_type": "GOV",
+            "base_url": "http://apis.data.go.kr/1160100/service/GetBondIssuInfoService/getBondBasiInfo",
+            "api_type": "REST",
+            "update_frequency": "DAILY",
+            "license_type": "PUBLIC",
+            "description": "금융위원회 채권기본정보 OpenAPI",
             "is_active": True
         },
         {

@@ -15,11 +15,15 @@ from .base_fetcher import BaseFetcher, FetchResult, DataType, FetcherError
 from .fetcher_factory import FetcherFactory
 from .pykrx_adapter import PykrxFetcher
 from .dart_fetcher import DartFetcher, DartApiError
+from .fsc_dividend_fetcher import FscDividendFetcher, FscApiError
+from .bond_basic_info_fetcher import BondBasicInfoFetcher
 from .krx_info_fetcher import KrxInfoFetcher, KrxApiError
 
 # Fetcher 자동 등록
 FetcherFactory.register(PykrxFetcher)
 FetcherFactory.register(KrxInfoFetcher)
+FetcherFactory.register(FscDividendFetcher)
+FetcherFactory.register(BondBasicInfoFetcher)
 
 # DART는 API 키가 있을 때만 등록
 if os.getenv("DART_API_KEY"):
@@ -36,6 +40,9 @@ __all__ = [
     "PykrxFetcher",
     "DartFetcher",
     "DartApiError",
+    "FscDividendFetcher",
+    "FscApiError",
+    "BondBasicInfoFetcher",
     "KrxInfoFetcher",
     "KrxApiError",
 ]
