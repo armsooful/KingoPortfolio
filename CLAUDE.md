@@ -74,7 +74,7 @@ frontend/
 
 ## Tech Stack
 
-- **Backend**: FastAPI 0.104, Python 3.11, SQLAlchemy 2.0, SQLite (dev) / PostgreSQL (prod)
+- **Backend**: FastAPI 0.104, Python 3.11, SQLAlchemy 2.0, PostgreSQL
 - **Frontend**: React 18, Vite 5, Tailwind CSS 4, React Router 6, Chart.js
 - **Testing**: pytest 8.3 with pytest-asyncio, pytest-cov
 - **AI Integration**: Anthropic Claude API (optional)
@@ -92,7 +92,7 @@ pytest.ini defines 37 markers. Key ones:
 
 Backend (.env):
 ```
-DATABASE_URL=sqlite:///./kingo.db
+DATABASE_URL=postgresql://changrim@localhost:5432/kingo
 SECRET_KEY=your-secret-key-min-32-chars
 ANTHROPIC_API_KEY=your-api-key (optional)
 ALPHA_VANTAGE_API_KEY=your-api-key
