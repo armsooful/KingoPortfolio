@@ -1,5 +1,11 @@
 import os
 from typing import List
+from dotenv import load_dotenv
+
+# Settings가 import되는 시점에 반드시 .env가 로드되어야 함
+# main.py 외 스크립트·테스트에서도 올바르게 동작
+load_dotenv()
+
 
 class Settings:
     """애플리케이션 설정 (환경변수 기반 CORS)"""
