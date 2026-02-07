@@ -7,7 +7,6 @@ function ProgressModal({ taskId, onComplete, onClose }) {
   const [error, setError] = useState(null);
   const [logs, setLogs] = useState([]);
   const lastHistoryLenRef = useRef(0);
-  const autoCloseTimeoutRef = useRef(null);
 
   const formatLogTimestamp = (timestamp) => {
     if (!timestamp) return '';
@@ -41,6 +40,18 @@ function ProgressModal({ taskId, onComplete, onClose }) {
         const response = await api.getProgress(taskId);
         const data = response.data;
         notFoundCount = 0; // 성공하면 카운트 초기화
+
+        // 디버깅 로깅
+        console.log('[ProgressModal] API Response:', {
+          taskId,
+          status: data.status,
+          current: data.current,
+          total: data.total,
+          success_count: data.success_count,
+          phase: data.phase,
+          current_item: data.current_item
+        });
+
         setProgress(data);
 
         // items_history를 사용하여 로그 업데이트
@@ -62,19 +73,12 @@ function ProgressModal({ taskId, onComplete, onClose }) {
 
         // 완료되면 폴링 중지
         if (data.status === 'completed' || data.status === 'failed') {
+          console.log('[ProgressModal] Task completed with status:', data.status);
           clearInterval(interval);
           if (onComplete) {
             onComplete(data);
           }
-          // 3초 후 자동으로 모달 종료
-          if (autoCloseTimeoutRef.current) {
-            clearTimeout(autoCloseTimeoutRef.current);
-          }
-          autoCloseTimeoutRef.current = setTimeout(() => {
-            if (onClose) {
-              onClose();
-            }
-          }, 3000);
+          // 자동 종료 제거 - 사용자가 버튼 클릭할 때까지 대기
         }
       } catch (err) {
         if (err.response?.status === 404) {
@@ -96,27 +100,10 @@ function ProgressModal({ taskId, onComplete, onClose }) {
     // 컴포넌트 언마운트 시 정리
     return () => {
       clearInterval(interval);
-      if (autoCloseTimeoutRef.current) {
-        clearTimeout(autoCloseTimeoutRef.current);
-      }
     };
   }, [taskId, onComplete, onClose]);
 
-  // 완료되면 자동으로 모달 종료 (hooks는 조건부 return 전에 호출되어야 함)
-  const isCompleteRef = useRef(false);
-  useEffect(() => {
-    if (!progress) return;
-    const isComplete = progress.status === 'completed' || progress.status === 'failed';
-    if (isComplete && !isCompleteRef.current) {
-      isCompleteRef.current = true;
-      const timer = setTimeout(() => {
-        if (onClose) {
-          onClose();
-        }
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [progress, onClose]);
+  // 자동 종료 제거 - 사용자 버튼 클릭 대기
 
   if (!progress) {
     return (
@@ -150,8 +137,11 @@ function ProgressModal({ taskId, onComplete, onClose }) {
     : 0;
 
   const isComplete = progress.status === 'completed' || progress.status === 'failed';
-  // Phase 1: 진행 중이면서 로그가 없는 상태 (Phase 2 시작 전)
-  const isPhase1 = progress.status === 'running' && logs.length === 0;
+
+  // Phase 판별: backend의 phase 필드 사용, 없으면 current_item 기반으로 판단
+  const currentPhase = progress.phase ||
+    (progress.current_item && progress.current_item.includes('[Phase 1]') ? 'Phase 1' : 'Phase 2');
+  const isPhase1 = progress.status === 'running' && currentPhase === 'Phase 1';
 
   // Phase 1 상태 표시
   if (isPhase1) {
@@ -165,10 +155,16 @@ function ProgressModal({ taskId, onComplete, onClose }) {
 
           <div className="modal-body">
             <div className="progress-section">
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
+                <span style={{ backgroundColor: '#4CAF50', color: 'white', padding: '5px 15px', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                  Phase 1
+                </span>
+                <span style={{ color: '#999', fontSize: '0.9rem' }}>데이터 수집</span>
+              </div>
               <div className="loading-spinner">
                 <div className="spinner-animation"></div>
               </div>
-              <h3 style={{ marginTop: '20px', textAlign: 'center' }}>⏳ Phase 1: 데이터 수집 중</h3>
+              <h3 style={{ marginTop: '20px', textAlign: 'center' }}>⏳ 진행 중...</h3>
               <p style={{ marginTop: '15px', textAlign: 'center', color: '#666', fontSize: '0.95rem' }}>
                 {progress.current_item || 'FSC API를 통해 주식 정보를 병렬로 수집 중...'}
               </p>
@@ -210,6 +206,30 @@ function ProgressModal({ taskId, onComplete, onClose }) {
                 style={{ width: `${percentage}%` }}
               />
             </div>
+            {/* Phase Badge */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '15px', marginBottom: '10px' }}>
+              <span style={{
+                backgroundColor: currentPhase === 'Phase 1' ? '#4CAF50' : '#e0e0e0',
+                color: currentPhase === 'Phase 1' ? 'white' : '#666',
+                padding: '5px 15px',
+                borderRadius: '20px',
+                fontSize: '0.9rem',
+                fontWeight: 'bold'
+              }}>
+                Phase 1: 수집
+              </span>
+              <span style={{
+                backgroundColor: currentPhase === 'Phase 2' ? '#2196F3' : '#e0e0e0',
+                color: currentPhase === 'Phase 2' ? 'white' : '#666',
+                padding: '5px 15px',
+                borderRadius: '20px',
+                fontSize: '0.9rem',
+                fontWeight: 'bold'
+              }}>
+                Phase 2: 저장
+              </span>
+            </div>
+
             <div className="progress-details">
               <span className="detail-item success">
                 ✅ 성공: {progress.success_count}
@@ -220,7 +240,7 @@ function ProgressModal({ taskId, onComplete, onClose }) {
               <span className={`detail-item status ${progress.status}`}>
                 {progress.status === 'completed' ? '✔️ 완료' :
                  progress.status === 'failed' ? '⚠️ 실패' :
-                 (logs.length === 0 ? '⏳ Phase 1: 진행 중' : '⏳ Phase 2: 진행 중')}
+                 `⏳ 진행 중`}
               </span>
             </div>
           </div>
@@ -238,10 +258,22 @@ function ProgressModal({ taskId, onComplete, onClose }) {
             </div>
           )}
 
+          {/* Completion Status */}
+          {isComplete && (
+            <div style={{ marginTop: '20px', padding: '15px', backgroundColor: progress.status === 'completed' ? '#E8F5E9' : '#FFEBEE', borderRadius: '8px', textAlign: 'center' }}>
+              <p style={{ margin: '0 0 10px 0', fontSize: '1.1rem', fontWeight: 'bold', color: progress.status === 'completed' ? '#2E7D32' : '#C62828' }}>
+                {progress.status === 'completed' ? '✅ 데이터 적재 완료!' : '⚠️ 작업이 실패했습니다'}
+              </p>
+              <p style={{ margin: '0', color: progress.status === 'completed' ? '#558B2F' : '#B71C1C', fontSize: '0.9rem' }}>
+                총 {progress.success_count + progress.failed_count}건 중 {progress.success_count}건 성공
+              </p>
+            </div>
+          )}
+
           {/* Close Button for Completed */}
           {isComplete && (
             <div className="modal-footer">
-              <button className="btn btn-primary" onClick={onClose}>
+              <button className="btn btn-primary" onClick={onClose} style={{ marginTop: '15px' }}>
                 닫기
               </button>
             </div>
