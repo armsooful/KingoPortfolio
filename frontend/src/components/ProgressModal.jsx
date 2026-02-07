@@ -102,6 +102,22 @@ function ProgressModal({ taskId, onComplete, onClose }) {
     };
   }, [taskId, onComplete, onClose]);
 
+  // 완료되면 자동으로 모달 종료 (hooks는 조건부 return 전에 호출되어야 함)
+  const isCompleteRef = useRef(false);
+  useEffect(() => {
+    if (!progress) return;
+    const isComplete = progress.status === 'completed' || progress.status === 'failed';
+    if (isComplete && !isCompleteRef.current) {
+      isCompleteRef.current = true;
+      const timer = setTimeout(() => {
+        if (onClose) {
+          onClose();
+        }
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [progress, onClose]);
+
   if (!progress) {
     return (
       <div className="modal-overlay">
@@ -136,18 +152,6 @@ function ProgressModal({ taskId, onComplete, onClose }) {
   const isComplete = progress.status === 'completed' || progress.status === 'failed';
   // Phase 1: 진행 중이면서 로그가 없는 상태 (Phase 2 시작 전)
   const isPhase1 = progress.status === 'running' && logs.length === 0;
-
-  // 완료되면 자동으로 모달 종료
-  React.useEffect(() => {
-    if (isComplete) {
-      const timer = setTimeout(() => {
-        if (onClose) {
-          onClose();
-        }
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [isComplete, onClose]);
 
   // Phase 1 상태 표시
   if (isPhase1) {
