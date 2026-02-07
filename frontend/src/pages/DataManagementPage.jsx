@@ -1,6 +1,6 @@
 // frontend/src/pages/DataManagementPage.jsx
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as api from '../services/api';
 import ProgressModal from '../components/ProgressModal';
@@ -15,11 +15,20 @@ export default function DataManagementPage() {
   const [activeTab, setActiveTab] = useState('stocks');
   const [symbolInput, setSymbolInput] = useState('');
   const [dividendTickers, setDividendTickers] = useState('');
-  const [dividendYear, setDividendYear] = useState(2018);
+  const [dividendBasDt, setDividendBasDt] = useState('');
   const [dividendAsOf, setDividendAsOf] = useState(new Date().toISOString().split('T')[0]);
   const [actionStart, setActionStart] = useState('');
   const [actionEnd, setActionEnd] = useState('');
   const [actionAsOf, setActionAsOf] = useState(new Date().toISOString().split('T')[0]);
+  const [bondBasDt, setBondBasDt] = useState('');
+  const [bondCrno, setBondCrno] = useState('');
+  const [bondIssuerNm, setBondIssuerNm] = useState('');
+  const [bondLimit, setBondLimit] = useState(100);
+  const [dartFiscalYear, setDartFiscalYear] = useState(2024);
+  const [dartReportType, setDartReportType] = useState('ANNUAL');
+  const [dartFinLimit, setDartFinLimit] = useState('');
+  const [fdrMarket, setFdrMarket] = useState('KRX');
+  const [fdrAsOf, setFdrAsOf] = useState(new Date().toISOString().split('T')[0]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,7 +49,7 @@ export default function DataManagementPage() {
 
   const handleLoadData = async (type) => {
     const typeNames = { all: '모든', stocks: '주식', etfs: 'ETF' };
-    if (!window.confirm(`${typeNames[type]} 데이터를 수집하시겠습니까? (1-2분 소요)`)) {
+    if (!window.confirm(`${typeNames[type]} 데이터를 수집하시겠습니까?`)) {
       return;
     }
 
@@ -74,13 +83,13 @@ export default function DataManagementPage() {
     }
   };
 
-  const handleProgressComplete = async (progressData) => {
+  const handleProgressComplete = useCallback(async (progressData) => {
     await fetchDataStatus();
-  };
+  }, []);
 
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     setCurrentTaskId(null);
-  };
+  }, []);
 
   return (
     <div className="main-content">
@@ -132,10 +141,10 @@ export default function DataManagementPage() {
 
           {/* yfinance Data Collection Section */}
           <div className="description-section">
-            <h2>🔄 yfinance 데이터 수집</h2>
+            <h2>🔄 데이터 수집</h2>
             <div className="info-box" style={{ marginTop: '15px', padding: '15px', background: '#f0f7ff', borderRadius: '8px', borderLeft: '4px solid #2196F3' }}>
               <p style={{ margin: 0, color: '#333' }}>
-                💡 yfinance API로 실시간 종목 정보를 수집합니다. 전체 데이터 수집은 약 1-2분이 소요됩니다.
+                💡 KRX(pykrx)로 실시간 종목 정보를 수집합니다.
               </p>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginTop: '20px' }}>
@@ -848,17 +857,17 @@ export default function DataManagementPage() {
           </div>
 
           <div className="description-section" style={{ marginTop: '40px', borderTop: '2px solid #e0e0e0', paddingTop: '30px' }}>
-            <h2>📦 배당/기업액션 적재</h2>
+            <h2>📦 배당/기업액션/채권/재무제표 적재</h2>
 
             <div style={{ marginTop: '15px', padding: '15px', background: '#e3f2fd', borderRadius: '8px', borderLeft: '4px solid #2196f3' }}>
               <p style={{ margin: 0, color: '#333', fontSize: '0.9rem' }}>
-                🔑 DART API Key가 필요합니다. 배당/기업액션 데이터는 DART 공시 기반으로 적재됩니다.
+                🔑 배당·채권: 금융위원회 OpenAPI 키가 필요합니다. 기업액션·재무제표: DART API Key가 필요합니다.
               </p>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '15px', marginTop: '20px' }}>
               <div style={{ padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#ffffff' }}>
-                <h3 style={{ marginBottom: '10px', fontSize: '1rem' }}>배당 이력 (DART)</h3>
+                <h3 style={{ marginBottom: '10px', fontSize: '1rem' }}>배당 이력 (금융위원회 OpenAPI)</h3>
                 <input
                   type="text"
                   value={dividendTickers}
@@ -867,16 +876,16 @@ export default function DataManagementPage() {
                   style={{ width: '100%', padding: '10px', fontSize: '0.9rem', border: '1px solid #ddd', borderRadius: '6px', marginBottom: '8px' }}
                 />
                 <input
-                  type="number"
-                  value={dividendYear}
-                  onChange={(e) => setDividendYear(Number(e.target.value))}
-                  placeholder="기준 사업연도"
-                  style={{ width: '100%', padding: '10px', fontSize: '0.9rem', border: '1px solid #ddd', borderRadius: '6px', marginBottom: '8px' }}
-                />
-                <input
                   type="date"
                   value={dividendAsOf}
                   onChange={(e) => setDividendAsOf(e.target.value)}
+                  style={{ width: '100%', padding: '10px', fontSize: '0.9rem', border: '1px solid #ddd', borderRadius: '6px', marginBottom: '10px' }}
+                />
+                <input
+                  type="text"
+                  value={dividendBasDt}
+                  onChange={(e) => setDividendBasDt(e.target.value.replace(/[^0-9]/g, '').slice(0, 8))}
+                  placeholder="기준일자 (YYYYMMDD) - 비워두면 회사명으로 전체 조회"
                   style={{ width: '100%', padding: '10px', fontSize: '0.9rem', border: '1px solid #ddd', borderRadius: '6px', marginBottom: '10px' }}
                 />
                 <button
@@ -889,9 +898,9 @@ export default function DataManagementPage() {
                     setLoading(true);
                     setError(null);
                     try {
-                      const response = await api.loadDartDividends({
+                      const response = await api.loadFscDividends({
                         tickers,
-                        fiscal_year: dividendYear,
+                        bas_dt: dividendBasDt || null,
                         as_of_date: dividendAsOf,
                       });
                       alert('✅ ' + response.data.message);
@@ -905,7 +914,7 @@ export default function DataManagementPage() {
                   className="btn btn-primary"
                   style={{ width: '100%', padding: '10px', fontSize: '0.95rem' }}
                 >
-                  배당 이력 적재
+                  배당 이력 적재 (FSC)
                 </button>
               </div>
 
@@ -958,6 +967,200 @@ export default function DataManagementPage() {
                 </button>
               </div>
 
+              <div style={{ padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#ffffff' }}>
+                <h3 style={{ marginBottom: '10px', fontSize: '1rem' }}>채권 기본정보 (금융위원회 OpenAPI)</h3>
+                <input
+                  type="text"
+                  value={bondBasDt}
+                  onChange={(e) => setBondBasDt(e.target.value.replace(/[^0-9]/g, '').slice(0, 8))}
+                  placeholder="기준일자 (YYYYMMDD)"
+                  style={{ width: '100%', padding: '10px', fontSize: '0.9rem', border: '1px solid #ddd', borderRadius: '6px', marginBottom: '8px' }}
+                />
+                <input
+                  type="text"
+                  value={bondCrno}
+                  onChange={(e) => setBondCrno(e.target.value.replace(/[^0-9]/g, '').slice(0, 13))}
+                  placeholder="법인등록번호 (13자리)"
+                  style={{ width: '100%', padding: '10px', fontSize: '0.9rem', border: '1px solid #ddd', borderRadius: '6px', marginBottom: '8px' }}
+                />
+                <input
+                  type="text"
+                  value={bondIssuerNm}
+                  onChange={(e) => setBondIssuerNm(e.target.value)}
+                  placeholder="발행사명"
+                  style={{ width: '100%', padding: '10px', fontSize: '0.9rem', border: '1px solid #ddd', borderRadius: '6px', marginBottom: '8px' }}
+                />
+                <input
+                  type="number"
+                  value={bondLimit}
+                  onChange={(e) => setBondLimit(Number(e.target.value))}
+                  min="1"
+                  max="10000"
+                  placeholder="조회 건수 (최대 10000)"
+                  style={{ width: '100%', padding: '10px', fontSize: '0.9rem', border: '1px solid #ddd', borderRadius: '6px', marginBottom: '10px' }}
+                />
+                <button
+                  onClick={async () => {
+                    if (!bondBasDt && !bondCrno && !bondIssuerNm) {
+                      alert('기준일자, 법인등록번호, 발행사명 중 하나를 입력해야 합니다');
+                      return;
+                    }
+                    if (bondBasDt && bondBasDt.length !== 8) {
+                      alert('기준일자는 YYYYMMDD 형식으로 8자리를 입력해주세요');
+                      return;
+                    }
+                    if (bondCrno && bondCrno.length !== 13) {
+                      alert('법인등록번호는 13자리를 입력해주세요');
+                      return;
+                    }
+                    setLoading(true);
+                    setError(null);
+                    try {
+                      const response = await api.loadFscBonds({
+                        bas_dt: bondBasDt || null,
+                        crno: bondCrno || null,
+                        bond_isur_nm: bondIssuerNm || null,
+                        limit: bondLimit || 100,
+                      });
+                      alert('✅ ' + response.data.message);
+                      await fetchDataStatus();
+                    } catch (err) {
+                      alert('❌ ' + (err.response?.data?.detail || '채권 적재 실패'));
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  disabled={loading}
+                  className="btn btn-primary"
+                  style={{ width: '100%', padding: '10px', fontSize: '0.95rem' }}
+                >
+                  채권 기본정보 적재
+                </button>
+                <div style={{ marginTop: '8px', fontSize: '0.8rem', color: '#666' }}>
+                  💡 기준일자 / 법인등록번호 / 발행사명 중 하나 이상 필수
+                </div>
+              </div>
+
+              {/* DART 재무제표 카드 */}
+              <div style={{ background: '#fff', borderRadius: '8px', padding: '20px', border: '1px solid #e0e0e0' }}>
+                <h3 style={{ marginBottom: '10px', fontSize: '1rem' }}>재무제표 + PER/PBR (DART)</h3>
+                <p style={{ fontSize: '0.82rem', color: '#666', margin: '0 0 12px' }}>
+                  DART 사업보고서에서 당기순이익·자기자본을 수집하고,
+                  시가총액 기준 PER/PBR을 계산하여 stocks에 저장합니다. (백그라운드 실행)
+                </p>
+
+                <label style={{ fontSize: '0.82rem', color: '#555' }}>회계연도</label>
+                <input
+                  type="number"
+                  value={dartFiscalYear}
+                  onChange={(e) => setDartFiscalYear(Number(e.target.value))}
+                  style={{ width: '100%', padding: '6px 8px', borderRadius: '4px', border: '1px solid #ccc', marginBottom: '8px', boxSizing: 'border-box' }}
+                />
+
+                <label style={{ fontSize: '0.82rem', color: '#555' }}>보고서 종류</label>
+                <select
+                  value={dartReportType}
+                  onChange={(e) => setDartReportType(e.target.value)}
+                  style={{ width: '100%', padding: '6px 8px', borderRadius: '4px', border: '1px solid #ccc', marginBottom: '8px', boxSizing: 'border-box' }}
+                >
+                  <option value="ANNUAL">ANNUAL (사업보고서)</option>
+                  <option value="Q3">Q3 (3분기보고서)</option>
+                  <option value="Q2">Q2 (반기보고서)</option>
+                  <option value="Q1">Q1 (1분기보고서)</option>
+                </select>
+
+                <label style={{ fontSize: '0.82rem', color: '#555' }}>종목 수 제한 (테스트용)</label>
+                <input
+                  type="number"
+                  value={dartFinLimit}
+                  onChange={(e) => setDartFinLimit(e.target.value)}
+                  placeholder="빈 칸이면 전체"
+                  min={1}
+                  max={5000}
+                  style={{ width: '100%', padding: '6px 8px', borderRadius: '4px', border: '1px solid #ccc', marginBottom: '12px', boxSizing: 'border-box' }}
+                />
+
+                <button
+                  onClick={async () => {
+                    if (!window.confirm(`FY${dartFiscalYear} ${dartReportType} 재무제표를 수집할지 확인합니다.`)) return;
+                    setLoading(true);
+                    try {
+                      const params = { fiscal_year: dartFiscalYear, report_type: dartReportType };
+                      if (dartFinLimit) params.limit = Number(dartFinLimit);
+                      const res = await api.loadDartFinancials(params);
+                      setCurrentTaskId(res.data.task_id);
+                      alert('✅ DART 재무제표 수집 시작됨\ntask_id: ' + res.data.task_id + '\n진행 상황은 아래 ProgressModal에서 확인 가능합니다.');
+                      await fetchDataStatus();
+                    } catch (err) {
+                      alert('❌ ' + (err.response?.data?.detail || 'DART 재무제표 적재 실패'));
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  disabled={loading}
+                  className="btn btn-primary"
+                  style={{ width: '100%', padding: '10px', fontSize: '0.95rem' }}
+                >
+                  재무제표 적재 (DART)
+                </button>
+                <div style={{ marginTop: '8px', fontSize: '0.8rem', color: '#666' }}>
+                  💡 종목당 ~1초 소요 (DART rate limit). 전체 종목은 백그라운드로 실행됩니다.
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <div className="description-section" style={{ marginTop: '40px', borderTop: '2px solid #e0e0e0', paddingTop: '30px' }}>
+            <h2>📘 FinanceDataReader 종목 마스터</h2>
+            <div style={{ marginTop: '15px', padding: '15px', background: '#f1f5f9', borderRadius: '8px', borderLeft: '4px solid #64748b' }}>
+              <p style={{ margin: 0, color: '#333', fontSize: '0.9rem' }}>
+                📌 종목 마스터를 적재합니다. 주식 데이터 수집의 사전 단계(Stage 1)입니다. Marcap·발행주식수 포함.
+              </p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '15px', marginTop: '20px' }}>
+              <div style={{ padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#ffffff' }}>
+                <h3 style={{ marginBottom: '10px', fontSize: '1rem' }}>FDR 종목 마스터 적재</h3>
+                <select
+                  value={fdrMarket}
+                  onChange={(e) => setFdrMarket(e.target.value)}
+                  style={{ width: '100%', padding: '10px', fontSize: '0.9rem', border: '1px solid #ddd', borderRadius: '6px', marginBottom: '8px' }}
+                >
+                  <option value="KRX">KRX</option>
+                  <option value="KOSPI">KOSPI</option>
+                  <option value="KOSDAQ">KOSDAQ</option>
+                  <option value="KONEX">KONEX</option>
+                </select>
+                <input
+                  type="date"
+                  value={fdrAsOf}
+                  onChange={(e) => setFdrAsOf(e.target.value)}
+                  style={{ width: '100%', padding: '10px', fontSize: '0.9rem', border: '1px solid #ddd', borderRadius: '6px', marginBottom: '10px' }}
+                />
+                <button
+                  onClick={async () => {
+                    setLoading(true);
+                    setError(null);
+                    try {
+                      const response = await api.loadFdrStockListing({
+                        market: fdrMarket,
+                        as_of_date: fdrAsOf,
+                      });
+                      alert('✅ ' + response.data.message);
+                    } catch (err) {
+                      alert('❌ ' + (err.response?.data?.detail || 'FDR 종목 마스터 적재 실패'));
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  disabled={loading}
+                  className="btn btn-secondary"
+                  style={{ width: '100%', padding: '10px', fontSize: '0.95rem' }}
+                >
+                  FDR 종목 마스터 적재
+                </button>
+              </div>
             </div>
           </div>
 
