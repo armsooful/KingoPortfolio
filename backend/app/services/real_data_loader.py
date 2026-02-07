@@ -13,7 +13,7 @@ Phase 11: 실 데이터 적재 서비스
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
@@ -27,7 +27,7 @@ from app.models.real_data import (
     DividendHistory,
     CorporateAction,
     FdrStockListing,
-    BondBasicInfo,
+    FinancialStatement,
 )
 from app.services.batch_manager import BatchManager, BatchStats, BatchType
 from app.services.data_quality_validator import (
@@ -47,6 +47,17 @@ from app.services.fetchers.bond_basic_info_fetcher import BondBasicInfoFetcher
 from app.utils.structured_logging import get_structured_logger
 
 logger = get_structured_logger(__name__)
+
+# 신용등급 코드 → 텍스트 등급 매핑 (FSC API 기준)
+_CREDIT_CODE_MAP = {
+    "100": "AAA",
+    "110": "AA",
+    "120": "A",
+    "130": "BBB",
+    "140": "BB",
+    "150": "B",
+    "160": "CCC",
+}
 
 
 class DataLoadError(Exception):
@@ -825,7 +836,7 @@ class RealDataLoader:
 
             for record in result.data:
                 stats.total_records += 1
-                inserted = self._insert_bond_basic_info(
+                inserted = self._upsert_bond(
                     record=record,
                     batch_id=batch.batch_id,
                     as_of_date=as_of_date,
@@ -955,7 +966,7 @@ class RealDataLoader:
                         except Exception:
                             listing_date = None
 
-                    shares = row.get("Shares")
+                    shares = row.get("Stocks")
                     try:
                         if shares is None or (isinstance(shares, float) and pd.isna(shares)):
                             shares = None
@@ -973,6 +984,15 @@ class RealDataLoader:
                     except Exception:
                         par_value = None
 
+                    marcap = row.get("Marcap")
+                    try:
+                        if marcap is None or (isinstance(marcap, float) and pd.isna(marcap)):
+                            marcap = None
+                        else:
+                            marcap = float(marcap)
+                    except Exception:
+                        marcap = None
+
                     record = FdrStockListing(
                         ticker=ticker,
                         name=name,
@@ -982,6 +1002,7 @@ class RealDataLoader:
                         listing_date=listing_date,
                         shares=shares,
                         par_value=par_value,
+                        marcap=marcap,
                         as_of_date=as_of_date,
                         source_id=source_id,
                         batch_id=batch.batch_id,
@@ -1011,6 +1032,270 @@ class RealDataLoader:
                 f"FDR 종목 마스터 적재 실패: {e}",
                 batch_id=batch.batch_id,
             ) from e
+
+    def load_stocks_from_fdr(
+        self,
+        as_of_date: Optional[date] = None,
+        limit: Optional[int] = None,
+        operator_id: Optional[str] = None,
+        operator_reason: Optional[str] = None,
+        progress_callback: Optional[Callable[[int, str, Optional[bool], Optional[str]], None]] = None,
+    ) -> LoadResult:
+        """fdr_stock_listing → pykrx → stocks 단일 파이프라인
+
+        Prerequisites: load_fdr_stock_listing() 실행 완료 (Stage 1)
+        """
+        source_id = "FDR"
+        self._ensure_data_source(
+            source_id,
+            "FinanceDataReader",
+            source_type="VENDOR",
+            api_type="LIB",
+            update_frequency="DAILY",
+            license_type="OPEN",
+            base_url="https://github.com/FinanceData/FinanceDataReader",
+            description="FinanceDataReader 종목 마스터",
+        )
+
+        # as_of_date가 None이면 fdr_stock_listing의 최신 날짜 자동 조회
+        if as_of_date is None:
+            from sqlalchemy import func as sa_func
+
+            latest = (
+                self.db.query(sa_func.max(FdrStockListing.as_of_date))
+                .filter(FdrStockListing.source_id == source_id)
+                .scalar()
+            )
+            if latest is None:
+                raise DataLoadError(
+                    "fdr_stock_listing에 데이터 없음. "
+                    "Stage 1(load-stock-listing) 먼저 실행해야 합니다."
+                )
+            as_of_date = latest
+
+        batch = self.batch_manager.create_batch(
+            batch_type=BatchType.INFO,
+            source_id=source_id,
+            as_of_date=as_of_date,
+            target_start=as_of_date,
+            target_end=as_of_date,
+            operator_id=operator_id,
+            operator_reason=operator_reason or "stocks 적재 (fdr → pykrx)",
+        )
+        self.batch_manager.start_batch(batch.batch_id)
+        stats = BatchStats()
+
+        try:
+            listings = (
+                self.db.query(FdrStockListing)
+                .filter(
+                    FdrStockListing.as_of_date == as_of_date,
+                    FdrStockListing.source_id == source_id,
+                )
+                .order_by(FdrStockListing.ticker)
+                .all()
+            )
+
+            if limit:
+                listings = listings[:limit]
+
+            # Phase 1: pykrx를 ThreadPoolExecutor로 동시 호출
+            # ORM 객체 자체는 스레드에 전달하지 않고 단순 값만 전달
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+
+            fetched: Dict[str, Optional[Dict]] = {}
+            completed_count = 0
+            with ThreadPoolExecutor(max_workers=5) as pool:
+                future_to_ticker = {
+                    pool.submit(
+                        RealDataLoader._fetch_stock_data,
+                        lst.ticker, lst.name, lst.marcap or 0,
+                    ): lst.ticker
+                    for lst in listings
+                }
+                for future in as_completed(future_to_ticker):
+                    ticker = future_to_ticker[future]
+                    completed_count += 1
+                    try:
+                        fetched[ticker] = future.result()
+                        # Phase 1: 데이터 수집 완료 로그
+                        if progress_callback:
+                            progress_callback(completed_count, f"[Phase 1] {ticker} 데이터 수집 완료", True, None)
+                    except Exception as e:
+                        logger.error(
+                            "pykrx fetch 실패",
+                            {"ticker": ticker, "error": str(e)},
+                        )
+                        fetched[ticker] = None
+                        # Phase 1: 데이터 수집 실패 로그
+                        if progress_callback:
+                            progress_callback(completed_count, f"[Phase 1] {ticker} 데이터 수집 실패", False, str(e))
+
+            # Phase 2: 단일 스레드로 DB upsert (100건씩 batch commit)
+            _BATCH_SIZE = 100
+            pending = 0
+            for idx, listing in enumerate(listings, start=1):
+                stats.total_records += 1
+                data = fetched.get(listing.ticker)
+                if data is None:
+                    stats.failed_records += 1
+                    if progress_callback:
+                        progress_callback(idx, listing.ticker, False, "데이터 없음")
+                    continue
+                try:
+                    self._apply_stock(listing, data)
+                    stats.success_records += 1
+                    pending += 1
+                    if progress_callback:
+                        progress_callback(idx, listing.ticker, True, None)
+                except Exception as e:
+                    logger.error(
+                        "stocks upsert 실패",
+                        {"ticker": listing.ticker, "error": str(e)},
+                    )
+                    self.db.rollback()
+                    stats.failed_records += 1
+                    pending = 0
+                    if progress_callback:
+                        progress_callback(idx, listing.ticker, False, str(e))
+                    continue
+
+                if pending >= _BATCH_SIZE:
+                    self.db.commit()
+                    pending = 0
+
+            if pending > 0:
+                self.db.commit()
+
+            self.batch_manager.complete_batch(batch.batch_id, stats)
+            return LoadResult(
+                batch_id=batch.batch_id,
+                success=True,
+                total_records=stats.total_records,
+                success_records=stats.success_records,
+                failed_records=stats.failed_records,
+                skipped_records=stats.skipped_records,
+            )
+
+        except Exception as e:
+            self.db.rollback()
+            self.batch_manager.fail_batch(batch.batch_id, str(e), stats)
+            if isinstance(e, DataLoadError):
+                raise
+            raise DataLoadError(
+                f"stocks 적재 실패: {e}",
+                batch_id=batch.batch_id,
+            ) from e
+
+    @staticmethod
+    def _fetch_stock_data(ticker: str, name: str, marcap: float) -> Optional[Dict]:
+        """pykrx ohlcv + FDR marcap으로 종목 데이터 수집 (스레드 안전, DB 접근 없음)."""
+        from pykrx import stock as krx_stock
+        from datetime import datetime, timedelta
+        from app.data_collector import DataCollector
+
+        today = datetime.now().strftime('%Y%m%d')
+        one_year_ago = (datetime.now() - timedelta(days=365)).strftime('%Y%m%d')
+        year_start = datetime.now().replace(month=1, day=1).strftime('%Y%m%d')
+
+        try:
+            df = krx_stock.get_market_ohlcv(one_year_ago, today, ticker)
+            if df.empty:
+                yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y%m%d')
+                df = krx_stock.get_market_ohlcv(one_year_ago, yesterday, ticker)
+            if df.empty:
+                return None
+        except Exception as e:
+            logger.warning("pykrx ohlcv 호출 실패", {"ticker": ticker, "error": str(e)})
+            return None
+
+        current_price = float(df['종가'].iloc[-1])
+
+        # 1년 수익률
+        one_year_return = None
+        if len(df) > 1:
+            one_year_return = float(((df['종가'].iloc[-1] - df['종가'].iloc[0]) / df['종가'].iloc[0]) * 100)
+
+        # YTD 수익률 (연초 이후 데이터만)
+        ytd_return = None
+        ytd_df = df.loc[year_start:]
+        if len(ytd_df) > 1:
+            ytd_return = float(((ytd_df['종가'].iloc[-1] - ytd_df['종가'].iloc[0]) / ytd_df['종가'].iloc[0]) * 100)
+
+        # crno 조회 (캐시 우선, 스레드 안전)
+        crno = DataCollector.get_crno(ticker, name)
+
+        return {
+            "ticker": ticker,
+            "crno": crno,
+            "current_price": current_price,
+            "market_cap": marcap or 0,
+            "pe_ratio": None,            # DART 파이프라인에서 별도 처리
+            "pb_ratio": None,            # DART 파이프라인에서 별도 처리
+            "dividend_yield": None,      # FSC/DART 파이프라인에서 별도 처리
+            "ytd_return": ytd_return,
+            "one_year_return": one_year_return,
+            "sector": None,              # fdr_stock_listing.sector 사용
+        }
+
+    def _apply_stock(self, listing: FdrStockListing, data: Dict) -> None:
+        """stocks 테이블 upsert (단일 스레드). commit은 호출측에서 batch 단위로 수행."""
+        from app.models.securities import Stock
+        from app.data_collector import DataClassifier
+
+        ticker = listing.ticker
+        name = listing.name
+
+        crno = data.get("crno") or None  # 빈 문자열 → None 정규화
+        if crno and not listing.crno:
+            listing.crno = crno  # fdr_stock_listing backfill
+
+        risk_level = DataClassifier.classify_risk(data.get("pe_ratio"), data.get("dividend_yield"))
+        investment_types = DataClassifier.classify_investment_type(risk_level, data.get("dividend_yield"))
+        category = DataClassifier.classify_category(name, data.get("sector"))
+        investment_type = ",".join(investment_types) if investment_types else "moderate"
+
+        existing = self.db.query(Stock).filter(Stock.ticker == ticker).first()
+
+        if existing:
+            existing.current_price = data.get("current_price")
+            existing.market_cap = data.get("market_cap")
+            if data.get("pe_ratio") is not None:
+                existing.pe_ratio = data.get("pe_ratio")
+            if data.get("pb_ratio") is not None:
+                existing.pb_ratio = data.get("pb_ratio")
+            if data.get("dividend_yield") is not None:
+                existing.dividend_yield = data.get("dividend_yield")
+            existing.ytd_return = data.get("ytd_return")
+            existing.one_year_return = data.get("one_year_return")
+            existing.risk_level = risk_level
+            existing.investment_type = investment_type
+            existing.category = category
+            if listing.sector:
+                existing.sector = listing.sector  # fdr sector 우선 (KRX 공식 분류)
+            if crno and not existing.crno:
+                existing.crno = crno
+            return
+
+        self.db.add(Stock(
+            ticker=ticker,
+            name=name,
+            crno=crno,
+            sector=listing.sector or data.get("sector"),
+            market=listing.market,
+            current_price=data.get("current_price"),
+            market_cap=data.get("market_cap"),
+            pe_ratio=data.get("pe_ratio"),
+            pb_ratio=data.get("pb_ratio"),
+            dividend_yield=data.get("dividend_yield"),
+            ytd_return=data.get("ytd_return"),
+            one_year_return=data.get("one_year_return"),
+            risk_level=risk_level,
+            investment_type=investment_type,
+            category=category,
+            description=f"{name} ({category})",
+            is_active=True,
+        ))
 
     def load_corporate_actions(
         self,
@@ -1120,6 +1405,226 @@ class RealDataLoader:
                 batch_id=batch.batch_id,
             ) from e
 
+    def load_financials_from_dart(
+        self,
+        fiscal_year: int = 2024,
+        report_type: str = "ANNUAL",
+        limit: Optional[int] = None,
+        operator_id: Optional[str] = None,
+        operator_reason: Optional[str] = None,
+        progress_callback: Optional[Callable[[int, str], None]] = None,
+    ) -> "LoadResult":
+        """DART 재무제표 적재 + PER/PBR 계산 (stocks 업데이트)
+
+        Pipeline:
+          stocks (is_active, market_cap > 0)
+            → DART fnlttSinglAcntAll (당기순이익, 자본총계)
+            → financial_statement upsert
+            → PER = market_cap / net_income
+            → PBR = market_cap / total_equity
+            → stocks.pe_ratio / pb_ratio 업데이트
+        """
+        from app.models.securities import Stock
+
+        if not self.dart_fetcher:
+            self.dart_fetcher = DartFetcher()
+
+        self._ensure_data_source(
+            self.dart_fetcher.source_id,
+            self.dart_fetcher.source_name,
+            source_type="VENDOR",
+            api_type="REST",
+            update_frequency="MANUAL",
+            license_type="PUBLIC",
+            base_url=self.dart_fetcher.BASE_URL,
+            description="DART OpenAPI",
+        )
+
+        as_of_date = date.today()
+
+        batch = self.batch_manager.create_batch(
+            batch_type=BatchType.INFO,
+            source_id=self.dart_fetcher.source_id,
+            as_of_date=as_of_date,
+            target_start=date(fiscal_year, 1, 1),
+            target_end=date(fiscal_year, 12, 31),
+            operator_id=operator_id,
+            operator_reason=operator_reason or f"DART 재무제표 적재 (FY{fiscal_year} {report_type})",
+        )
+
+        logger.info(
+            "DART 재무제표 적재 시작",
+            {"batch_id": batch.batch_id, "fiscal_year": fiscal_year, "report_type": report_type},
+        )
+
+        self.batch_manager.start_batch(batch.batch_id)
+        stats = BatchStats()
+
+        try:
+            # 대상 종목: stocks 테이블 (is_active=True, market_cap > 0), 시가총액 내림차순
+            targets = (
+                self.db.query(Stock.ticker, Stock.market_cap)
+                .filter(Stock.is_active == True, Stock.market_cap > 0)
+                .order_by(Stock.market_cap.desc())
+                .all()
+            )
+
+            if limit:
+                targets = targets[:limit]
+
+            _BATCH_SIZE = 50
+            pending = 0
+
+            for idx, (ticker, market_cap) in enumerate(targets):
+                stats.total_records += 1
+                try:
+                    result = self.dart_fetcher.fetch(
+                        DataType.FINANCIAL_STATEMENT,
+                        {
+                            "ticker": ticker,
+                            "fiscal_year": fiscal_year,
+                            "report_type": report_type,
+                            "as_of_date": as_of_date,
+                        },
+                    )
+
+                    if not result.success or not result.data:
+                        stats.skipped_records += 1
+                        if progress_callback:
+                            progress_callback(idx + 1, ticker)
+                        continue
+
+                    record = result.data[0]
+                    upserted = self._upsert_financials(
+                        ticker=ticker,
+                        record=record,
+                        batch_id=batch.batch_id,
+                        as_of_date=as_of_date,
+                        source_id=self.dart_fetcher.source_id,
+                        market_cap=market_cap,
+                    )
+
+                    if upserted:
+                        stats.success_records += 1
+                        pending += 1
+                    else:
+                        stats.skipped_records += 1
+
+                    if progress_callback:
+                        progress_callback(idx + 1, ticker)
+
+                except Exception as e:
+                    logger.error("DART 재무제표 조회 실패", {"ticker": ticker, "error": str(e)})
+                    stats.failed_records += 1
+                    self.db.rollback()
+                    pending = 0
+                    if progress_callback:
+                        progress_callback(idx + 1, ticker)
+                    continue
+
+                if pending >= _BATCH_SIZE:
+                    self.db.commit()
+                    pending = 0
+
+            if pending > 0:
+                self.db.commit()
+
+            self.batch_manager.complete_batch(batch.batch_id, stats)
+            return LoadResult(
+                batch_id=batch.batch_id,
+                success=True,
+                total_records=stats.total_records,
+                success_records=stats.success_records,
+                failed_records=stats.failed_records,
+                skipped_records=stats.skipped_records,
+            )
+
+        except Exception as e:
+            self.batch_manager.fail_batch(batch.batch_id, str(e), stats)
+            raise DataLoadError(
+                f"DART 재무제표 적재 실패: {e}",
+                batch_id=batch.batch_id,
+            ) from e
+
+    def _upsert_financials(
+        self,
+        ticker: str,
+        record: Dict,
+        batch_id: int,
+        as_of_date: date,
+        source_id: str,
+        market_cap: float,
+    ) -> bool:
+        """financial_statement upsert + stocks PER/PBR 업데이트. commit은 caller에서 수행."""
+        from app.models.securities import Stock
+
+        fiscal_year = record.get("fiscal_year")
+        fiscal_quarter = record.get("fiscal_quarter", 4)
+        net_income = record.get("net_income")
+        total_equity = record.get("total_equity")
+
+        if net_income is None and total_equity is None:
+            return False
+
+        # 1. financial_statement upsert (unique: ticker, fiscal_year, fiscal_quarter, source_id)
+        existing = (
+            self.db.query(FinancialStatement)
+            .filter(
+                FinancialStatement.ticker == ticker,
+                FinancialStatement.fiscal_year == fiscal_year,
+                FinancialStatement.fiscal_quarter == fiscal_quarter,
+                FinancialStatement.source_id == source_id,
+            )
+            .first()
+        )
+
+        if existing:
+            existing.revenue = record.get("revenue")
+            existing.operating_income = record.get("operating_income")
+            existing.net_income = net_income
+            existing.total_assets = record.get("total_assets")
+            existing.total_liabilities = record.get("total_liabilities")
+            existing.total_equity = total_equity
+            existing.operating_cash_flow = record.get("operating_cash_flow")
+            existing.investing_cash_flow = record.get("investing_cash_flow")
+            existing.financing_cash_flow = record.get("financing_cash_flow")
+            existing.roe = record.get("roe")
+            existing.roa = record.get("roa")
+            existing.debt_ratio = record.get("debt_ratio")
+            existing.dart_rcept_no = record.get("dart_rcept_no")
+        else:
+            stmt = FinancialStatement(
+                ticker=ticker,
+                fiscal_year=fiscal_year,
+                fiscal_quarter=fiscal_quarter,
+                report_type=record.get("report_type", "ANNUAL"),
+                revenue=record.get("revenue"),
+                operating_income=record.get("operating_income"),
+                net_income=net_income,
+                total_assets=record.get("total_assets"),
+                total_liabilities=record.get("total_liabilities"),
+                total_equity=total_equity,
+                operating_cash_flow=record.get("operating_cash_flow"),
+                investing_cash_flow=record.get("investing_cash_flow"),
+                financing_cash_flow=record.get("financing_cash_flow"),
+                roe=record.get("roe"),
+                roa=record.get("roa"),
+                debt_ratio=record.get("debt_ratio"),
+                source_id=source_id,
+                batch_id=batch_id,
+                as_of_date=as_of_date,
+                dart_rcept_no=record.get("dart_rcept_no"),
+            )
+            self.db.add(stmt)
+
+        # 2. PER / PBR 계산 + stocks 업데이트
+        stock = self.db.query(Stock).filter(Stock.ticker == ticker).first()
+        if stock and market_cap and market_cap > 0:
+            stock.pe_ratio = round(market_cap / net_income, 2) if net_income and net_income > 0 else None
+            stock.pb_ratio = round(market_cap / total_equity, 2) if total_equity and total_equity > 0 else None
+
+        return True
+
     def _insert_stock_price(
         self,
         record: OHLCVRecord,
@@ -1220,39 +1725,93 @@ class RealDataLoader:
             self.db.rollback()
             raise
 
-    def _insert_bond_basic_info(
+    @staticmethod
+    def _map_credit_rating(record: Dict) -> Optional[str]:
+        """신용등급 코드 → 텍스트 등급 (KIS > KBP > NICE > FN 우선)"""
+        for field in ('kis_scrs_itms_kcd', 'kbp_scrs_itms_kcd', 'nice_scrs_itms_kcd', 'fn_scrs_itms_kcd'):
+            code = (record.get(field) or "").strip()
+            if not code:
+                continue
+            if code.isdigit():
+                return _CREDIT_CODE_MAP.get(code)
+            return code  # 텍스트 등급이면 그대로
+        return None
+
+    @staticmethod
+    def _derive_bond_fields(record: Dict) -> Dict:
+        """실데이터 레코드 → 교육용 컬럼 유도 (bond_type, credit_rating, risk_level, investment_type, interest_rate, maturity_years)"""
+        credit_rating = RealDataLoader._map_credit_rating(record)
+
+        # bond_type: scrs_itms_kcd 첫 글자로 판별
+        #   1xxx = 회사채/CB, 2xxx = 국채, 3xxx = 특수채(MBS), 4xxx = 지방정부채
+        kcd = (record.get("scrs_itms_kcd") or "").strip()
+        if kcd and kcd[0] in ("2", "3", "4"):
+            bond_type = "government"
+        else:
+            base = (credit_rating or "").upper().rstrip("+-")
+            bond_type = "high_yield" if base in ("BBB", "BB", "B", "CCC", "CC", "C", "D") else "corporate"
+
+        # risk_level + investment_type (기존 시드 패턴과 일치)
+        base = (credit_rating or "").upper().rstrip("+-")
+        if base in ("AAA", "AA"):
+            risk_level, investment_type = "low", "conservative,moderate,aggressive"
+        elif base == "A":
+            risk_level, investment_type = "low", "conservative,moderate"
+        elif base == "BBB":
+            risk_level, investment_type = "high", "aggressive"
+        elif base in ("BB", "B", "CCC", "CC", "C", "D"):
+            risk_level, investment_type = "high", "aggressive"
+        else:  # 등급 정보 없음
+            risk_level, investment_type = "medium", "moderate,aggressive"
+
+        # interest_rate: FSC API는 백분율 기준 (1.81 = 1.81%)
+        interest_rate = None
+        raw_rate = record.get("bond_srfc_inrt")
+        if raw_rate is not None:
+            interest_rate = float(raw_rate)
+
+        # maturity_years: 발행일~만기일 차이로 계산
+        maturity_years = None
+        issu_dt = record.get("bond_issu_dt")
+        expr_dt = record.get("bond_expr_dt")
+        if issu_dt and expr_dt:
+            maturity_years = max(1, round((expr_dt - issu_dt).days / 365))
+
+        return {
+            "bond_type": bond_type,
+            "credit_rating": credit_rating,
+            "risk_level": risk_level,
+            "investment_type": investment_type,
+            "interest_rate": interest_rate,
+            "maturity_years": maturity_years,
+        }
+
+    def _upsert_bond(
         self,
         record: Dict[str, any],
         batch_id: int,
         as_of_date: date,
         source_id: str,
     ) -> bool:
-        """채권기본정보 레코드 삽입 (중복 시 스킵)"""
-        existing = (
-            self.db.query(BondBasicInfo)
-            .filter(
-                BondBasicInfo.isin_cd == record.get("isin_cd"),
-                BondBasicInfo.bas_dt == record.get("bas_dt"),
-                BondBasicInfo.source_id == source_id,
-            )
-            .first()
-        )
-        if existing:
+        """채권 upsert (isin_cd 기준). 기존 행이면 실데이터 컬럼 갱신, 없으면 신규 삽입."""
+        from app.models.securities import Bond
+
+        isin_cd = record.get("isin_cd")
+        if not isin_cd:
             return False
 
-        bond_info = BondBasicInfo(
-            isin_cd=record.get("isin_cd"),
+        mapped = self._derive_bond_fields(record)
+
+        # 공통: 실데이터 컬럼 값 준비
+        real_data_fields = dict(
             bas_dt=record.get("bas_dt"),
             crno=record.get("crno"),
-            isin_cd_nm=record.get("isin_cd_nm"),
             scrs_itms_kcd=record.get("scrs_itms_kcd"),
             scrs_itms_kcd_nm=record.get("scrs_itms_kcd_nm"),
-            bond_isur_nm=record.get("bond_isur_nm"),
             bond_issu_dt=record.get("bond_issu_dt"),
             bond_expr_dt=record.get("bond_expr_dt"),
             bond_issu_amt=record.get("bond_issu_amt"),
             bond_bal=record.get("bond_bal"),
-            bond_srfc_inrt=record.get("bond_srfc_inrt"),
             irt_chng_dcd=record.get("irt_chng_dcd"),
             bond_int_tcd=record.get("bond_int_tcd"),
             int_pay_cycl_ctt=record.get("int_pay_cycl_ctt"),
@@ -1272,7 +1831,42 @@ class RealDataLoader:
             batch_id=batch_id,
             as_of_date=as_of_date,
         )
-        self.db.add(bond_info)
+
+        existing = self.db.query(Bond).filter(Bond.isin_cd == isin_cd).first()
+
+        if existing:
+            # UPDATE: 유도 컬럼 + 실데이터 컬럼 갱신
+            existing.name = record.get("isin_cd_nm") or existing.name
+            existing.issuer = record.get("bond_isur_nm") or existing.issuer
+            existing.bond_type = mapped["bond_type"]
+            existing.credit_rating = mapped["credit_rating"] or existing.credit_rating
+            existing.risk_level = mapped["risk_level"]
+            existing.investment_type = mapped["investment_type"]
+            if mapped["interest_rate"] is not None:
+                existing.interest_rate = mapped["interest_rate"]
+            if mapped["maturity_years"] is not None:
+                existing.maturity_years = mapped["maturity_years"]
+            existing.is_active = True
+            for col, val in real_data_fields.items():
+                setattr(existing, col, val)
+            self.db.commit()
+            return True
+
+        # INSERT: 신규 행
+        bond = Bond(
+            name=record.get("isin_cd_nm") or isin_cd,
+            bond_type=mapped["bond_type"],
+            issuer=record.get("bond_isur_nm"),
+            interest_rate=mapped["interest_rate"] or 0.0,
+            maturity_years=mapped["maturity_years"] or 0,
+            credit_rating=mapped["credit_rating"],
+            risk_level=mapped["risk_level"],
+            investment_type=mapped["investment_type"],
+            is_active=True,
+            isin_cd=isin_cd,
+            **real_data_fields,
+        )
+        self.db.add(bond)
         try:
             self.db.commit()
             return True
