@@ -134,7 +134,20 @@ function ProgressModal({ taskId, onComplete, onClose }) {
     : 0;
 
   const isComplete = progress.status === 'completed' || progress.status === 'failed';
-  const isPhase1 = progress.current === 0 && logs.length === 0 && !isComplete;
+  // Phase 1: 진행 중이면서 로그가 없는 상태 (Phase 2 시작 전)
+  const isPhase1 = progress.status === 'running' && logs.length === 0;
+
+  // 완료되면 자동으로 모달 종료
+  React.useEffect(() => {
+    if (isComplete) {
+      const timer = setTimeout(() => {
+        if (onClose) {
+          onClose();
+        }
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isComplete, onClose]);
 
   // Phase 1 상태 표시
   if (isPhase1) {
