@@ -137,6 +137,7 @@ async def load_stocks(
             )
 
             # Phase 1: 데이터 수집 중 (진행 상황 메시지 업데이트)
+            progress_tracker.set_phase(task_id, "Phase 1")
             progress_tracker.update_progress(
                 task_id,
                 current=0,
@@ -147,6 +148,13 @@ async def load_stocks(
             loader = RealDataLoader(db)
 
             def on_progress(current, ticker, success=None, error=None):
+                # Phase 2 시작 감지: "[Phase 2]" prefix가 있으면 Phase 2로 전환 및 count 리셋
+                if ticker and isinstance(ticker, str) and "[Phase 2]" in ticker:
+                    current_state = progress_tracker.get_progress(task_id)
+                    if current_state and current_state.get("phase") != "Phase 2":
+                        # Phase 2로 전환 및 success/failed count 초기화
+                        progress_tracker.set_phase(task_id, "Phase 2", reset_counts=True)
+
                 progress_tracker.update_progress(
                     task_id,
                     current=current,

@@ -1140,14 +1140,14 @@ class RealDataLoader:
                 if data is None:
                     stats.failed_records += 1
                     if progress_callback:
-                        progress_callback(idx, listing.ticker, False, "데이터 없음")
+                        progress_callback(idx, f"[Phase 2] {listing.ticker}", False, "데이터 없음")
                     continue
                 try:
                     self._apply_stock(listing, data)
                     stats.success_records += 1
                     pending += 1
                     if progress_callback:
-                        progress_callback(idx, listing.ticker, True, None)
+                        progress_callback(idx, f"[Phase 2] {listing.ticker}", True, None)
                 except Exception as e:
                     logger.error(
                         "stocks upsert 실패",
@@ -1157,7 +1157,7 @@ class RealDataLoader:
                     stats.failed_records += 1
                     pending = 0
                     if progress_callback:
-                        progress_callback(idx, listing.ticker, False, str(e))
+                        progress_callback(idx, f"[Phase 2] {listing.ticker}", False, str(e))
                     continue
 
                 if pending >= _BATCH_SIZE:
