@@ -170,6 +170,13 @@ async def load_stocks(
                 operator_reason="stocks 적재 (fdr → pykrx)",
                 progress_callback=on_progress,
             )
+            # 완료 메시지: progress.total을 실제 처리 건수로 동기화
+            # (초기 count와 실제 처리 개수의 차이를 보정)
+            progress = progress_tracker.get_progress(task_id)
+            if progress and progress.get("total") != result.total_records:
+                # total 재조정 (상단 진행률의 분모를 맞춤)
+                progress["total"] = result.total_records
+
             progress_tracker.update_progress(
                 task_id,
                 current=result.total_records,
