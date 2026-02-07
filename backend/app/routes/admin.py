@@ -1,11 +1,11 @@
 # backend/app/routes/admin.py
 
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import date
 from pydantic import BaseModel, Field
-from app.database import get_db
+from app.database import get_db, SessionLocal
 from app.services.data_loader import DataLoaderService
 from app.services.alpha_vantage_loader import AlphaVantageDataLoader
 from app.services.pykrx_loader import PyKrxDataLoader
@@ -58,6 +58,14 @@ class CorporateActionLoadRequest(BaseModel):
     as_of_date: Optional[date] = None
     corp_cls: Optional[str] = Field(None, regex="^[YKNE]$")
 
+
+class DailyPricesLoadRequest(BaseModel):
+    start_date: str = Field(..., regex="^[0-9]{8}$")
+    end_date: str = Field(..., regex="^[0-9]{8}$")
+    tickers: Optional[List[str]] = None
+    parallel: bool = Field(True, description="병렬 처리 여부")
+    num_workers: int = Field(8, ge=1, le=16, description="동시 작업 스레드 수")
+
 @router.post("/load-data")
 async def load_all_data(
     db: Session = Depends(get_db),
@@ -80,25 +88,108 @@ async def load_all_data(
 
 @router.post("/load-stocks")
 async def load_stocks(
+    background_tasks: BackgroundTasks,
+    as_of_date: Optional[date] = Query(None),
+    limit: Optional[int] = Query(None, ge=1, le=5000),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
 ):
-    """주식 데이터만 적재"""
-    try:
-        # task_id 생성
-        task_id = f"stocks_{uuid.uuid4().hex[:8]}"
+    """주식 데이터 적재 (fdr_stock_listing → stocks, 백그라운드)
 
-        # 백그라운드에서 실행하지 않고 즉시 실행 (나중에 백그라운드 태스크로 변경 가능)
-        result = DataLoaderService.load_korean_stocks(db, task_id=task_id)
+    Prerequisites: POST /admin/fdr/load-stock-listing 실행 완료
+    """
+    task_id = f"stocks_{uuid.uuid4().hex[:8]}"
+    operator_id = str(current_user.id)
 
-        return {
-            "status": "success",
-            "message": "주식 데이터 적재 완료",
-            "result": result,
-            "task_id": task_id
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    def run_stock_loading():
+        from app.database import SessionLocal
+        from app.progress_tracker import progress_tracker
+        from sqlalchemy import func as sa_func
+        from app.models.real_data import FdrStockListing
+
+        db = SessionLocal()
+        try:
+            effective_as_of_date = as_of_date
+            if effective_as_of_date is None:
+                latest = (
+                    db.query(sa_func.max(FdrStockListing.as_of_date))
+                    .filter(FdrStockListing.source_id == "FDR")
+                    .scalar()
+                )
+                effective_as_of_date = latest
+
+            total_items = 0
+            if effective_as_of_date:
+                total_items = (
+                    db.query(sa_func.count(FdrStockListing.ticker))
+                    .filter(
+                        FdrStockListing.as_of_date == effective_as_of_date,
+                        FdrStockListing.source_id == "FDR",
+                    )
+                    .scalar()
+                    or 0
+                )
+
+            progress_tracker.start_task(
+                task_id,
+                total_items,
+                "주식 데이터 적재 (FDR + pykrx)",
+            )
+
+            # Phase 1: 데이터 수집 중 (진행 상황 메시지 업데이트)
+            progress_tracker.update_progress(
+                task_id,
+                current=0,
+                current_item="⏳ Phase 1: FSC API를 통해 주식 정보를 병렬로 수집 중... (약 2-3분 소요)",
+                success=None,
+            )
+
+            loader = RealDataLoader(db)
+
+            def on_progress(current, ticker, success=None, error=None):
+                progress_tracker.update_progress(
+                    task_id,
+                    current=current,
+                    current_item=ticker,
+                    success=success,
+                    error=error,
+                )
+
+            result = loader.load_stocks_from_fdr(
+                as_of_date=effective_as_of_date,
+                limit=limit,
+                operator_id=operator_id,
+                operator_reason="stocks 적재 (fdr → pykrx)",
+                progress_callback=on_progress,
+            )
+            progress_tracker.update_progress(
+                task_id,
+                current=result.total_records,
+                current_item=f"완료: {result.success_records}건 성공, {result.failed_records}건 실패",
+                success=True,
+            )
+            progress_tracker.complete_task(task_id, "completed")
+            logger.info(f"Stock loading completed: batch_id={result.batch_id} total={result.total_records}")
+        except Exception as e:
+            logger.error(f"Stock loading failed: {str(e)}", exc_info=True)
+            progress_tracker.update_progress(
+                task_id,
+                current=0,
+                current_item=f"실패: {str(e)}",
+                success=False,
+                error=str(e),
+            )
+            progress_tracker.complete_task(task_id, "failed")
+        finally:
+            db.close()
+
+    background_tasks.add_task(run_stock_loading)
+
+    return {
+        "status": "success",
+        "message": "주식 데이터 수집 시작",
+        "task_id": task_id,
+    }
 
 @router.post("/load-etfs")
 async def load_etfs(
@@ -263,6 +354,83 @@ async def load_corporate_actions(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/dart/load-financials")
+async def load_dart_financials(
+    background_tasks: BackgroundTasks,
+    fiscal_year: int = Query(2024),
+    report_type: str = Query("ANNUAL"),
+    limit: Optional[int] = Query(None, ge=1, le=5000),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
+):
+    """DART 재무제표 적재 + PER/PBR 계산 (백그라운드)
+
+    financial_statement 테이블에 재무제표를 저장하고,
+    stocks.pe_ratio / pb_ratio를 market_cap 기반으로 계산하여 업데이트합니다.
+
+    - fiscal_year: 회계연도 (기본 2024)
+    - report_type: ANNUAL | Q1 | Q2 | Q3
+    - limit: 테스트용 종목 수 제한 (시가총액 내림차순)
+    """
+    task_id = f"dart_fin_{uuid.uuid4().hex[:8]}"
+    operator_id = str(current_user.id)
+
+    def run_dart_financials_loading():
+        from app.database import SessionLocal
+        from app.progress_tracker import progress_tracker
+
+        progress_tracker.start_task(task_id, 0, f"DART 재무제표 적재 (FY{fiscal_year} {report_type})")
+
+        db = SessionLocal()
+        try:
+            loader = RealDataLoader(db)
+
+            def on_progress(current, ticker):
+                progress_tracker.update_progress(
+                    task_id,
+                    current=current,
+                    current_item=f"처리 중: {ticker}",
+                )
+
+            result = loader.load_financials_from_dart(
+                fiscal_year=fiscal_year,
+                report_type=report_type,
+                limit=limit,
+                operator_id=operator_id,
+                operator_reason=f"DART 재무제표 적재 (FY{fiscal_year} {report_type})",
+                progress_callback=on_progress,
+            )
+            progress_tracker.update_progress(
+                task_id,
+                current=result.total_records,
+                current_item=f"완료: {result.success_records}건 성공, {result.failed_records}건 실패, {result.skipped_records}건 스킵",
+                success=True,
+            )
+            progress_tracker.complete_task(task_id, "completed")
+            logger.info(f"DART financials loading completed: batch_id={result.batch_id}")
+        except Exception as e:
+            logger.error(f"DART financials loading failed: {str(e)}", exc_info=True)
+            progress_tracker.update_progress(
+                task_id,
+                current=0,
+                current_item=f"실패: {str(e)}",
+                success=False,
+                error=str(e),
+            )
+            progress_tracker.complete_task(task_id, "failed")
+        finally:
+            db.close()
+
+    background_tasks.add_task(run_dart_financials_loading)
+
+    return {
+        "status": "success",
+        "message": "DART 재무제표 수집 시작",
+        "task_id": task_id,
+    }
+
 
 @router.get("/data-status")
 async def get_data_status(
@@ -1817,4 +1985,83 @@ async def delete_user(
     except Exception as e:
         db.rollback()
         logger.error(f"Failed to delete user: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ========================================================================
+# pykrx 일별 시세 적재 (병렬 처리 최적화)
+# ========================================================================
+
+@router.post("/pykrx/load-daily-prices")
+async def load_daily_prices(
+    req: DailyPricesLoadRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
+):
+    """pykrx를 이용하여 일별 시세 적재
+
+    Parameters:
+    - start_date: 시작일 (YYYYMMDD)
+    - end_date: 종료일 (YYYYMMDD)
+    - tickers: 종목코드 리스트 (None이면 인기 종목 20개 사용)
+    - parallel: 병렬 처리 여부 (기본값: True, 권장)
+    - num_workers: 동시 스레드 수 (기본값: 8, 1-16)
+
+    Returns:
+    - task_id: 진행 상황 추적용 ID
+    - 병렬 처리로 50-80% 시간 단축 가능
+    """
+    try:
+        task_id = f"daily_prices_{uuid.uuid4().hex[:8]}"
+        operator_id = str(current_user.id)
+
+        def run_load_task():
+            db_local = SessionLocal()
+            try:
+                loader = PyKrxDataLoader()
+
+                if req.parallel:
+                    # 병렬 처리 (권장)
+                    result = loader.load_all_daily_prices_parallel(
+                        db=db_local,
+                        start_date=req.start_date,
+                        end_date=req.end_date,
+                        tickers=req.tickers,
+                        task_id=task_id,
+                        num_workers=req.num_workers
+                    )
+                else:
+                    # 순차 처리 (호환성)
+                    result = loader.load_all_daily_prices(
+                        db=db_local,
+                        start_date=req.start_date,
+                        end_date=req.end_date,
+                        tickers=req.tickers,
+                        task_id=task_id
+                    )
+
+                progress_tracker.complete_task(task_id, "completed")
+                logger.info(f"Daily prices loading completed: {result}")
+
+            except Exception as e:
+                logger.error(f"Failed to load daily prices: {str(e)}")
+                progress_tracker.complete_task(task_id, "failed", error=str(e))
+            finally:
+                db_local.close()
+
+        background_tasks.add_task(run_load_task)
+
+        return {
+            "success": True,
+            "message": f"일별 시세 적재 작업 시작 (병렬: {req.parallel}, 스레드: {req.num_workers})",
+            "task_id": task_id,
+            "processing_mode": "parallel" if req.parallel else "sequential"
+        }
+
+    except ValueError as e:
+        logger.error(f"Validation error: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Failed to start daily prices loading: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

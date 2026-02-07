@@ -107,11 +107,22 @@ function ProgressModal({ taskId, onComplete, onClose }) {
       <div className="modal-overlay">
         <div className="progress-modal">
           <div className="modal-header">
-            <h3>진행 상황</h3>
+            <h3>📊 데이터 적재</h3>
             <button className="close-button" onClick={onClose}>×</button>
           </div>
           <div className="modal-body">
-            <p>진행 상황 로딩 중...</p>
+            <div className="progress-section">
+              <div className="loading-spinner">
+                <div className="spinner-animation"></div>
+              </div>
+              <h3 style={{ marginTop: '20px', textAlign: 'center' }}>⏳ Phase 1: 데이터 수집 중</h3>
+              <p style={{ marginTop: '10px', textAlign: 'center', color: '#666', fontSize: '0.9rem' }}>
+                FSC API를 통해 주식 정보를 병렬로 수집 중입니다...
+              </p>
+              <p style={{ marginTop: '5px', textAlign: 'center', color: '#999', fontSize: '0.85rem' }}>
+                (약 2-3분 소요)
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -123,6 +134,39 @@ function ProgressModal({ taskId, onComplete, onClose }) {
     : 0;
 
   const isComplete = progress.status === 'completed' || progress.status === 'failed';
+  const isPhase1 = progress.current === 0 && logs.length === 0 && !isComplete;
+
+  // Phase 1 상태 표시
+  if (isPhase1) {
+    return (
+      <div className="modal-overlay">
+        <div className="progress-modal">
+          <div className="modal-header">
+            <h3>📊 {progress.description}</h3>
+            <button className="close-button" onClick={onClose}>×</button>
+          </div>
+
+          <div className="modal-body">
+            <div className="progress-section">
+              <div className="loading-spinner">
+                <div className="spinner-animation"></div>
+              </div>
+              <h3 style={{ marginTop: '20px', textAlign: 'center' }}>⏳ Phase 1: 데이터 수집 중</h3>
+              <p style={{ marginTop: '15px', textAlign: 'center', color: '#666', fontSize: '0.95rem' }}>
+                {progress.current_item || 'FSC API를 통해 주식 정보를 병렬로 수집 중...'}
+              </p>
+              <p style={{ marginTop: '10px', textAlign: 'center', color: '#999', fontSize: '0.85rem' }}>
+                이 단계는 약 2-3분이 소요됩니다
+              </p>
+              <p style={{ marginTop: '5px', textAlign: 'center', color: '#bbb', fontSize: '0.8rem' }}>
+                완료 후 Phase 2에서 데이터베이스에 저장됩니다
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="modal-overlay">
@@ -159,7 +203,7 @@ function ProgressModal({ taskId, onComplete, onClose }) {
               <span className={`detail-item status ${progress.status}`}>
                 {progress.status === 'completed' ? '✔️ 완료' :
                  progress.status === 'failed' ? '⚠️ 실패' :
-                 '⏳ 진행 중'}
+                 '⏳ Phase 2: 진행 중'}
               </span>
             </div>
           </div>
@@ -167,12 +211,12 @@ function ProgressModal({ taskId, onComplete, onClose }) {
           {/* Logs Section */}
           <div className="logs-section">
             <div className="logs-header">
-              <h4>📋 실시간 로그</h4>
+              <h4>📋 실시간 로그 (Phase 2)</h4>
               <span className="log-count">{logs.length}개 항목</span>
             </div>
             <div className="logs-container">
               {logs.length === 0 ? (
-                <p className="no-logs">로그를 기다리는 중...</p>
+                <p className="no-logs">Phase 1 완료 후 로그가 표시됩니다...</p>
               ) : (
                 logs.map((log, index) => (
                   <div key={log.id || index} className="log-item">
