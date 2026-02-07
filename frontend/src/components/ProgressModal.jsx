@@ -220,27 +220,8 @@ function ProgressModal({ taskId, onComplete, onClose }) {
               <span className={`detail-item status ${progress.status}`}>
                 {progress.status === 'completed' ? '✔️ 완료' :
                  progress.status === 'failed' ? '⚠️ 실패' :
-                 '⏳ Phase 2: 진행 중'}
+                 (logs.length === 0 ? '⏳ Phase 1: 진행 중' : '⏳ Phase 2: 진행 중')}
               </span>
-            </div>
-          </div>
-
-          {/* Logs Section */}
-          <div className="logs-section">
-            <div className="logs-header">
-              <h4>📋 실시간 로그 (Phase 2)</h4>
-              <span className="log-count">{logs.length}개 항목</span>
-            </div>
-            <div className="logs-container">
-              {logs.length === 0 ? (
-                <p className="no-logs">Phase 1 완료 후 로그가 표시됩니다...</p>
-              ) : (
-                logs.map((log, index) => (
-                  <div key={log.id || index} className="log-item">
-                    {typeof log === 'string' ? log : (log.text || JSON.stringify(log))}
-                  </div>
-                ))
-              )}
             </div>
           </div>
 

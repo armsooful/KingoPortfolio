@@ -168,10 +168,15 @@ async def load_stocks(
                 current_item=f"완료: {result.success_records}건 성공, {result.failed_records}건 실패",
                 success=True,
             )
+            # 작업 완료 마킹
+            logger.info(f"[CRITICAL] About to call complete_task for {task_id}")
             progress_tracker.complete_task(task_id, "completed")
+            # 완료 후 상태 확인
+            final_progress = progress_tracker.get_progress(task_id)
+            logger.info(f"[CRITICAL] Task {task_id} completed. Final status: {final_progress.get('status') if final_progress else 'TASK NOT FOUND'}")
             logger.info(f"Stock loading completed: batch_id={result.batch_id} total={result.total_records}")
         except Exception as e:
-            logger.error(f"Stock loading failed: {str(e)}", exc_info=True)
+            logger.error(f"[CRITICAL] Stock loading failed with exception: {str(e)}", exc_info=True)
             progress_tracker.update_progress(
                 task_id,
                 current=0,
@@ -179,7 +184,10 @@ async def load_stocks(
                 success=False,
                 error=str(e),
             )
+            logger.error(f"[CRITICAL] Calling complete_task with 'failed' status for {task_id}")
             progress_tracker.complete_task(task_id, "failed")
+            final_progress = progress_tracker.get_progress(task_id)
+            logger.error(f"[CRITICAL] Task {task_id} marked as failed. Final status: {final_progress.get('status') if final_progress else 'TASK NOT FOUND'}")
         finally:
             db.close()
 
@@ -466,7 +474,7 @@ async def get_progress(
         raise HTTPException(status_code=404, detail="Task not found")
 
     # 디버그 로깅
-    logger.info(f"Progress API called - task_id: {task_id}, current: {progress.get('current')}, current_item: {progress.get('current_item')}, success_count: {progress.get('success_count')}, failed_count: {progress.get('failed_count')}")
+    logger.info(f"Progress API called - task_id: {task_id}, status: {progress.get('status')}, current: {progress.get('current')}, current_item: {progress.get('current_item')}, success_count: {progress.get('success_count')}, failed_count: {progress.get('failed_count')}")
 
     return progress
 
