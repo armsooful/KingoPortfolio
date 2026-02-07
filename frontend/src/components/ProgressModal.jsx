@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as api from '../services/api';
 import '../styles/ProgressModal.css';
 
@@ -6,6 +6,8 @@ function ProgressModal({ taskId, onComplete, onClose }) {
   const [progress, setProgress] = useState(null);
   const [error, setError] = useState(null);
   const [logs, setLogs] = useState([]);
+  const lastHistoryLenRef = useRef(0);
+  const autoCloseTimeoutRef = useRef(null);
 
   const formatLogTimestamp = (timestamp) => {
     if (!timestamp) return '';
@@ -19,10 +21,16 @@ function ProgressModal({ taskId, onComplete, onClose }) {
   useEffect(() => {
     if (!taskId) return;
 
+    setProgress(null);
+    setError(null);
+    setLogs([]);
+    lastHistoryLenRef.current = 0;
+
     // 임시 task_id인지 확인
     const isTempTask = taskId.startsWith('temp_');
+    let notFoundCount = 0; // 404 에러 카운트
 
-    // 진행 상황을 300ms마다 폴링 (더 빠른 업데이트)
+    // 진행 상황을 1초마다 폴링
     const interval = setInterval(async () => {
       // 임시 task_id면 실제 데이터를 기다림
       if (isTempTask) {
@@ -32,13 +40,14 @@ function ProgressModal({ taskId, onComplete, onClose }) {
       try {
         const response = await api.getProgress(taskId);
         const data = response.data;
+        notFoundCount = 0; // 성공하면 카운트 초기화
         setProgress(data);
 
         // items_history를 사용하여 로그 업데이트
-        if (data.items_history && data.items_history.length > logs.length) {
-          // 새로운 항목이 있으면 로그에 추가
-          const newItems = data.items_history.slice(logs.length);
-          const newLogs = newItems.map(item => {
+        if (data.items_history && data.items_history.length > lastHistoryLenRef.current) {
+          const newItems = data.items_history.slice(lastHistoryLenRef.current);
+          lastHistoryLenRef.current = data.items_history.length;
+          const newLogs = newItems.map((item) => {
             const timestamp = formatLogTimestamp(item.timestamp);
             const status = item.success ? '✅' : '❌';
             return {
@@ -57,19 +66,41 @@ function ProgressModal({ taskId, onComplete, onClose }) {
           if (onComplete) {
             onComplete(data);
           }
+          // 3초 후 자동으로 모달 종료
+          if (autoCloseTimeoutRef.current) {
+            clearTimeout(autoCloseTimeoutRef.current);
+          }
+          autoCloseTimeoutRef.current = setTimeout(() => {
+            if (onClose) {
+              onClose();
+            }
+          }, 3000);
         }
       } catch (err) {
         if (err.response?.status === 404) {
-          // 작업이 없으면 계속 대기 (임시에서 실제 task_id로 전환 중일 수 있음)
+          // 404가 3회 연속 발생하면 폴링 중지 (작업이 완료되고 정리됨)
+          notFoundCount++;
+          if (notFoundCount >= 3) {
+            clearInterval(interval);
+            // 진행 상황 모달 자동 종료
+            if (onClose) {
+              onClose();
+            }
+          }
         } else {
           setError('진행 상황을 가져올 수 없습니다');
         }
       }
-    }, 300); // 300ms마다 업데이트 (더 빠른 반응)
+    }, 1000);
 
     // 컴포넌트 언마운트 시 정리
-    return () => clearInterval(interval);
-  }, [taskId, onComplete, logs.length]);
+    return () => {
+      clearInterval(interval);
+      if (autoCloseTimeoutRef.current) {
+        clearTimeout(autoCloseTimeoutRef.current);
+      }
+    };
+  }, [taskId, onComplete, onClose]);
 
   if (!progress) {
     return (
