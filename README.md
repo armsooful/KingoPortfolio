@@ -575,6 +575,7 @@ Environment 탭에서:
 DATABASE_URL=postgresql://user:password@host/dbname
 SECRET_KEY=your-secret-key-min-32-characters
 ALLOWED_ORIGINS=http://localhost:5173,https://kingo-portfolio.vercel.app
+PROGRESS_HISTORY_LIMIT=200
 ```
 
 #### Step 4: 배포

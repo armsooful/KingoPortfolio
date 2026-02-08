@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import date
+from datetime import date, datetime, timezone
 from pydantic import BaseModel, Field
 from app.database import get_db, SessionLocal
 from app.services.data_loader import DataLoaderService
@@ -65,26 +65,6 @@ class DailyPricesLoadRequest(BaseModel):
     tickers: Optional[List[str]] = None
     parallel: bool = Field(True, description="병렬 처리 여부")
     num_workers: int = Field(8, ge=1, le=16, description="동시 작업 스레드 수")
-
-@router.post("/load-data")
-async def load_all_data(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
-):
-    """모든 종목 데이터 적재 (관리자용)"""
-    try:
-        results = DataLoaderService.load_all_data(db)
-        return {
-            "status": "success",
-            "message": "데이터 적재 완료",
-            "results": results
-        }
-    except Exception as e:
-        logger.error(f"Data loading failed: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"데이터 적재 실패: {str(e)}"
-        )
 
 @router.post("/load-stocks")
 async def load_stocks(
@@ -327,6 +307,128 @@ async def load_bond_basic_info(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/load-bonds")
+async def load_bonds_full_query(
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
+):
+    """채권 기본정보 전체 조회 (금융위원회 OpenAPI) - 기준일자는 오늘 날짜"""
+    operator_id = str(current_user.id)
+    task_id = f"bonds_{uuid.uuid4().hex[:8]}"
+
+    # 채권 적재: Progress를 직접 초기화 (start_task로 total 고정 방지)
+    progress_tracker._progress[task_id] = {
+        "status": "running",
+        "total": 0,  # 초기값 0 (나중에 업데이트)
+        "current": 0,
+        "current_item": "채권 데이터 조회 중...",
+        "success_count": 0,
+        "failed_count": 0,
+        "phase": "Phase 2",
+        "description": "채권 데이터 조회",
+        "error_message": None,
+        "items_history": [],
+        "operator_id": operator_id,
+        "created_at": datetime.now(timezone.utc),
+    }
+
+    # 초기 Phase 2 진행 상황 로그
+    progress_tracker._progress[task_id]["items_history"].append({
+        "index": 0,
+        "item": "채권 데이터 조회 시작",
+        "success": True,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    })
+
+    def load_bonds_async():
+        try:
+            db_session = SessionLocal()
+            loader = RealDataLoader(db_session)
+
+            # 최근 영업일 기준일자 설정 (FSC API는 미래 날짜 데이터 없음)
+            # 현재 날짜에서 최대 7일 이전까지 시도
+            from datetime import timedelta
+            bas_dt = None
+            as_of_date = date.today()
+
+            for days_back in range(7):
+                check_date = as_of_date - timedelta(days=days_back)
+                check_date_str = str(check_date).replace('-', '')
+
+                # 실제 데이터 조회 전에 해당 날짜가 유효한지 먼저 확인할 수 있지만,
+                # 일단 어제 날짜 사용 (대부분의 경우 어제 데이터가 있음)
+                if days_back == 0:
+                    continue  # 오늘은 건너뛰기 (미래 날짜)
+                bas_dt = check_date_str
+                as_of_date = check_date
+                break
+
+            logger.info(f"[BOND] FSC API 호출 시작: bas_dt={bas_dt}, as_of_date={as_of_date}")
+
+            result = loader.load_bond_basic_info(
+                crno=None,
+                bond_isur_nm=None,
+                bas_dt=bas_dt,
+                limit=None,
+                as_of_date=as_of_date,
+                operator_id=operator_id,
+                operator_reason="FSC 채권기본정보 전체 조회",
+            )
+
+            # 실제 적재된 건수로 진행 상황 업데이트
+            if result.success:
+                total_records = result.total_records
+                success_records = result.success_records
+                failed_records = result.failed_records
+
+                logger.info(f"[BOND] FSC API 응답: 총 {total_records}건, 성공 {success_records}건, 실패 {failed_records}건")
+                logger.info(f"[BOND] 채권 적재 완료: 총 {total_records}건, 성공 {success_records}건, 실패 {failed_records}건")
+
+                # 진행 상황 업데이트 - total을 실제 데이터로 설정
+                with progress_tracker._lock:
+                    if task_id in progress_tracker._progress:
+                        progress_tracker._progress[task_id]["total"] = total_records
+                        progress_tracker._progress[task_id]["current"] = total_records
+                        progress_tracker._progress[task_id]["success_count"] = success_records
+                        progress_tracker._progress[task_id]["failed_count"] = failed_records
+                        progress_tracker._progress[task_id]["current_item"] = f"채권 데이터 적재 완료: {total_records}건"
+                        progress_tracker._progress[task_id]["items_history"].append({
+                            "index": 1,
+                            "item": f"채권 데이터 적재 완료: {total_records}건",
+                            "success": True,
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        })
+
+                progress_tracker.complete_task(task_id, status="completed")
+            else:
+                raise Exception(result.error_message or "채권 데이터 조회 실패")
+
+        except Exception as e:
+            logger.error(f"[BOND] 채권 데이터 적재 실패: {str(e)}")
+            with progress_tracker._lock:
+                if task_id in progress_tracker._progress:
+                    progress_tracker._progress[task_id]["current_item"] = f"오류: {str(e)}"
+                    progress_tracker._progress[task_id]["error_message"] = str(e)
+                    progress_tracker._progress[task_id]["items_history"].append({
+                        "index": 1,
+                        "item": f"오류 발생: {str(e)}",
+                        "success": False,
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    })
+            progress_tracker.complete_task(task_id, status="failed")
+        finally:
+            db_session.close()
+
+    background_tasks.add_task(load_bonds_async)
+
+    return {
+        "status": "success",
+        "task_id": task_id,
+        "message": "채권 데이터 조회 시작"
+    }
 
 
 @router.post("/fdr/load-stock-listing")
@@ -1071,234 +1173,6 @@ async def get_alpha_vantage_data_status(
 
 
 # ========== pykrx (한국 주식) 관련 엔드포인트 ==========
-
-@router.post("/pykrx/load-all-stocks")
-async def load_all_pykrx_stocks(
-    background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
-):
-    """pykrx: 인기 한국 주식 전체 적재"""
-    try:
-        task_id = f"pykrx_stocks_{uuid.uuid4().hex[:8]}"
-
-        # 백그라운드에서 실행
-        def run_pykrx_stock_loading():
-            logger.info(f"🚀 Background task started for pykrx stocks, task_id: {task_id}")
-            from app.database import SessionLocal
-            db = SessionLocal()
-            try:
-                loader = PyKrxDataLoader()
-                result = loader.load_all_popular_stocks(db, task_id=task_id)
-                logger.info(f"✅ Background task completed for pykrx stocks: {result}")
-            except Exception as e:
-                logger.error(f"❌ Background task failed for pykrx stocks: {str(e)}", exc_info=True)
-            finally:
-                logger.info(f"🔒 Closing database session for task_id: {task_id}")
-                db.close()
-
-        background_tasks.add_task(run_pykrx_stock_loading)
-        logger.info(f"✅ Background task added to queue for pykrx stocks: {task_id}")
-
-        return {
-            "status": "success",
-            "message": "pykrx 한국 주식 데이터 수집 시작",
-            "task_id": task_id
-        }
-    except Exception as e:
-        logger.error(f"pykrx stock loading failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/pykrx/load-stock/{ticker}")
-async def load_pykrx_stock(
-    ticker: str,
-    background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
-):
-    """pykrx: 특정 한국 주식 적재"""
-    try:
-        task_id = f"pykrx_stock_{ticker}_{uuid.uuid4().hex[:8]}"
-
-        # 백그라운드에서 실행
-        def run_single_pykrx_stock_loading():
-            logger.info(f"🚀 Background task started for pykrx stock {ticker}, task_id: {task_id}")
-            from app.database import SessionLocal
-            from app.progress_tracker import progress_tracker
-            db = SessionLocal()
-            try:
-                # 진행 상황 추적 시작 (1개 항목)
-                progress_tracker.start_task(task_id, 1, f"{ticker} pykrx 주식 데이터 수집")
-
-                progress_tracker.update_progress(
-                    task_id,
-                    current=1,
-                    current_item=f"{ticker} 데이터 수집 중...",
-                    success=None
-                )
-
-                loader = PyKrxDataLoader()
-                result = loader.load_stock_data(db, ticker)
-
-                if result['success']:
-                    progress_tracker.update_progress(
-                        task_id,
-                        current=1,
-                        current_item=f"{ticker} - {result['message']}",
-                        success=True
-                    )
-                else:
-                    progress_tracker.update_progress(
-                        task_id,
-                        current=1,
-                        current_item=f"{ticker} - {result['message']}",
-                        success=False,
-                        error=result['message']
-                    )
-
-                progress_tracker.complete_task(task_id, "completed")
-                logger.info(f"✅ Background task completed for pykrx stock {ticker}: {result}")
-            except Exception as e:
-                logger.error(f"❌ Background task failed for pykrx stock {ticker}: {str(e)}", exc_info=True)
-                progress_tracker.update_progress(
-                    task_id,
-                    current=1,
-                    current_item=f"{ticker} - 오류 발생",
-                    success=False,
-                    error=str(e)
-                )
-                progress_tracker.complete_task(task_id, "failed")
-            finally:
-                logger.info(f"🔒 Closing database session for task_id: {task_id}")
-                db.close()
-
-        background_tasks.add_task(run_single_pykrx_stock_loading)
-        logger.info(f"✅ Background task added to queue for pykrx stock {ticker}: {task_id}")
-
-        return {
-            "status": "success",
-            "message": f"{ticker} pykrx 주식 데이터 수집 시작",
-            "task_id": task_id
-        }
-    except Exception as e:
-        logger.error(f"pykrx stock loading failed for {ticker}: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/pykrx/load-all-etfs")
-async def load_all_pykrx_etfs(
-    background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
-):
-    """pykrx: 한국 ETF 전체 종목 적재"""
-    try:
-        task_id = f"pykrx_etfs_{uuid.uuid4().hex[:8]}"
-
-        # 백그라운드에서 실행
-        def run_pykrx_etf_loading():
-            logger.info(f"🚀 Background task started for pykrx ETFs, task_id: {task_id}")
-            from app.database import SessionLocal
-            db = SessionLocal()
-            try:
-                loader = PyKrxDataLoader()
-                result = loader.load_all_popular_etfs(db, task_id=task_id)
-                logger.info(f"✅ Background task completed for pykrx ETFs: {result}")
-            except Exception as e:
-                logger.error(f"❌ Background task failed for pykrx ETFs: {str(e)}", exc_info=True)
-            finally:
-                logger.info(f"🔒 Closing database session for task_id: {task_id}")
-                db.close()
-
-        background_tasks.add_task(run_pykrx_etf_loading)
-        logger.info(f"✅ Background task added to queue for pykrx ETFs: {task_id}")
-
-        return {
-            "status": "success",
-            "message": "pykrx 한국 ETF 전체 종목 수집 시작",
-            "task_id": task_id
-        }
-    except Exception as e:
-        logger.error(f"pykrx ETF loading failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/pykrx/load-etf/{ticker}")
-async def load_pykrx_etf(
-    ticker: str,
-    background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
-):
-    """pykrx: 특정 한국 ETF 적재"""
-    try:
-        task_id = f"pykrx_etf_{ticker}_{uuid.uuid4().hex[:8]}"
-
-        # 백그라운드에서 실행
-        def run_single_pykrx_etf_loading():
-            logger.info(f"🚀 Background task started for pykrx ETF {ticker}, task_id: {task_id}")
-            from app.database import SessionLocal
-            from app.progress_tracker import progress_tracker
-            db = SessionLocal()
-            try:
-                # 진행 상황 추적 시작 (1개 항목)
-                progress_tracker.start_task(task_id, 1, f"{ticker} pykrx ETF 데이터 수집")
-
-                progress_tracker.update_progress(
-                    task_id,
-                    current=1,
-                    current_item=f"{ticker} ETF 데이터 수집 중...",
-                    success=None
-                )
-
-                loader = PyKrxDataLoader()
-                result = loader.load_etf_data(db, ticker)
-
-                if result['success']:
-                    progress_tracker.update_progress(
-                        task_id,
-                        current=1,
-                        current_item=f"{ticker} - {result['message']}",
-                        success=True
-                    )
-                else:
-                    progress_tracker.update_progress(
-                        task_id,
-                        current=1,
-                        current_item=f"{ticker} - {result['message']}",
-                        success=False,
-                        error=result['message']
-                    )
-
-                progress_tracker.complete_task(task_id, "completed")
-                logger.info(f"✅ Background task completed for pykrx ETF {ticker}: {result}")
-            except Exception as e:
-                logger.error(f"❌ Background task failed for pykrx ETF {ticker}: {str(e)}", exc_info=True)
-                progress_tracker.update_progress(
-                    task_id,
-                    current=1,
-                    current_item=f"{ticker} ETF - 오류 발생",
-                    success=False,
-                    error=str(e)
-                )
-                progress_tracker.complete_task(task_id, "failed")
-            finally:
-                logger.info(f"🔒 Closing database session for task_id: {task_id}")
-                db.close()
-
-        background_tasks.add_task(run_single_pykrx_etf_loading)
-        logger.info(f"✅ Background task added to queue for pykrx ETF {ticker}: {task_id}")
-
-        return {
-            "status": "success",
-            "message": f"{ticker} pykrx ETF 데이터 수집 시작",
-            "task_id": task_id
-        }
-    except Exception as e:
-        logger.error(f"pykrx ETF loading failed for {ticker}: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
 
 @router.post("/pykrx/load-all-financials")
 async def load_all_pykrx_financials(

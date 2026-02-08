@@ -138,10 +138,13 @@ function ProgressModal({ taskId, onComplete, onClose }) {
 
   const isComplete = progress.status === 'completed' || progress.status === 'failed';
 
+  // 채권 적재(bonds)의 경우 Phase 1 없음 - Phase 2만 표시
+  const isBondTask = taskId && taskId.startsWith('bonds_');
+
   // Phase 판별: backend의 phase 필드 사용, 없으면 current_item 기반으로 판단
   const currentPhase = progress.phase ||
     (progress.current_item && progress.current_item.includes('[Phase 1]') ? 'Phase 1' : 'Phase 2');
-  const isPhase1 = progress.status === 'running' && currentPhase === 'Phase 1';
+  const isPhase1 = !isBondTask && progress.status === 'running' && currentPhase === 'Phase 1';
 
   // Phase 1 상태 표시
   if (isPhase1) {
@@ -186,9 +189,7 @@ function ProgressModal({ taskId, onComplete, onClose }) {
       <div className="progress-modal">
         <div className="modal-header">
           <h3>📊 {progress.description}</h3>
-          {isComplete && (
-            <button className="close-button" onClick={onClose}>×</button>
-          )}
+          <button className="close-button" onClick={onClose}>×</button>
         </div>
 
         <div className="modal-body">

@@ -343,7 +343,8 @@ class DartFetcher(BaseFetcher):
             amount_str = item.get("thstrm_amount", "").replace(",", "")
             if amount_str and amount_str not in ["-", ""]:
                 try:
-                    accounts[account_nm] = int(amount_str)
+                    if account_nm not in accounts:
+                        accounts[account_nm] = int(amount_str)
                 except ValueError:
                     pass
 

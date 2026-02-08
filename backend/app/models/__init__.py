@@ -30,7 +30,6 @@ from .real_data import (
     StockInfo, DataQualityLog,
     # Level 2
     FinancialStatement, DividendHistory, CorporateAction, InstitutionTrade, FdrStockListing,
-    BondBasicInfo,
     # Phase 11
     StocksDailyPrice
 )
@@ -52,7 +51,7 @@ __all__ = ['User', 'KrxTimeSeries', 'Portfolio', 'PortfolioHistory', 'Simulation
            'DataSource', 'DataLoadBatch', 'StockPriceDaily', 'IndexPriceDaily',
            'StockInfo', 'DataQualityLog',
            'FinancialStatement', 'DividendHistory', 'CorporateAction', 'InstitutionTrade',
-           'FdrStockListing', 'BondBasicInfo', 'StocksDailyPrice']
+           'FdrStockListing', 'StocksDailyPrice']
 # models.py에서 추가 모델 import
 import sys
 import os

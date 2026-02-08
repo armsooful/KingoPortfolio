@@ -129,6 +129,9 @@ CLAUDE_API_KEY=your-claude-api-key
 
 # Rate Limiting (프로덕션)
 REDIS_URL=redis://localhost:6379
+
+# 진행 로그
+PROGRESS_HISTORY_LIMIT=200
 ```
 
 ---

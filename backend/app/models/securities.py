@@ -1,17 +1,17 @@
 # backend/app/models/securities.py
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Date
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Date, Numeric, ForeignKey, UniqueConstraint, Index
 from app.database import Base
 from app.utils.kst_now import kst_now
 
 class Stock(Base):
     """한국 주식"""
     __tablename__ = "stocks"
-    
-    id = Column(Integer, primary_key=True)
-    ticker = Column(String(10), unique=True, index=True)  # 005930
+
+    ticker = Column(String(10), primary_key=True)  # 005930 (PK)
     name = Column(String(100), index=True)                # 삼성전자
     company = Column(String(100))                         # 회사명 (영문)
+    crno = Column(String(13), nullable=True)              # 법인등록번호 (FSC 배당 조회용)
     sector = Column(String(50))                           # 전자
     market = Column(String(20))                           # KOSPI, KOSDAQ
     
@@ -42,9 +42,8 @@ class Stock(Base):
 class ETF(Base):
     """ETF"""
     __tablename__ = "etfs"
-    
-    id = Column(Integer, primary_key=True)
-    ticker = Column(String(10), unique=True, index=True)
+
+    ticker = Column(String(10), primary_key=True)  # PK
     name = Column(String(100), index=True)
     etf_type = Column(String(50))                         # equity, bond, commodity, reits
     
@@ -68,31 +67,87 @@ class ETF(Base):
 
 
 class Bond(Base):
-    """채권"""
+    """채권 (교육용 + 실데이터 통합)"""
     __tablename__ = "bonds"
-    
+
     id = Column(Integer, primary_key=True)
     name = Column(String(100), unique=True, index=True)
     bond_type = Column(String(50))                        # government, corporate, high_yield
     issuer = Column(String(100), nullable=True)
-    
+
     # 금리
-    interest_rate = Column(Float)                         # 금리 (%)
+    interest_rate = Column(Float)                         # 금리 (%) — bond_srfc_inrt과 통합
     coupon_rate = Column(Float, nullable=True)
     maturity_years = Column(Integer)
-    
+
     # 신용도
-    credit_rating = Column(String(10))                    # AAA, AA, A, BBB
+    credit_rating = Column(String(10))                    # AAA, AA, A, BBB (코드로부터 유도)
     risk_level = Column(String(20))
-    
+
     # 정보
-    investment_type = Column(String(100))
+    investment_type = Column(String(100))                 # conservative,moderate,aggressive (유도)
     minimum_investment = Column(Integer)                  # 최소 투자액 (원)
     description = Column(String(500))
     is_active = Column(Boolean, default=True)
-    
+
+    # --- 실데이터 컬럼 (FSC API) ---
+    # 식별
+    isin_cd = Column(String(12), nullable=True)           # ISIN 코드 (unique)
+    bas_dt = Column(String(8), nullable=True)             # API 조회 기준일 (YYYYMMDD)
+    crno = Column(String(13), nullable=True)              # 법인등록번호
+
+    # 종목
+    scrs_itms_kcd = Column(String(4), nullable=True)      # 유가증권종목종류코드
+    scrs_itms_kcd_nm = Column(String(100), nullable=True) # 유가증권종목종류코드명
+
+    # 발행
+    bond_issu_dt = Column(Date, nullable=True)            # 발행일
+    bond_expr_dt = Column(Date, nullable=True)            # 만기일
+
+    # 금액
+    bond_issu_amt = Column(Numeric(22, 3), nullable=True) # 발행금액
+    bond_bal = Column(Numeric(22, 3), nullable=True)      # 잔액
+
+    # 금리 세부
+    irt_chng_dcd = Column(String(1), nullable=True)       # 금리변동구분: Y=변동, N=고정
+    bond_int_tcd = Column(String(1), nullable=True)       # 이자유형코드
+    int_pay_cycl_ctt = Column(String(100), nullable=True) # 이자지급주기
+
+    # 이표
+    nxtm_copn_dt = Column(Date, nullable=True)            # 차기이표일
+    rbf_copn_dt = Column(Date, nullable=True)             # 직전이표일
+
+    # 보증/순위
+    grn_dcd = Column(String(1), nullable=True)            # 보증구분코드
+    bond_rnkn_dcd = Column(String(1), nullable=True)      # 순위구분코드
+
+    # 신용등급 코드 (원본)
+    kis_scrs_itms_kcd = Column(String(4), nullable=True)  # KIS 신용등급 코드
+    kbp_scrs_itms_kcd = Column(String(4), nullable=True)  # KBP 신용등급 코드
+    nice_scrs_itms_kcd = Column(String(4), nullable=True) # NICE 신용등급 코드
+    fn_scrs_itms_kcd = Column(String(4), nullable=True)   # FN 신용등급 코드
+
+    # 모집/상장
+    bond_offr_mcd = Column(String(2), nullable=True)      # 모집방법코드
+    lstg_dt = Column(Date, nullable=True)                 # 상장일
+
+    # 특이
+    prmnc_bond_yn = Column(String(1), nullable=True)      # 영구채권여부
+    strips_psbl_yn = Column(String(1), nullable=True)     # 스트립스가능여부
+
+    # 거버넌스
+    source_id = Column(String(20), ForeignKey("data_source.source_id"), nullable=True)
+    batch_id = Column(Integer, ForeignKey("data_load_batch.batch_id"), nullable=True)
+    as_of_date = Column(Date, nullable=True)
+
     last_updated = Column(DateTime, default=kst_now, onupdate=kst_now)
     created_at = Column(DateTime, default=kst_now)
+
+    __table_args__ = (
+        UniqueConstraint('isin_cd', name='uq_bond_isin'),
+        Index('idx_bond_isin', 'isin_cd'),
+        Index('idx_bond_expr_dt', 'bond_expr_dt'),
+    )
 
 
 class DepositProduct(Base):

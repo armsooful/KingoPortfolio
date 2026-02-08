@@ -45,7 +45,6 @@ class DBProductSampler:
         
         return [
             {
-                "id": stock.id,
                 "ticker": stock.ticker,
                 "name": stock.name,
                 "category": stock.category,
@@ -79,7 +78,6 @@ class DBProductSampler:
         
         return [
             {
-                "id": etf.id,
                 "ticker": etf.ticker,
                 "name": etf.name,
                 "category": etf.category,

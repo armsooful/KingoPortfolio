@@ -367,7 +367,7 @@ export default function PortfolioManagementPage() {
                           </thead>
                           <tbody>
                             {detailPortfolio.portfolio.stocks.map((stock) => (
-                              <tr key={stock.id}>
+                              <tr key={stock.ticker}>
                                 <td style={{ padding: '12px', borderBottom: '1px solid #e0e0e0' }}>
                                   <div style={{ fontWeight: 'bold' }}>{stock.name}</div>
                                   <div style={{ fontSize: '12px', color: '#666' }}>{stock.ticker}</div>
@@ -422,7 +422,7 @@ export default function PortfolioManagementPage() {
                           </thead>
                           <tbody>
                             {detailPortfolio.portfolio.etfs.map((etf) => (
-                              <tr key={etf.id}>
+                              <tr key={etf.ticker}>
                                 <td style={{ padding: '12px', borderBottom: '1px solid #e0e0e0' }}>
                                   <div style={{ fontWeight: 'bold' }}>{etf.name}</div>
                                   <div style={{ fontSize: '12px', color: '#666' }}>{etf.ticker}</div>

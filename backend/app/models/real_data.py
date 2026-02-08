@@ -12,7 +12,7 @@ Phase 11: 실 데이터 적재용 ORM 모델
 
 from sqlalchemy import (
     Column, String, Integer, BigInteger, Boolean, DateTime, Date, Text,
-    ForeignKey, Index, UniqueConstraint, Numeric, CheckConstraint
+    ForeignKey, Index, UniqueConstraint, Numeric, CheckConstraint, Float
 )
 from sqlalchemy.orm import relationship
 
@@ -259,6 +259,8 @@ class FdrStockListing(Base):
     listing_date = Column(Date)
     shares = Column(BigInteger)
     par_value = Column(Numeric(18, 2))
+    marcap = Column(Float)  # 시가총액 (FDR Marcap — Stage 1에서 저장)
+    crno = Column(String(13), nullable=True)  # 법인등록번호 (load_stocks_from_fdr 시점에 backfill)
 
     # 데이터 거버넌스
     as_of_date = Column(Date, nullable=False)
@@ -553,83 +555,3 @@ class StocksDailyPrice(Base):
     def __repr__(self):
         return f"<StocksDailyPrice {self.code} {self.date}: {self.close_price}>"
 
-
-# ============================================================================
-# Level 2: 채권 기본 정보 (FSC OpenAPI)
-# ============================================================================
-
-class BondBasicInfo(Base):
-    """채권 기본 정보 (금융위원회 OpenAPI)
-
-    데이터 출처: 금융위원회 채권기본정보 API (GetBondIssuInfoService)
-    - isin_cd + bas_dt + source_id 복합키로 유일성 보장
-    - 기존 bonds 테이블(교육용)과 독립 구조
-    """
-    __tablename__ = "bond_basic_info"
-
-    bond_info_id = Column(Integer, primary_key=True, autoincrement=True)
-
-    # 식별
-    isin_cd = Column(String(12), nullable=False)  # ISIN 코드
-    bas_dt = Column(String(8))  # API 조회 기준일 (YYYYMMDD)
-    crno = Column(String(13))  # 법인등록번호
-
-    # 종목
-    isin_cd_nm = Column(String(200))  # 채권명
-    scrs_itms_kcd = Column(String(4))  # 유가증권종목종류코드
-    scrs_itms_kcd_nm = Column(String(100))  # 유가증권종목종류코드명
-    bond_isur_nm = Column(String(200))  # 발행인명
-
-    # 발행
-    bond_issu_dt = Column(Date)  # 발행일
-    bond_expr_dt = Column(Date)  # 만기일
-
-    # 금액
-    bond_issu_amt = Column(Numeric(22, 3))  # 발행금액
-    bond_bal = Column(Numeric(22, 3))  # 잔액
-
-    # 금리
-    bond_srfc_inrt = Column(Numeric(15, 10))  # 표면이율
-    irt_chng_dcd = Column(String(1))  # 금리변동구분: Y=변동, N=고정
-    bond_int_tcd = Column(String(1))  # 이자유형코드
-    int_pay_cycl_ctt = Column(String(100))  # 이자지급주기
-
-    # 이표
-    nxtm_copn_dt = Column(Date)  # 차기이표일
-    rbf_copn_dt = Column(Date)  # 직전이표일
-
-    # 보증/순위
-    grn_dcd = Column(String(1))  # 보증구분코드
-    bond_rnkn_dcd = Column(String(1))  # 순위구분코드
-
-    # 신용등급
-    kis_scrs_itms_kcd = Column(String(4))  # KIS 신용등급
-    kbp_scrs_itms_kcd = Column(String(4))  # KBP 신용등급
-    nice_scrs_itms_kcd = Column(String(4))  # NICE 신용등급
-    fn_scrs_itms_kcd = Column(String(4))  # FN 신용등급
-
-    # 모집/상장
-    bond_offr_mcd = Column(String(2))  # 모집방법코드
-    lstg_dt = Column(Date)  # 상장일
-
-    # 특이
-    prmnc_bond_yn = Column(String(1))  # 영구채권여부
-    strips_psbl_yn = Column(String(1))  # 스트립스가능여부
-
-    # 데이터 거버넌스
-    source_id = Column(String(20), ForeignKey("data_source.source_id"), nullable=False)
-    batch_id = Column(Integer, ForeignKey("data_load_batch.batch_id"))
-    as_of_date = Column(Date, nullable=False)  # 데이터 기준일
-
-    created_at = Column(DateTime, default=kst_now)
-
-    __table_args__ = (
-        UniqueConstraint('isin_cd', 'bas_dt', 'source_id', name='uq_bond_basic_info'),
-        Index('idx_bond_info_isin', 'isin_cd'),
-        Index('idx_bond_info_isur', 'bond_isur_nm'),
-        Index('idx_bond_info_expr_dt', 'bond_expr_dt'),
-        Index('idx_bond_info_asof', 'as_of_date'),
-    )
-
-    def __repr__(self):
-        return f"<BondBasicInfo {self.isin_cd} ({self.isin_cd_nm}) expr={self.bond_expr_dt}>"

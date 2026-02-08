@@ -262,7 +262,6 @@ class PortfolioEngine:
             invested_amount = shares * stock.current_price if stock.current_price else 0
 
             result.append({
-                "id": stock.id,
                 "ticker": stock.ticker,
                 "name": stock.name,
                 "sector": stock.sector,
@@ -542,7 +541,6 @@ class PortfolioEngine:
             invested_amount = shares * etf.current_price if etf.current_price else 0
 
             result.append({
-                "id": etf.id,
                 "ticker": etf.ticker,
                 "name": etf.name,
                 "etf_type": etf.etf_type,

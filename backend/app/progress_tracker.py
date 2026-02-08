@@ -3,13 +3,15 @@
 from typing import Dict, Optional
 from datetime import datetime
 import threading
+from app.config import settings
 
 class ProgressTracker:
     """데이터 수집 진행 상황 추적"""
 
-    def __init__(self):
+    def __init__(self, history_limit: int = 200):
         self._progress: Dict[str, dict] = {}
         self._lock = threading.Lock()
+        self._history_limit = history_limit
 
     def start_task(self, task_id: str, total_items: int, description: str = ""):
         """작업 시작"""
@@ -25,6 +27,9 @@ class ProgressTracker:
                 "completed_at": None,
                 "success_count": 0,
                 "failed_count": 0,
+                "phase": "Phase 1",  # 현재 단계 (Phase 1 / Phase 2)
+                "phase1_count": 0,   # Phase 1 성공 건수
+                "phase2_count": 0,   # Phase 2 성공 건수
                 "current_item": None,
                 "error_message": None,
                 "items_history": []  # 완료된 항목 히스토리
@@ -57,6 +62,8 @@ class ProgressTracker:
                             "success": success,
                             "timestamp": datetime.utcnow().isoformat()
                         })
+                        if len(self._progress[task_id]["items_history"]) > self._history_limit:
+                            self._progress[task_id]["items_history"] = self._progress[task_id]["items_history"][-self._history_limit:]
 
                 if success is True:
                     self._progress[task_id]["success_count"] += 1
@@ -65,6 +72,17 @@ class ProgressTracker:
 
                 if error:
                     self._progress[task_id]["error_message"] = error
+
+    def set_phase(self, task_id: str, phase: str, reset_counts: bool = False):
+        """현재 단계 설정 (Phase 1 / Phase 2)"""
+        with self._lock:
+            if task_id in self._progress:
+                self._progress[task_id]["phase"] = phase
+                self._progress[task_id]["updated_at"] = datetime.utcnow().isoformat()
+                if reset_counts:
+                    # Phase 전환 시 성공 건수 리셋
+                    self._progress[task_id]["success_count"] = 0
+                    self._progress[task_id]["failed_count"] = 0
 
     def complete_task(self, task_id: str, status: str = "completed"):
         """작업 완료"""
@@ -100,4 +118,4 @@ class ProgressTracker:
 
 
 # 전역 인스턴스
-progress_tracker = ProgressTracker()
+progress_tracker = ProgressTracker(history_limit=settings.progress_history_limit)

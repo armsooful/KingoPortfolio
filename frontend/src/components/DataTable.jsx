@@ -122,7 +122,7 @@ export default function DataTable({ type, fetchData }) {
     switch (type) {
       case 'stocks':
         return (
-          <tr key={item.id} style={rowStyle}>
+          <tr key={item.ticker} style={rowStyle}>
             <td style={cellStyle}>{item.ticker}</td>
             <td style={cellStyle}>{item.name}</td>
             <td style={{ ...cellStyle, textAlign: 'right' }}>{formatCurrency(item.current_price)}</td>
@@ -133,7 +133,7 @@ export default function DataTable({ type, fetchData }) {
         );
       case 'etfs':
         return (
-          <tr key={item.id} style={rowStyle}>
+          <tr key={item.ticker} style={rowStyle}>
             <td style={cellStyle}>{item.ticker}</td>
             <td style={cellStyle}>{item.name}</td>
             <td style={{ ...cellStyle, textAlign: 'right' }}>{formatCurrency(item.current_price)}</td>

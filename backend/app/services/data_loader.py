@@ -1,11 +1,11 @@
 # backend/app/services/data_loader.py
 
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
-from app.models.securities import Stock, ETF, Bond, DepositProduct, ProductRecommendation
-from app.data_collector import DataCollector, DataClassifier
+from app.models.securities import ETF, DepositProduct, ProductRecommendation
 from app.progress_tracker import progress_tracker
-from datetime import datetime, timedelta
+import FinanceDataReader as fdr
+from datetime import datetime
+from typing import Dict, Optional
 import logging
 import uuid
 
@@ -15,192 +15,118 @@ class DataLoaderService:
     """DB에 종목 데이터 적재"""
 
     @staticmethod
-    def load_korean_stocks(db: Session, task_id: str = None) -> dict:
-        """한국 주식 데이터 적재
+    def _fetch_etf_data(ticker: str, name: str) -> Optional[Dict]:
+        """pykrx ohlcv로 ETF 데이터 수집 (스레드 안전, DB 접근 없음)."""
+        from pykrx import stock as krx_stock
+        from datetime import datetime, timedelta
 
-        Returns:
-            적재 결과 {success: int, failed: int, updated: int}
-        """
-        # task_id가 없으면 생성
-        if not task_id:
-            task_id = f"stocks_{uuid.uuid4().hex[:8]}"
+        today = datetime.now().strftime('%Y%m%d')
+        one_year_ago = (datetime.now() - timedelta(days=365)).strftime('%Y%m%d')
+        year_start = datetime.now().replace(month=1, day=1).strftime('%Y%m%d')
 
-        stocks_list = list(DataCollector.KOREAN_STOCKS.items())
-        total_count = len(stocks_list)
+        try:
+            df = krx_stock.get_market_ohlcv(one_year_ago, today, ticker)
+            if df.empty:
+                yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y%m%d')
+                df = krx_stock.get_market_ohlcv(one_year_ago, yesterday, ticker)
+            if df.empty:
+                return None
+        except Exception as e:
+            logger.warning(f"pykrx ohlcv 호출 실패: {ticker} — {e}")
+            return None
 
-        # 진행 상황 추적 시작
-        progress_tracker.start_task(task_id, total_count, "주식 데이터 수집")
+        current_price = float(df['종가'].iloc[-1])
 
-        result = {"success": 0, "failed": 0, "updated": 0}
+        # 1년 수익률
+        one_year_return = None
+        if len(df) > 1:
+            one_year_return = float(((df['종가'].iloc[-1] - df['종가'].iloc[0]) / df['종가'].iloc[0]) * 100)
 
-        for idx, (ticker, name) in enumerate(stocks_list, 1):
-            try:
-                # 현재 처리 중인 항목 표시 (카운트 증가 없이)
-                progress_tracker.update_progress(
-                    task_id,
-                    current=idx,
-                    current_item=f"{name} ({ticker})",
-                    success=None
-                )
+        # YTD 수익률 (연초 이후 데이터만)
+        ytd_return = None
+        ytd_df = df.loc[year_start:]
+        if len(ytd_df) > 1:
+            ytd_return = float(((ytd_df['종가'].iloc[-1] - ytd_df['종가'].iloc[0]) / ytd_df['종가'].iloc[0]) * 100)
 
-                # API에서 데이터 수집
-                data = DataCollector.fetch_stock_data(ticker, name)
-                if not data:
-                    result["failed"] += 1
-                    progress_tracker.update_progress(
-                        task_id,
-                        current=idx,
-                        current_item=f"{name} ({ticker})",
-                        success=False,
-                        error=f"{name} 데이터 수집 실패"
-                    )
-                    continue
-                
-                # 위험도 분류
-                risk_level = DataClassifier.classify_risk(
-                    data.get("pe_ratio"),
-                    data.get("dividend_yield")
-                )
-                
-                # 투자성향 분류
-                investment_types = DataClassifier.classify_investment_type(
-                    risk_level,
-                    data.get("dividend_yield")
-                )
-                
-                # 범주 분류
-                category = DataClassifier.classify_category(name, data.get("sector"))
-                
-                # 기존 데이터 확인
-                existing_stock = db.query(Stock).filter(
-                    Stock.ticker == ticker
-                ).first()
-                
-                if existing_stock:
-                    # 업데이트
-                    existing_stock.current_price = data.get("current_price")
-                    existing_stock.market_cap = data.get("market_cap")
-                    existing_stock.pe_ratio = data.get("pe_ratio")
-                    existing_stock.pb_ratio = data.get("pb_ratio")
-                    existing_stock.dividend_yield = data.get("dividend_yield")
-                    existing_stock.ytd_return = data.get("ytd_return")
-                    existing_stock.one_year_return = data.get("one_year_return")
-                    existing_stock.last_updated = datetime.utcnow()
-                    result["updated"] += 1
-                else:
-                    # 새로 생성
-                    stock = Stock(
-                        ticker=ticker,
-                        name=name,
-                        sector=data.get("sector"),
-                        market="KOSPI",
-                        current_price=data.get("current_price"),
-                        market_cap=data.get("market_cap"),
-                        pe_ratio=data.get("pe_ratio"),
-                        pb_ratio=data.get("pb_ratio"),
-                        dividend_yield=data.get("dividend_yield"),
-                        ytd_return=data.get("ytd_return"),
-                        one_year_return=data.get("one_year_return"),
-                        risk_level=risk_level,
-                        investment_type=",".join(investment_types),
-                        category=category,
-                        description=f"{name} ({category})"
-                    )
-                    db.add(stock)
-                    result["success"] += 1
-                
-                db.commit()
-                logger.info(f"Successfully processed {ticker}: {name}")
+        return {
+            "current_price": current_price,
+            "aum": None,            # pykrx 미제공 — 별도 파이프라인에서 처리 가능
+            "expense_ratio": None,  # pykrx 미제공 — 별도 파이프라인에서 처리 가능
+            "ytd_return": ytd_return,
+            "one_year_return": one_year_return,
+        }
 
-                # 성공 업데이트
-                progress_tracker.update_progress(
-                    task_id,
-                    current=idx,
-                    current_item=f"{name} ({ticker})",
-                    success=True
-                )
-
-            except Exception as e:
-                logger.error(f"Error processing {ticker}: {str(e)}")
-                result["failed"] += 1
-                progress_tracker.update_progress(
-                    task_id,
-                    current=idx,
-                    current_item=f"{name} ({ticker})",
-                    success=False,
-                    error=str(e)
-                )
-                db.rollback()
-
-        # 작업 완료
-        progress_tracker.complete_task(task_id, "completed")
-        result["task_id"] = task_id
-
-        return result
-    
     @staticmethod
     def load_etfs(db: Session, task_id: str = None) -> dict:
-        """ETF 데이터 적재
+        """ETF 데이터 적재 (pykrx ohlcv)
 
         Returns:
             적재 결과 {success: int, failed: int, updated: int}
         """
-        # task_id가 없으면 생성
         if not task_id:
             task_id = f"etfs_{uuid.uuid4().hex[:8]}"
 
-        etfs_list = list(DataCollector.KOREAN_ETFS.items())
+        # fdr로 전체 한국 ETF 종목 로드
+        listing = fdr.StockListing("ETF/KR")
+        etfs_list = list(listing[["Symbol", "Name"]].itertuples(index=False, name=None))
         total_count = len(etfs_list)
 
-        # 진행 상황 추적 시작
-        progress_tracker.start_task(task_id, total_count, "ETF 데이터 수집")
+        progress_tracker.start_task(task_id, total_count, f"ETF 데이터 수집 ({total_count}종목)")
 
         result = {"success": 0, "failed": 0, "updated": 0}
 
+        # Phase 1: pykrx를 ThreadPoolExecutor로 동시 호출
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        fetched: Dict[str, Optional[Dict]] = {}
+        with ThreadPoolExecutor(max_workers=5) as pool:
+            future_to_ticker = {
+                pool.submit(DataLoaderService._fetch_etf_data, ticker, name): ticker
+                for ticker, name in etfs_list
+            }
+            for future in as_completed(future_to_ticker):
+                ticker = future_to_ticker[future]
+                try:
+                    fetched[ticker] = future.result()
+                except Exception as e:
+                    logger.error(f"pykrx ETF fetch 실패: {ticker} — {e}")
+                    fetched[ticker] = None
+
+        # Phase 2: 단일 스레드로 DB upsert (100건씩 batch commit)
+        _BATCH_SIZE = 100
+        pending = 0
         for idx, (ticker, name) in enumerate(etfs_list, 1):
-            try:
-                # 현재 처리 중인 항목 표시 (카운트 증가 없이)
+            progress_tracker.update_progress(
+                task_id, current=idx, current_item=f"{name} ({ticker})", success=None
+            )
+
+            data = fetched.get(ticker)
+            if data is None:
+                result["failed"] += 1
                 progress_tracker.update_progress(
-                    task_id,
-                    current=idx,
-                    current_item=f"{name} ({ticker})",
-                    success=None
+                    task_id, current=idx, current_item=f"{name} ({ticker})",
+                    success=False, error=f"{name} 데이터 수집 실패"
                 )
+                continue
 
-                # API에서 데이터 수집
-                data = DataCollector.fetch_etf_data(ticker, name)
-                if not data:
-                    result["failed"] += 1
-                    progress_tracker.update_progress(
-                        task_id,
-                        current=idx,
-                        current_item=f"{name} ({ticker})",
-                        success=False,
-                        error=f"{name} 데이터 수집 실패"
-                    )
-                    continue
-
-                # ETF 타입 결정
+            try:
                 etf_type = "equity" if "주식" in name else "bond" if "채권" in name else "balanced"
-
-                # 위험도 결정
                 risk_level = "medium" if etf_type == "balanced" else "low" if etf_type == "bond" else "high"
 
-                # 기존 데이터 확인
-                existing_etf = db.query(ETF).filter(
-                    ETF.ticker == ticker
-                ).first()
+                existing_etf = db.query(ETF).filter(ETF.ticker == ticker).first()
 
                 if existing_etf:
                     existing_etf.current_price = data.get("current_price")
-                    existing_etf.aum = data.get("aum")
-                    existing_etf.expense_ratio = data.get("expense_ratio")
+                    if data.get("aum") is not None:
+                        existing_etf.aum = data.get("aum")
+                    if data.get("expense_ratio") is not None:
+                        existing_etf.expense_ratio = data.get("expense_ratio")
                     existing_etf.ytd_return = data.get("ytd_return")
                     existing_etf.one_year_return = data.get("one_year_return")
                     existing_etf.last_updated = datetime.utcnow()
                     result["updated"] += 1
                 else:
-                    etf = ETF(
+                    db.add(ETF(
                         ticker=ticker,
                         name=name,
                         etf_type=etf_type,
@@ -211,93 +137,34 @@ class DataLoaderService:
                         one_year_return=data.get("one_year_return"),
                         risk_level=risk_level,
                         investment_type="conservative,moderate,aggressive",
-                        category=name
-                    )
-                    db.add(etf)
+                        category=name,
+                    ))
                     result["success"] += 1
 
-                db.commit()
-                logger.info(f"Successfully processed ETF {ticker}: {name}")
-
-                # 성공 업데이트
+                pending += 1
                 progress_tracker.update_progress(
-                    task_id,
-                    current=idx,
-                    current_item=f"{name} ({ticker})",
-                    success=True
+                    task_id, current=idx, current_item=f"{name} ({ticker})", success=True
                 )
+
+                if pending >= _BATCH_SIZE:
+                    db.commit()
+                    pending = 0
 
             except Exception as e:
-                logger.error(f"Error processing ETF {ticker}: {str(e)}")
+                logger.error(f"ETF upsert 실패: {ticker} — {e}")
                 result["failed"] += 1
-                progress_tracker.update_progress(
-                    task_id,
-                    current=idx,
-                    current_item=f"{name} ({ticker})",
-                    success=False,
-                    error=str(e)
-                )
                 db.rollback()
+                pending = 0
+                progress_tracker.update_progress(
+                    task_id, current=idx, current_item=f"{name} ({ticker})",
+                    success=False, error=str(e)
+                )
 
-        # 작업 완료
+        if pending > 0:
+            db.commit()
+
         progress_tracker.complete_task(task_id, "completed")
         result["task_id"] = task_id
-
-        return result
-    
-    @staticmethod
-    def load_bonds(db: Session) -> dict:
-        """채권 데이터 적재 (수동)"""
-        bonds = [
-            {
-                "name": "국고채 3년물",
-                "bond_type": "government",
-                "interest_rate": 3.5,
-                "maturity_years": 3,
-                "credit_rating": "AAA",
-                "risk_level": "low",
-                "investment_type": "conservative,moderate,aggressive"
-            },
-            {
-                "name": "회사채(A등급) 펀드",
-                "bond_type": "corporate",
-                "interest_rate": 4.2,
-                "maturity_years": 3,
-                "credit_rating": "A",
-                "risk_level": "low",
-                "investment_type": "conservative,moderate"
-            },
-            {
-                "name": "하이일드 채권 펀드",
-                "bond_type": "high_yield",
-                "interest_rate": 6.2,
-                "maturity_years": 3,
-                "credit_rating": "BBB",
-                "risk_level": "high",
-                "investment_type": "aggressive"
-            },
-        ]
-        
-        result = {"success": 0, "failed": 0, "updated": 0}
-
-        for bond_data in bonds:
-            try:
-                existing = db.query(Bond).filter(
-                    Bond.name == bond_data["name"]
-                ).first()
-
-                if not existing:
-                    bond = Bond(**bond_data)
-                    db.add(bond)
-                    result["success"] += 1
-                else:
-                    result["updated"] += 1
-
-                db.commit()
-            except Exception as e:
-                logger.error(f"Error loading bond: {str(e)}")
-                result["failed"] += 1
-                db.rollback()
 
         return result
     
@@ -356,9 +223,7 @@ class DataLoaderService:
     def load_all_data(db: Session) -> dict:
         """모든 데이터 적재"""
         results = {
-            "stocks": DataLoaderService.load_korean_stocks(db),
             "etfs": DataLoaderService.load_etfs(db),
-            "bonds": DataLoaderService.load_bonds(db),
             "deposits": DataLoaderService.load_deposit_products(db),
         }
         

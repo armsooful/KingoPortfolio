@@ -20,10 +20,6 @@ export default function DataManagementPage() {
   const [actionStart, setActionStart] = useState('');
   const [actionEnd, setActionEnd] = useState('');
   const [actionAsOf, setActionAsOf] = useState(new Date().toISOString().split('T')[0]);
-  const [bondBasDt, setBondBasDt] = useState('');
-  const [bondCrno, setBondCrno] = useState('');
-  const [bondIssuerNm, setBondIssuerNm] = useState('');
-  const [bondLimit, setBondLimit] = useState(100);
   const [dartFiscalYear, setDartFiscalYear] = useState(2024);
   const [dartReportType, setDartReportType] = useState('ANNUAL');
   const [dartFinLimit, setDartFinLimit] = useState('');
@@ -48,7 +44,7 @@ export default function DataManagementPage() {
   };
 
   const handleLoadData = async (type) => {
-    const typeNames = { all: '모든', stocks: '주식', etfs: 'ETF' };
+    const typeNames = { stocks: '주식', etfs: 'ETF' };
     if (!window.confirm(`${typeNames[type]} 데이터를 수집하시겠습니까?`)) {
       return;
     }
@@ -63,8 +59,7 @@ export default function DataManagementPage() {
 
     try {
       let response;
-      if (type === 'all') response = await api.loadAllData();
-      else if (type === 'stocks') response = await api.loadStocks();
+      if (type === 'stocks') response = await api.loadStocks();
       else response = await api.loadETFs();
 
       setLoadResult(response.data);
@@ -77,6 +72,38 @@ export default function DataManagementPage() {
       await fetchDataStatus();
     } catch (err) {
       setError(err.response?.data?.detail || '데이터 수집 실패');
+      setCurrentTaskId(null); // 에러 시 모달 닫기
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLoadBonds = async () => {
+    if (!window.confirm('채권 데이터를 조회하시겠습니까?')) {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setLoadResult(null);
+
+    // 임시 task_id로 즉시 모달 표시
+    const tempTaskId = `temp_bonds_${Date.now()}`;
+    setCurrentTaskId(tempTaskId);
+
+    try {
+      const response = await api.loadBonds();
+
+      setLoadResult(response.data);
+
+      // 실제 task_id로 업데이트
+      if (response.data.task_id) {
+        setCurrentTaskId(response.data.task_id);
+      }
+
+      await fetchDataStatus();
+    } catch (err) {
+      setError(err.response?.data?.detail || '채권 데이터 조회 실패');
       setCurrentTaskId(null); // 에러 시 모달 닫기
     } finally {
       setLoading(false);
@@ -148,14 +175,6 @@ export default function DataManagementPage() {
               </p>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginTop: '20px' }}>
-              <button
-                onClick={() => handleLoadData('all')}
-                disabled={loading}
-                className="btn btn-primary"
-                style={{ padding: '20px', fontSize: '1rem', fontWeight: 'bold' }}
-              >
-                {loading ? '🔄 수집 중...' : '📦 전체 데이터'}
-              </button>
               <button
                 onClick={() => handleLoadData('stocks')}
                 disabled={loading}
@@ -601,261 +620,6 @@ export default function DataManagementPage() {
             </div>
           </div>
 
-          {/* pykrx Section */}
-          <div className="description-section" style={{ marginTop: '40px', borderTop: '2px solid #e0e0e0', paddingTop: '30px' }}>
-            <h2>🇰🇷 pykrx - 한국 주식 기본 정보</h2>
-            <div className="info-box" style={{ marginTop: '15px', padding: '15px', background: '#e8f5e9', borderRadius: '8px', borderLeft: '4px solid #4CAF50' }}>
-              <p style={{ margin: 0, color: '#333', fontSize: '0.9rem' }}>
-                📊 pykrx 라이브러리를 통해 한국 증권시장 종목 정보를 수집합니다.<br />
-                ✅ KRX (한국거래소) 공식 데이터 - API 제한 없음
-              </p>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px', marginTop: '20px' }}>
-              <button
-                onClick={async () => {
-                  if (!window.confirm('인기 한국 주식 전체를 수집하시겠습니까? (약 1-2분 소요)')) return;
-
-                  setLoading(true);
-                  setError(null);
-
-                  try {
-                    const response = await api.loadAllPykrxStocks();
-
-                    // task_id가 있으면 진행상황 모달 표시
-                    if (response.data.task_id) {
-                      setCurrentTaskId(response.data.task_id);
-                    } else {
-                      alert('✅ ' + response.data.message);
-                      await fetchDataStatus();
-                    }
-                  } catch (err) {
-                    alert('❌ ' + (err.response?.data?.detail || '실패'));
-                    setCurrentTaskId(null);
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-                disabled={loading}
-                className="btn btn-primary"
-                style={{ padding: '20px', fontSize: '1rem', fontWeight: 'bold' }}
-              >
-                {loading ? '🔄 수집 중...' : '🇰🇷 한국 주식 전체 수집'}
-              </button>
-
-              <button
-                onClick={async () => {
-                  if (!window.confirm('인기 한국 ETF 전체를 수집하시겠습니까?')) return;
-
-                  setLoading(true);
-                  setError(null);
-
-                  try {
-                    const response = await api.loadAllPykrxETFs();
-
-                    // task_id가 있으면 진행상황 모달 표시
-                    if (response.data.task_id) {
-                      setCurrentTaskId(response.data.task_id);
-                    } else {
-                      alert('✅ ' + response.data.message);
-                      await fetchDataStatus();
-                    }
-                  } catch (err) {
-                    alert('❌ ' + (err.response?.data?.detail || '실패'));
-                    setCurrentTaskId(null);
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-                disabled={loading}
-                className="btn btn-primary"
-                style={{ padding: '20px', fontSize: '1rem', fontWeight: 'bold' }}
-              >
-                {loading ? '🔄 수집 중...' : '📊 한국 ETF 전체 수집'}
-              </button>
-            </div>
-
-            <div style={{ marginTop: '20px', padding: '20px', background: '#f5f5f5', borderRadius: '8px' }}>
-              <h3 style={{ marginBottom: '15px', fontSize: '1.1rem' }}>🔍 특정 종목 검색 & 적재</h3>
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                <input
-                  type="text"
-                  placeholder="종목 코드 입력 (예: 005930, 035420)"
-                  value={symbolInput}
-                  onChange={(e) => setSymbolInput(e.target.value.replace(/[^0-9]/g, ''))}
-                  maxLength={6}
-                  style={{
-                    flex: '1',
-                    minWidth: '200px',
-                    padding: '12px',
-                    fontSize: '1rem',
-                    border: '2px solid #ddd',
-                    borderRadius: '6px'
-                  }}
-                />
-                <button
-                  onClick={async () => {
-                    const ticker = symbolInput.trim();
-                    if (!ticker) {
-                      alert('종목 코드를 입력하세요');
-                      return;
-                    }
-                    if (ticker.length !== 6) {
-                      alert('6자리 종목 코드를 입력하세요');
-                      return;
-                    }
-
-                    setLoading(true);
-                    setError(null);
-
-                    try {
-                      const response = await api.loadPykrxStock(ticker);
-
-                      // task_id가 있으면 진행상황 모달 표시
-                      if (response.data.task_id) {
-                        setCurrentTaskId(response.data.task_id);
-                      } else {
-                        alert('✅ ' + response.data.message);
-                        await fetchDataStatus();
-                      }
-                    } catch (err) {
-                      alert('❌ ' + (err.response?.data?.detail || '실패'));
-                      setCurrentTaskId(null);
-                    } finally {
-                      setLoading(false);
-                    }
-                  }}
-                  disabled={loading}
-                  className="btn btn-primary"
-                  style={{ padding: '12px 24px' }}
-                >
-                  📈 주식 수집
-                </button>
-                <button
-                  onClick={async () => {
-                    const ticker = symbolInput.trim();
-                    if (!ticker) {
-                      alert('종목 코드를 입력하세요');
-                      return;
-                    }
-                    if (ticker.length !== 6) {
-                      alert('6자리 종목 코드를 입력하세요');
-                      return;
-                    }
-
-                    setLoading(true);
-                    setError(null);
-
-                    try {
-                      const response = await api.loadPykrxETF(ticker);
-
-                      // task_id가 있으면 진행상황 모달 표시
-                      if (response.data.task_id) {
-                        setCurrentTaskId(response.data.task_id);
-                      } else {
-                        alert('✅ ' + response.data.message);
-                        await fetchDataStatus();
-                      }
-                    } catch (err) {
-                      alert('❌ ' + (err.response?.data?.detail || '실패'));
-                      setCurrentTaskId(null);
-                    } finally {
-                      setLoading(false);
-                    }
-                  }}
-                  disabled={loading}
-                  className="btn btn-secondary"
-                  style={{ padding: '12px 24px' }}
-                >
-                  📊 ETF 수집
-                </button>
-              </div>
-              <div style={{ marginTop: '10px', fontSize: '0.85rem', color: '#666' }}>
-                💡 인기 종목: 삼성전자(005930), NAVER(035420), 카카오(035720), SK하이닉스(000660) 등<br />
-                💡 인기 ETF: KODEX 200(069500), KODEX 레버리지(122630), KODEX 인버스(114800) 등
-              </div>
-            </div>
-
-            <div style={{ marginTop: '20px', padding: '20px', background: '#fff3e0', borderRadius: '8px', border: '1px solid #ffb74d' }}>
-              <h3 style={{ marginBottom: '15px', fontSize: '1.1rem' }}>📊 재무 지표 데이터 수집</h3>
-              <div style={{ marginBottom: '10px', fontSize: '0.85rem', color: '#666', background: '#fff', padding: '10px', borderRadius: '5px' }}>
-                ⚠️ pykrx는 상세 재무제표를 제공하지 않습니다. PER, PBR, EPS, BPS 지표를 기반으로 재무 정보를 추정합니다.
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '10px' }}>
-                <button
-                  onClick={async () => {
-                    if (!window.confirm('인기 한국 주식 전체 재무 지표를 수집하시겠습니까? (약 1-2분 소요)')) return;
-
-                    setLoading(true);
-                    setError(null);
-
-                    try {
-                      const response = await api.loadAllPykrxFinancials();
-
-                      if (response.data.task_id) {
-                        setCurrentTaskId(response.data.task_id);
-                      } else {
-                        alert('✅ ' + response.data.message);
-                        await fetchDataStatus();
-                      }
-                    } catch (err) {
-                      alert('❌ ' + (err.response?.data?.detail || '실패'));
-                      setCurrentTaskId(null);
-                    } finally {
-                      setLoading(false);
-                    }
-                  }}
-                  disabled={loading}
-                  className="btn btn-success"
-                  style={{ padding: '15px', fontSize: '0.95rem', fontWeight: 'bold' }}
-                >
-                  {loading ? '🔄 수집 중...' : '📈 재무 지표 전체 수집'}
-                </button>
-
-                <button
-                  onClick={async () => {
-                    const ticker = symbolInput.trim();
-                    if (!ticker) {
-                      alert('종목 코드를 입력하세요');
-                      return;
-                    }
-                    if (ticker.length !== 6) {
-                      alert('6자리 종목 코드를 입력하세요');
-                      return;
-                    }
-
-                    setLoading(true);
-                    setError(null);
-
-                    try {
-                      const response = await api.loadPykrxFinancials(ticker);
-
-                      if (response.data.task_id) {
-                        setCurrentTaskId(response.data.task_id);
-                      } else {
-                        alert('✅ ' + response.data.message);
-                        await fetchDataStatus();
-                      }
-                    } catch (err) {
-                      alert('❌ ' + (err.response?.data?.detail || '실패'));
-                      setCurrentTaskId(null);
-                    } finally {
-                      setLoading(false);
-                    }
-                  }}
-                  disabled={loading}
-                  className="btn btn-success"
-                  style={{ padding: '15px', fontSize: '0.95rem' }}
-                >
-                  📊 개별종목 재무 지표 수집
-                </button>
-              </div>
-              <div style={{ marginTop: '10px', fontSize: '0.85rem', color: '#666' }}>
-                💡 최근 거래일 기준 PER, PBR, EPS, BPS, 배당수익률 등을 수집하여 ROE, ROA, 부채비율 등을 추정합니다.
-              </div>
-            </div>
-          </div>
-
           <div className="description-section" style={{ marginTop: '40px', borderTop: '2px solid #e0e0e0', paddingTop: '30px' }}>
             <h2>📦 배당/기업액션/채권/재무제표 적재</h2>
 
@@ -969,75 +733,16 @@ export default function DataManagementPage() {
 
               <div style={{ padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#ffffff' }}>
                 <h3 style={{ marginBottom: '10px', fontSize: '1rem' }}>채권 기본정보 (금융위원회 OpenAPI)</h3>
-                <input
-                  type="text"
-                  value={bondBasDt}
-                  onChange={(e) => setBondBasDt(e.target.value.replace(/[^0-9]/g, '').slice(0, 8))}
-                  placeholder="기준일자 (YYYYMMDD)"
-                  style={{ width: '100%', padding: '10px', fontSize: '0.9rem', border: '1px solid #ddd', borderRadius: '6px', marginBottom: '8px' }}
-                />
-                <input
-                  type="text"
-                  value={bondCrno}
-                  onChange={(e) => setBondCrno(e.target.value.replace(/[^0-9]/g, '').slice(0, 13))}
-                  placeholder="법인등록번호 (13자리)"
-                  style={{ width: '100%', padding: '10px', fontSize: '0.9rem', border: '1px solid #ddd', borderRadius: '6px', marginBottom: '8px' }}
-                />
-                <input
-                  type="text"
-                  value={bondIssuerNm}
-                  onChange={(e) => setBondIssuerNm(e.target.value)}
-                  placeholder="발행사명"
-                  style={{ width: '100%', padding: '10px', fontSize: '0.9rem', border: '1px solid #ddd', borderRadius: '6px', marginBottom: '8px' }}
-                />
-                <input
-                  type="number"
-                  value={bondLimit}
-                  onChange={(e) => setBondLimit(Number(e.target.value))}
-                  min="1"
-                  max="10000"
-                  placeholder="조회 건수 (최대 10000)"
-                  style={{ width: '100%', padding: '10px', fontSize: '0.9rem', border: '1px solid #ddd', borderRadius: '6px', marginBottom: '10px' }}
-                />
                 <button
-                  onClick={async () => {
-                    if (!bondBasDt && !bondCrno && !bondIssuerNm) {
-                      alert('기준일자, 법인등록번호, 발행사명 중 하나를 입력해야 합니다');
-                      return;
-                    }
-                    if (bondBasDt && bondBasDt.length !== 8) {
-                      alert('기준일자는 YYYYMMDD 형식으로 8자리를 입력해주세요');
-                      return;
-                    }
-                    if (bondCrno && bondCrno.length !== 13) {
-                      alert('법인등록번호는 13자리를 입력해주세요');
-                      return;
-                    }
-                    setLoading(true);
-                    setError(null);
-                    try {
-                      const response = await api.loadFscBonds({
-                        bas_dt: bondBasDt || null,
-                        crno: bondCrno || null,
-                        bond_isur_nm: bondIssuerNm || null,
-                        limit: bondLimit || 100,
-                      });
-                      alert('✅ ' + response.data.message);
-                      await fetchDataStatus();
-                    } catch (err) {
-                      alert('❌ ' + (err.response?.data?.detail || '채권 적재 실패'));
-                    } finally {
-                      setLoading(false);
-                    }
-                  }}
+                  onClick={handleLoadBonds}
                   disabled={loading}
                   className="btn btn-primary"
-                  style={{ width: '100%', padding: '10px', fontSize: '0.95rem' }}
+                  style={{ width: '100%', padding: '15px', fontSize: '1rem', fontWeight: 'bold' }}
                 >
-                  채권 기본정보 적재
+                  📊 채권 데이터 조회
                 </button>
                 <div style={{ marginTop: '8px', fontSize: '0.8rem', color: '#666' }}>
-                  💡 기준일자 / 법인등록번호 / 발행사명 중 하나 이상 필수
+                  💡 오늘 기준일로 모든 채권을 조회합니다
                 </div>
               </div>
 

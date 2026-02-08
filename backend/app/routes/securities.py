@@ -227,7 +227,7 @@ def list_sectors(
     """
     query = db.query(
         Stock.sector,
-        func.count(Stock.id).label("stock_count"),
+        func.count(Stock.ticker).label("stock_count"),
         func.avg(Stock.pe_ratio).label("avg_pe_ratio"),
         func.avg(Stock.dividend_yield).label("avg_dividend_yield"),
         func.avg(Stock.ytd_return).label("avg_ytd_return"),
@@ -239,7 +239,7 @@ def list_sectors(
     if market:
         query = query.filter(Stock.market == market)
 
-    query = query.group_by(Stock.sector).order_by(func.count(Stock.id).desc())
+    query = query.group_by(Stock.sector).order_by(func.count(Stock.ticker).desc())
 
     results = query.all()
 

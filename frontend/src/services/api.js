@@ -294,13 +294,6 @@ export default api;
 // ============================================================
 
 /**
- * 모든 종목 데이터 수집
- */
-export const loadAllData = () => {
-  return api.post('/admin/load-data');
-};
-
-/**
  * 주식 데이터만 수집
  */
 export const loadStocks = () => {
@@ -318,8 +311,31 @@ export const loadDartDividends = (payload) => {
   return api.post('/admin/dart/load-dividends', payload);
 };
 
+export const loadFscDividends = (payload) => {
+  return api.post('/admin/fsc/load-dividends', payload);
+};
+
+export const loadFdrStockListing = (payload) => {
+  return api.post('/admin/fdr/load-stock-listing', payload);
+};
+
 export const loadDartCorporateActions = (payload) => {
   return api.post('/admin/dart/load-corporate-actions', payload);
+};
+
+export const loadFscBonds = (payload) => {
+  return api.post('/admin/fsc/load-bonds', payload);
+};
+
+/**
+ * 채권 데이터 전체 조회 (기준일자: 오늘)
+ */
+export const loadBonds = () => {
+  return api.post('/admin/load-bonds');
+};
+
+export const loadDartFinancials = (params = {}) => {
+  return api.post('/admin/dart/load-financials', null, { params });
 };
 
 /**
@@ -444,34 +460,6 @@ export const loadAlphaVantageTimeSeries = (symbol, outputsize = 'compact') => {
 // ============================================================
 // pykrx (한국 주식) API
 // ============================================================
-
-/**
- * pykrx: 인기 한국 주식 전체 적재
- */
-export const loadAllPykrxStocks = () => {
-  return api.post('/admin/pykrx/load-all-stocks');
-};
-
-/**
- * pykrx: 특정 한국 주식 적재
- */
-export const loadPykrxStock = (ticker) => {
-  return api.post(`/admin/pykrx/load-stock/${ticker}`);
-};
-
-/**
- * pykrx: 인기 한국 ETF 전체 적재
- */
-export const loadAllPykrxETFs = () => {
-  return api.post('/admin/pykrx/load-all-etfs');
-};
-
-/**
- * pykrx: 특정 한국 ETF 적재
- */
-export const loadPykrxETF = (ticker) => {
-  return api.post(`/admin/pykrx/load-etf/${ticker}`);
-};
 
 /**
  * pykrx: 인기 한국 주식 전체 재무제표 적재

@@ -108,6 +108,12 @@ class Settings:
         "SKIP"
     )
 
+    # 진행 로그 히스토리 최대 보관 개수
+    progress_history_limit: int = int(os.getenv(
+        "PROGRESS_HISTORY_LIMIT",
+        "200"
+    ))
+
     # CORS
     allowed_origins: List[str] = []
     

@@ -164,6 +164,14 @@ class BondBasicInfoFetcher(BaseFetcher):
         if limit is not None:
             records = records[:limit]
 
+        self.logger.info(
+            "FSC 채권기본정보 API 최종 결과: total_count=%s, 반환된_건수=%d, bas_dt=%s, crno=%s, bond_isur_nm=%s",
+            total_count,
+            len(records),
+            bas_dt,
+            crno,
+            bond_isur_nm,
+        )
         return records
 
     def _parse_item(

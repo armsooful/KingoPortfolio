@@ -57,7 +57,12 @@ def init_db():
         Base.metadata.drop_all(bind=engine)
         print("⚠️ Database tables dropped (RESET_DB_ON_STARTUP=true)")
 
-    # 테이블 생성 (이미 존재하면 무시)
+    # PostgreSQL 환경에서는 마이그레이션으로만 스키마 관리
+    if settings.database_url.startswith("postgresql"):
+        print("ℹ️ Skipping Base.metadata.create_all (PostgreSQL)")
+        return
+
+    # SQLite 등 로컬 개발 환경만 create_all 사용
     try:
         Base.metadata.create_all(bind=engine)
         print(f"✅ Database initialized - {len(Base.metadata.tables)} tables created/verified")

@@ -140,7 +140,6 @@ curl -X GET "http://localhost:8000/admin/data-status" \
 ## 보호된 엔드포인트 목록
 
 ### Admin 전용 (`require_admin`)
-- `POST /admin/load-data` - 전체 데이터 수집
 - `POST /admin/load-stocks` - 주식 데이터 수집
 - `POST /admin/load-etfs` - ETF 데이터 수집
 - `GET /admin/data-status` - 데이터 통계

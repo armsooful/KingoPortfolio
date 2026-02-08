@@ -834,6 +834,11 @@ class RealDataLoader:
                     batch_id=batch.batch_id,
                 )
 
+            logger.info(
+                "[BOND] FSC API에서 받은 데이터: 총 %d건",
+                len(result.data) if result.data else 0,
+            )
+
             for record in result.data:
                 stats.total_records += 1
                 inserted = self._upsert_bond(
