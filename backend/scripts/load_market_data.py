@@ -287,13 +287,13 @@ def insert_daily_data(
     ]
 
     meta = MetaData()
-    prices_table = Table("stocks_daily_prices", meta, autoload_with=engine)
+    prices_table = Table("stock_price_daily", meta, autoload_with=engine)
     factors_table = Table("stocks_daily_factors", meta, autoload_with=engine)
 
     with engine.begin() as conn:
         if not prices.empty:
             stmt = pg_insert(prices_table).values(prices.to_dict(orient="records"))
-            stmt = stmt.on_conflict_do_nothing(index_elements=["code", "date"])
+            stmt = stmt.on_conflict_do_nothing(constraint='uq_stock_price_daily')
             conn.execute(stmt)
         if not factors.empty:
             stmt = pg_insert(factors_table).values(factors.to_dict(orient="records"))

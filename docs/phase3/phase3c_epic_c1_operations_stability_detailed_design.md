@@ -9,11 +9,11 @@
 
 ## 관련 문서
 - docs/phase3/c1_ddl_schema.sql
-- docs/phase3/20260118_20260118_c1_implementation_tickets.md
-- docs/phase3/20260118_20260118_c1_risk_control_checklist.md
-- docs/phase3/20260118_20260118_c1_c2_integration_checklist.md
-- docs/phase3/20260118_20260118_c1_c2_boundary.md
-- docs/phase3/20260118_20260118_c1_c3_go_live_checklist.md
+- docs/phase3/c1_implementation_tickets.md
+- docs/phase3/c1_risk_control_checklist.md
+- docs/phase3/c1_c2_integration_checklist.md
+- docs/phase3/c1_c2_boundary.md
+- docs/phase3/c1_c3_go_live_checklist.md
 - 20260118_phase3c_epic_c2_data_quality_lineage_reproducibility_detailed_design.md
 - 20260118_phase3c_epic_c3_performance_analysis_advanced_detailed_design.md
 

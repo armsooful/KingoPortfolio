@@ -62,16 +62,16 @@
 
 ### 문서
 - `docs/phase3/c1_ddl_schema.sql`
-- `docs/phase3/20260118_20260118_c1_implementation_tickets.md`
+- `docs/phase3/c1_implementation_tickets.md`
 - `20260118_phase3c_epic_c1_operations_stability_detailed_design.md`
-- `docs/phase3/20260118_20260118_c3_ddl_schema.md` (C-3)
+- `docs/phase3/c3_ddl_schema.md` (C-3)
 - `docs/phase3/c3_ddl_schema.sql` (C-3)
-- `docs/phase3/20260118_20260118_c3_performance_engine_spec.md` (C-3)
-- `docs/phase3/20260118_20260118_c3_implementation_tickets.md` (C-3)
-- `docs/phase3/20260118_20260118_c1_c3_go_live_checklist.md` (C-1~C-3)
+- `docs/phase3/c3_performance_engine_spec.md` (C-3)
+- `docs/phase3/c3_implementation_tickets.md` (C-3)
+- `docs/phase3/c1_c3_go_live_checklist.md` (C-1~C-3)
 
 ## 4. Go-Live 점검표 반영
-- 점검표 문서: `docs/phase3/20260118_20260118_c1_c3_go_live_checklist.md`
+- 점검표 문서: `docs/phase3/c1_c3_go_live_checklist.md`
 - 상태 표기 및 근거 링크 업데이트 완료
 
 ## 4. 테스트 결과

@@ -44,6 +44,12 @@ from app.services.fetchers.base_fetcher import DataType, FetcherError
 from app.services.fetchers.dart_fetcher import DartFetcher
 from app.services.fetchers.fsc_dividend_fetcher import FscDividendFetcher
 from app.services.fetchers.bond_basic_info_fetcher import BondBasicInfoFetcher
+from app.services.fetchers.deposit_fetcher import FssDepositFetcher
+from app.services.fetchers.savings_fetcher import FssSavingsFetcher
+from app.services.fetchers.annuity_savings_fetcher import FssAnnuitySavingsFetcher
+from app.services.fetchers.mortgage_loan_fetcher import FssMortgageLoanFetcher
+from app.services.fetchers.rent_house_loan_fetcher import FssRentHouseLoanFetcher
+from app.services.fetchers.credit_loan_fetcher import FssCreditLoanFetcher
 from app.utils.structured_logging import get_structured_logger
 
 logger = get_structured_logger(__name__)
@@ -96,6 +102,12 @@ class RealDataLoader:
         self.dart_fetcher: Optional[DartFetcher] = None
         self.fsc_dividend_fetcher: Optional[FscDividendFetcher] = None
         self.bond_basic_info_fetcher: Optional[BondBasicInfoFetcher] = None
+        self.deposit_fetcher: Optional[FssDepositFetcher] = None
+        self.savings_fetcher: Optional[FssSavingsFetcher] = None
+        self.annuity_savings_fetcher: Optional[FssAnnuitySavingsFetcher] = None
+        self.mortgage_loan_fetcher: Optional[FssMortgageLoanFetcher] = None
+        self.rent_house_loan_fetcher: Optional[FssRentHouseLoanFetcher] = None
+        self.credit_loan_fetcher: Optional[FssCreditLoanFetcher] = None
         self.batch_manager = BatchManager(db)
         self.validator = DataQualityValidator(db)
 
@@ -757,6 +769,10 @@ class RealDataLoader:
                 batch_id=batch.batch_id,
             ) from e
 
+    # 투자적격등급 필터 정의
+    _INVESTMENT_GRADE_RATINGS = {"AAA", "AA", "A", "BBB"}
+    _HIGH_QUALITY_RATINGS = {"AAA", "AA", "A"}
+
     def load_bond_basic_info(
         self,
         crno: Optional[str] = None,
@@ -766,6 +782,8 @@ class RealDataLoader:
         as_of_date: Optional[date] = None,
         operator_id: Optional[str] = None,
         operator_reason: Optional[str] = None,
+        progress_callback: Optional[Callable[[int, str, Optional[bool]], None]] = None,
+        quality_filter: Optional[str] = None,
     ) -> LoadResult:
         """
         채권기본정보 적재 (금융위원회 OpenAPI)
@@ -834,23 +852,74 @@ class RealDataLoader:
                     batch_id=batch.batch_id,
                 )
 
+            logger.info(f"[BOND] result.data type: {type(result.data)}, result object: {result}")
+
+            if not isinstance(result.data, list):
+                logger.error(f"[BOND] result.data is not list! type={type(result.data)}, value sample={str(result.data)[:200]}")
+                raise DataLoadError(
+                    f"채권기본정보 데이터 형식 오류: {type(result.data)}",
+                    batch_id=batch.batch_id,
+                )
+
+            total_bond_count = len(result.data) if result.data else 0
             logger.info(
-                "[BOND] FSC API에서 받은 데이터: 총 %d건",
-                len(result.data) if result.data else 0,
+                f"[BOND] FSC API에서 받은 데이터: 총 {total_bond_count}건",
             )
 
-            for record in result.data:
-                stats.total_records += 1
-                inserted = self._upsert_bond(
-                    record=record,
-                    batch_id=batch.batch_id,
-                    as_of_date=as_of_date,
-                    source_id=result.source_id,
+            # 품질 필터 적용 (fetch 후, upsert 전)
+            if quality_filter and quality_filter != "all":
+                allowed_ratings = (
+                    self._INVESTMENT_GRADE_RATINGS if quality_filter == "investment_grade"
+                    else self._HIGH_QUALITY_RATINGS
                 )
-                if inserted:
-                    stats.success_records += 1
-                else:
-                    stats.skipped_records += 1
+                filtered_data = []
+                for record in result.data:
+                    rating = self._map_credit_rating(record)
+                    # 등급 기본값 추출 (AA+, AA- 등을 AA로 매핑)
+                    base_rating = (rating or "").upper().rstrip("+-") if rating else None
+                    if base_rating in allowed_ratings:
+                        filtered_data.append(record)
+
+                logger.info(
+                    f"[BOND] 품질 필터 적용: {quality_filter} → "
+                    f"{len(filtered_data)}/{total_bond_count}건 통과"
+                )
+                stats.skipped_records += total_bond_count - len(filtered_data)
+                result_data = filtered_data
+                total_bond_count = len(filtered_data)
+            else:
+                result_data = result.data
+
+            # 진행률 콜백에 전체 개수 알림 (인덱스 -1은 특수 코드)
+            if progress_callback and total_bond_count > 0:
+                logger.info(f"[BOND] Calling progress_callback with [TOTAL]{total_bond_count}")
+                progress_callback(-1, f"[TOTAL]{total_bond_count}", True)
+
+            for idx, record in enumerate(result_data):
+                try:
+                    if not isinstance(record, dict):
+                        logger.error(f"[BOND] record is not dict: type={type(record)}, value={record}")
+                        continue
+
+                    stats.total_records += 1
+                    inserted = self._upsert_bond(
+                        record=record,
+                        batch_id=batch.batch_id,
+                        as_of_date=as_of_date,
+                        source_id=result.source_id,
+                    )
+                    if inserted:
+                        stats.success_records += 1
+                    else:
+                        stats.skipped_records += 1
+
+                    # 진행률 업데이트
+                    if progress_callback:
+                        bond_name = record.get("isin_cd_nm", record.get("isin_cd", f"Bond #{idx+1}"))
+                        progress_callback(idx + 1, f"채권 저장: {bond_name}", True)
+                except Exception as e:
+                    logger.error(f"[BOND] Error processing record {idx}: {type(e).__name__}: {str(e)}", exc_info=True)
+                    stats.failed_records += 1
 
             self.batch_manager.complete_batch(batch.batch_id, stats)
 
@@ -2004,3 +2073,1102 @@ class RealDataLoader:
         if not existing:
             self.db.add(stock_info)
             self.db.commit()
+
+    # ============================================================
+    # 예금 상품 적재 (FSS 금융감독원)
+    # ============================================================
+
+    def load_deposit_products(
+        self,
+        operator_id: Optional[str] = None,
+        operator_reason: Optional[str] = None,
+        progress_callback: Optional[Callable[[int, str, Optional[bool]], None]] = None,
+    ) -> LoadResult:
+        """
+        FSS 정기예금 상품 적재
+
+        금융감독원 '금융상품 한 눈에' API에서 은행 정기예금 상품을 조회하여
+        deposit_products + deposit_rate_options 테이블에 저장합니다.
+        """
+        from app.models.securities import DepositProduct, DepositRateOption
+
+        as_of_date = date.today()
+
+        if not self.deposit_fetcher:
+            self.deposit_fetcher = FssDepositFetcher()
+
+        self._ensure_data_source(
+            self.deposit_fetcher.source_id,
+            self.deposit_fetcher.source_name,
+            source_type="GOV",
+            api_type="REST",
+            update_frequency="MONTHLY",
+            license_type="PUBLIC",
+            base_url=self.deposit_fetcher.BASE_URL,
+            description="금융감독원 금융상품 한 눈에 (정기예금)",
+        )
+
+        batch = self.batch_manager.create_batch(
+            batch_type=BatchType.DEPOSIT,
+            source_id=self.deposit_fetcher.source_id,
+            as_of_date=as_of_date,
+            target_start=as_of_date,
+            target_end=as_of_date,
+            operator_id=operator_id,
+            operator_reason=operator_reason or "FSS 정기예금 상품 적재",
+        )
+
+        logger.info(
+            "FSS 정기예금 적재 시작",
+            {"batch_id": batch.batch_id},
+        )
+
+        self.batch_manager.start_batch(batch.batch_id)
+        stats = BatchStats()
+
+        try:
+            result = self.deposit_fetcher.fetch(
+                DataType.DEPOSIT_PRODUCT,
+                {},
+            )
+
+            if not result.success:
+                raise DataLoadError(
+                    result.error_message or "FSS 정기예금 조회 실패",
+                    batch_id=batch.batch_id,
+                )
+
+            total_count = len(result.data) if result.data else 0
+            logger.info(f"[DEPOSIT] FSS API에서 받은 데이터: 총 {total_count}건")
+
+            # 진행률 콜백에 전체 개수 알림
+            if progress_callback and total_count > 0:
+                progress_callback(-1, f"[TOTAL]{total_count}", True)
+
+            for idx, product_data in enumerate(result.data):
+                try:
+                    stats.total_records += 1
+                    base_info = product_data.get("base_info", {})
+                    options = product_data.get("options", [])
+
+                    fin_co_no = base_info.get("fin_co_no")
+                    fin_prdt_cd = base_info.get("fin_prdt_cd")
+                    if not fin_prdt_cd or not fin_co_no:
+                        stats.skipped_records += 1
+                        continue
+
+                    # 12개월 기본금리를 대표 금리로 설정
+                    representative_rate = None
+                    for opt in options:
+                        if opt.get("save_trm") == 12 and opt.get("intr_rate_type") == "S":
+                            representative_rate = opt.get("intr_rate")
+                            break
+                    # 12개월 단리가 없으면 첫 번째 옵션 사용
+                    if representative_rate is None and options:
+                        representative_rate = options[0].get("intr_rate")
+
+                    # Upsert 상품 (fin_co_no + fin_prdt_cd 조합으로 식별)
+                    existing = (
+                        self.db.query(DepositProduct)
+                        .filter(
+                            DepositProduct.fin_co_no == fin_co_no,
+                            DepositProduct.fin_prdt_cd == fin_prdt_cd,
+                        )
+                        .first()
+                    )
+
+                    if existing:
+                        existing.name = base_info.get("fin_prdt_nm", "")
+                        existing.bank = base_info.get("kor_co_nm", "")
+                        existing.product_type = "deposit"
+                        existing.interest_rate = representative_rate
+                        existing.fin_co_no = base_info.get("fin_co_no")
+                        existing.dcls_month = base_info.get("dcls_month")
+                        existing.join_way = base_info.get("join_way")
+                        existing.mtrt_int = base_info.get("mtrt_int")
+                        existing.spcl_cnd = base_info.get("spcl_cnd")
+                        existing.join_deny = base_info.get("join_deny")
+                        existing.join_member = base_info.get("join_member")
+                        existing.etc_note = base_info.get("etc_note")
+                        existing.max_limit = base_info.get("max_limit")
+                        product = existing
+                    else:
+                        product = DepositProduct(
+                            name=base_info.get("fin_prdt_nm", ""),
+                            bank=base_info.get("kor_co_nm", ""),
+                            product_type="deposit",
+                            interest_rate=representative_rate,
+                            fin_co_no=base_info.get("fin_co_no"),
+                            fin_prdt_cd=fin_prdt_cd,
+                            dcls_month=base_info.get("dcls_month"),
+                            join_way=base_info.get("join_way"),
+                            mtrt_int=base_info.get("mtrt_int"),
+                            spcl_cnd=base_info.get("spcl_cnd"),
+                            join_deny=base_info.get("join_deny"),
+                            join_member=base_info.get("join_member"),
+                            etc_note=base_info.get("etc_note"),
+                            max_limit=base_info.get("max_limit"),
+                        )
+                        self.db.add(product)
+
+                    self.db.flush()  # product.id 확보
+
+                    # 금리 옵션: 기존 삭제 후 재삽입
+                    self.db.query(DepositRateOption).filter(
+                        DepositRateOption.deposit_product_id == product.id
+                    ).delete()
+
+                    for opt in options:
+                        rate_option = DepositRateOption(
+                            deposit_product_id=product.id,
+                            save_trm=opt.get("save_trm") or 0,
+                            intr_rate_type=opt.get("intr_rate_type"),
+                            intr_rate_type_nm=opt.get("intr_rate_type_nm"),
+                            intr_rate=opt.get("intr_rate"),
+                            intr_rate2=opt.get("intr_rate2"),
+                        )
+                        self.db.add(rate_option)
+
+                    self.db.commit()
+                    stats.success_records += 1
+
+                    if progress_callback:
+                        product_name = base_info.get("fin_prdt_nm", f"상품 #{idx+1}")
+                        progress_callback(idx + 1, f"예금 저장: {product_name}", True)
+
+                except Exception as e:
+                    self.db.rollback()
+                    logger.error(
+                        f"[DEPOSIT] Error processing product {idx}: {type(e).__name__}: {str(e)}",
+                        exc_info=True,
+                    )
+                    stats.failed_records += 1
+                    if progress_callback:
+                        progress_callback(idx + 1, f"실패: {str(e)}", False)
+
+            self.batch_manager.complete_batch(batch.batch_id, stats)
+
+            return LoadResult(
+                batch_id=batch.batch_id,
+                success=True,
+                total_records=stats.total_records,
+                success_records=stats.success_records,
+                failed_records=stats.failed_records,
+                skipped_records=stats.skipped_records,
+            )
+
+        except Exception as e:
+            logger.error(
+                "FSS 정기예금 적재 실패",
+                {"batch_id": batch.batch_id, "error": str(e)},
+            )
+            self.batch_manager.fail_batch(batch.batch_id, str(e), stats)
+            raise DataLoadError(
+                f"FSS 정기예금 적재 실패: {e}",
+                batch_id=batch.batch_id,
+            ) from e
+
+    def load_savings_products(
+        self,
+        operator_id: Optional[str] = None,
+        operator_reason: Optional[str] = None,
+        progress_callback: Optional[Callable[[int, str, Optional[bool]], None]] = None,
+    ) -> LoadResult:
+        """
+        FSS 적금 상품 적재
+
+        금융감독원 '금융상품 한 눈에' API에서 적금 상품을 조회하여
+        savings_products + savings_rate_options 테이블에 저장합니다.
+        권역별(은행, 저축은행 등) + 다중 페이지 순차 호출.
+        """
+        from app.models.securities import SavingsProduct, SavingsRateOption
+
+        as_of_date = date.today()
+
+        if not self.savings_fetcher:
+            self.savings_fetcher = FssSavingsFetcher()
+
+        self._ensure_data_source(
+            self.savings_fetcher.source_id,
+            self.savings_fetcher.source_name,
+            source_type="GOV",
+            api_type="REST",
+            update_frequency="MONTHLY",
+            license_type="PUBLIC",
+            base_url=self.savings_fetcher.BASE_URL,
+            description="금융감독원 금융상품 한 눈에 (적금)",
+        )
+
+        batch = self.batch_manager.create_batch(
+            batch_type=BatchType.SAVINGS,
+            source_id=self.savings_fetcher.source_id,
+            as_of_date=as_of_date,
+            target_start=as_of_date,
+            target_end=as_of_date,
+            operator_id=operator_id,
+            operator_reason=operator_reason or "FSS 적금 상품 적재",
+        )
+
+        logger.info(
+            "FSS 적금 적재 시작",
+            {"batch_id": batch.batch_id},
+        )
+
+        self.batch_manager.start_batch(batch.batch_id)
+        stats = BatchStats()
+
+        try:
+            result = self.savings_fetcher.fetch(
+                DataType.SAVINGS_PRODUCT,
+                {},
+            )
+
+            if not result.success:
+                raise DataLoadError(
+                    result.error_message or "FSS 적금 조회 실패",
+                    batch_id=batch.batch_id,
+                )
+
+            total_count = len(result.data) if result.data else 0
+            logger.info(f"[SAVINGS] FSS API에서 받은 데이터: 총 {total_count}건")
+
+            # 진행률 콜백에 전체 개수 알림
+            if progress_callback and total_count > 0:
+                progress_callback(-1, f"[TOTAL]{total_count}", True)
+
+            for idx, product_data in enumerate(result.data):
+                try:
+                    stats.total_records += 1
+                    base_info = product_data.get("base_info", {})
+                    options = product_data.get("options", [])
+
+                    fin_co_no = base_info.get("fin_co_no")
+                    fin_prdt_cd = base_info.get("fin_prdt_cd")
+                    if not fin_prdt_cd or not fin_co_no:
+                        stats.skipped_records += 1
+                        continue
+
+                    # 12개월 정액적립식(S) 단리(S) 기본금리를 대표 금리로 설정
+                    representative_rate = None
+                    for opt in options:
+                        if (opt.get("save_trm") == 12
+                                and opt.get("intr_rate_type") == "S"
+                                and opt.get("rsrv_type") == "S"):
+                            representative_rate = opt.get("intr_rate")
+                            break
+                    # 12개월 정액적립식 단리가 없으면 첫 번째 옵션 사용
+                    if representative_rate is None and options:
+                        representative_rate = options[0].get("intr_rate")
+
+                    # Upsert 상품 (fin_co_no + fin_prdt_cd 조합으로 식별)
+                    existing = (
+                        self.db.query(SavingsProduct)
+                        .filter(
+                            SavingsProduct.fin_co_no == fin_co_no,
+                            SavingsProduct.fin_prdt_cd == fin_prdt_cd,
+                        )
+                        .first()
+                    )
+
+                    if existing:
+                        existing.name = base_info.get("fin_prdt_nm", "")
+                        existing.bank = base_info.get("kor_co_nm", "")
+                        existing.product_type = "savings"
+                        existing.interest_rate = representative_rate
+                        existing.dcls_month = base_info.get("dcls_month")
+                        existing.join_way = base_info.get("join_way")
+                        existing.mtrt_int = base_info.get("mtrt_int")
+                        existing.spcl_cnd = base_info.get("spcl_cnd")
+                        existing.join_deny = base_info.get("join_deny")
+                        existing.join_member = base_info.get("join_member")
+                        existing.etc_note = base_info.get("etc_note")
+                        existing.max_limit = base_info.get("max_limit")
+                        product = existing
+                    else:
+                        product = SavingsProduct(
+                            name=base_info.get("fin_prdt_nm", ""),
+                            bank=base_info.get("kor_co_nm", ""),
+                            product_type="savings",
+                            interest_rate=representative_rate,
+                            fin_co_no=fin_co_no,
+                            fin_prdt_cd=fin_prdt_cd,
+                            dcls_month=base_info.get("dcls_month"),
+                            join_way=base_info.get("join_way"),
+                            mtrt_int=base_info.get("mtrt_int"),
+                            spcl_cnd=base_info.get("spcl_cnd"),
+                            join_deny=base_info.get("join_deny"),
+                            join_member=base_info.get("join_member"),
+                            etc_note=base_info.get("etc_note"),
+                            max_limit=base_info.get("max_limit"),
+                        )
+                        self.db.add(product)
+
+                    self.db.flush()  # product.id 확보
+
+                    # 금리 옵션: 기존 삭제 후 재삽입
+                    self.db.query(SavingsRateOption).filter(
+                        SavingsRateOption.savings_product_id == product.id
+                    ).delete()
+
+                    for opt in options:
+                        rate_option = SavingsRateOption(
+                            savings_product_id=product.id,
+                            save_trm=opt.get("save_trm") or 0,
+                            intr_rate_type=opt.get("intr_rate_type"),
+                            intr_rate_type_nm=opt.get("intr_rate_type_nm"),
+                            rsrv_type=opt.get("rsrv_type"),
+                            rsrv_type_nm=opt.get("rsrv_type_nm"),
+                            intr_rate=opt.get("intr_rate"),
+                            intr_rate2=opt.get("intr_rate2"),
+                        )
+                        self.db.add(rate_option)
+
+                    self.db.commit()
+                    stats.success_records += 1
+
+                    if progress_callback:
+                        product_name = base_info.get("fin_prdt_nm", f"상품 #{idx+1}")
+                        progress_callback(idx + 1, f"적금 저장: {product_name}", True)
+
+                except Exception as e:
+                    self.db.rollback()
+                    logger.error(
+                        f"[SAVINGS] Error processing product {idx}: {type(e).__name__}: {str(e)}",
+                        exc_info=True,
+                    )
+                    stats.failed_records += 1
+                    if progress_callback:
+                        progress_callback(idx + 1, f"실패: {str(e)}", False)
+
+            self.batch_manager.complete_batch(batch.batch_id, stats)
+
+            return LoadResult(
+                batch_id=batch.batch_id,
+                success=True,
+                total_records=stats.total_records,
+                success_records=stats.success_records,
+                failed_records=stats.failed_records,
+                skipped_records=stats.skipped_records,
+            )
+
+        except Exception as e:
+            logger.error(
+                "FSS 적금 적재 실패",
+                {"batch_id": batch.batch_id, "error": str(e)},
+            )
+            self.batch_manager.fail_batch(batch.batch_id, str(e), stats)
+            raise DataLoadError(
+                f"FSS 적금 적재 실패: {e}",
+                batch_id=batch.batch_id,
+            ) from e
+
+    def load_annuity_savings_products(
+        self,
+        operator_id: Optional[str] = None,
+        operator_reason: Optional[str] = None,
+        progress_callback: Optional[Callable[[int, str, Optional[bool]], None]] = None,
+    ) -> LoadResult:
+        """
+        FSS 연금저축 상품 적재
+
+        금융감독원 '금융상품 한 눈에' API에서 연금저축 상품을 조회하여
+        annuity_savings_products + annuity_savings_options 테이블에 저장합니다.
+        권역별(보험, 금융투자 등) + 다중 페이지 순차 호출.
+        """
+        from app.models.securities import AnnuitySavingsProduct, AnnuitySavingsOption
+
+        as_of_date = date.today()
+
+        if not self.annuity_savings_fetcher:
+            self.annuity_savings_fetcher = FssAnnuitySavingsFetcher()
+
+        self._ensure_data_source(
+            self.annuity_savings_fetcher.source_id,
+            self.annuity_savings_fetcher.source_name,
+            source_type="GOV",
+            api_type="REST",
+            update_frequency="MONTHLY",
+            license_type="PUBLIC",
+            base_url=self.annuity_savings_fetcher.BASE_URL,
+            description="금융감독원 금융상품 한 눈에 (연금저축)",
+        )
+
+        batch = self.batch_manager.create_batch(
+            batch_type=BatchType.ANNUITY_SAVINGS,
+            source_id=self.annuity_savings_fetcher.source_id,
+            as_of_date=as_of_date,
+            target_start=as_of_date,
+            target_end=as_of_date,
+            operator_id=operator_id,
+            operator_reason=operator_reason or "FSS 연금저축 상품 적재",
+        )
+
+        logger.info(
+            "FSS 연금저축 적재 시작",
+            {"batch_id": batch.batch_id},
+        )
+
+        self.batch_manager.start_batch(batch.batch_id)
+        stats = BatchStats()
+
+        try:
+            result = self.annuity_savings_fetcher.fetch(
+                DataType.ANNUITY_SAVINGS_PRODUCT,
+                {},
+            )
+
+            if not result.success:
+                raise DataLoadError(
+                    result.error_message or "FSS 연금저축 조회 실패",
+                    batch_id=batch.batch_id,
+                )
+
+            total_count = len(result.data) if result.data else 0
+            logger.info(f"[ANNUITY] FSS API에서 받은 데이터: 총 {total_count}건")
+
+            # 진행률 콜백에 전체 개수 알림
+            if progress_callback and total_count > 0:
+                progress_callback(-1, f"[TOTAL]{total_count}", True)
+
+            for idx, product_data in enumerate(result.data):
+                try:
+                    stats.total_records += 1
+                    base_info = product_data.get("base_info", {})
+                    options = product_data.get("options", [])
+
+                    fin_co_no = base_info.get("fin_co_no")
+                    fin_prdt_cd = base_info.get("fin_prdt_cd")
+                    if not fin_prdt_cd or not fin_co_no:
+                        stats.skipped_records += 1
+                        continue
+
+                    # Upsert 상품 (fin_co_no + fin_prdt_cd 조합으로 식별)
+                    existing = (
+                        self.db.query(AnnuitySavingsProduct)
+                        .filter(
+                            AnnuitySavingsProduct.fin_co_no == fin_co_no,
+                            AnnuitySavingsProduct.fin_prdt_cd == fin_prdt_cd,
+                        )
+                        .first()
+                    )
+
+                    if existing:
+                        existing.name = base_info.get("fin_prdt_nm", "")
+                        existing.company = base_info.get("kor_co_nm", "")
+                        existing.product_type = "annuity_savings"
+                        existing.dcls_month = base_info.get("dcls_month")
+                        existing.join_way = base_info.get("join_way")
+                        existing.pnsn_kind = base_info.get("pnsn_kind")
+                        existing.pnsn_kind_nm = base_info.get("pnsn_kind_nm")
+                        existing.prdt_type = base_info.get("prdt_type")
+                        existing.prdt_type_nm = base_info.get("prdt_type_nm")
+                        existing.avg_prft_rate = base_info.get("avg_prft_rate")
+                        existing.dcls_rate = base_info.get("dcls_rate")
+                        existing.guar_rate = base_info.get("guar_rate")
+                        existing.btrm_prft_rate_1 = base_info.get("btrm_prft_rate_1")
+                        existing.btrm_prft_rate_2 = base_info.get("btrm_prft_rate_2")
+                        existing.btrm_prft_rate_3 = base_info.get("btrm_prft_rate_3")
+                        existing.sale_strt_day = base_info.get("sale_strt_day")
+                        existing.mntn_cnt = base_info.get("mntn_cnt")
+                        existing.sale_co = base_info.get("sale_co")
+                        existing.etc = base_info.get("etc")
+                        product = existing
+                    else:
+                        product = AnnuitySavingsProduct(
+                            name=base_info.get("fin_prdt_nm", ""),
+                            company=base_info.get("kor_co_nm", ""),
+                            product_type="annuity_savings",
+                            fin_co_no=fin_co_no,
+                            fin_prdt_cd=fin_prdt_cd,
+                            dcls_month=base_info.get("dcls_month"),
+                            join_way=base_info.get("join_way"),
+                            pnsn_kind=base_info.get("pnsn_kind"),
+                            pnsn_kind_nm=base_info.get("pnsn_kind_nm"),
+                            prdt_type=base_info.get("prdt_type"),
+                            prdt_type_nm=base_info.get("prdt_type_nm"),
+                            avg_prft_rate=base_info.get("avg_prft_rate"),
+                            dcls_rate=base_info.get("dcls_rate"),
+                            guar_rate=base_info.get("guar_rate"),
+                            btrm_prft_rate_1=base_info.get("btrm_prft_rate_1"),
+                            btrm_prft_rate_2=base_info.get("btrm_prft_rate_2"),
+                            btrm_prft_rate_3=base_info.get("btrm_prft_rate_3"),
+                            sale_strt_day=base_info.get("sale_strt_day"),
+                            mntn_cnt=base_info.get("mntn_cnt"),
+                            sale_co=base_info.get("sale_co"),
+                            etc=base_info.get("etc"),
+                        )
+                        self.db.add(product)
+
+                    self.db.flush()  # product.id 확보
+
+                    # 수령 옵션: 기존 삭제 후 재삽입
+                    self.db.query(AnnuitySavingsOption).filter(
+                        AnnuitySavingsOption.annuity_product_id == product.id
+                    ).delete()
+
+                    for opt in options:
+                        option = AnnuitySavingsOption(
+                            annuity_product_id=product.id,
+                            pnsn_recp_trm=opt.get("pnsn_recp_trm"),
+                            pnsn_recp_trm_nm=opt.get("pnsn_recp_trm_nm"),
+                            pnsn_entr_age=opt.get("pnsn_entr_age"),
+                            pnsn_entr_age_nm=opt.get("pnsn_entr_age_nm"),
+                            mon_paym_atm=opt.get("mon_paym_atm"),
+                            mon_paym_atm_nm=opt.get("mon_paym_atm_nm"),
+                            paym_prd=opt.get("paym_prd"),
+                            paym_prd_nm=opt.get("paym_prd_nm"),
+                            pnsn_strt_age=opt.get("pnsn_strt_age"),
+                            pnsn_strt_age_nm=opt.get("pnsn_strt_age_nm"),
+                            pnsn_recp_amt=opt.get("pnsn_recp_amt"),
+                        )
+                        self.db.add(option)
+
+                    self.db.commit()
+                    stats.success_records += 1
+
+                    if progress_callback:
+                        product_name = base_info.get("fin_prdt_nm", f"상품 #{idx+1}")
+                        progress_callback(idx + 1, f"연금저축 저장: {product_name}", True)
+
+                except Exception as e:
+                    self.db.rollback()
+                    logger.error(
+                        f"[ANNUITY] Error processing product {idx}: {type(e).__name__}: {str(e)}",
+                        exc_info=True,
+                    )
+                    stats.failed_records += 1
+                    if progress_callback:
+                        progress_callback(idx + 1, f"실패: {str(e)}", False)
+
+            self.batch_manager.complete_batch(batch.batch_id, stats)
+
+            return LoadResult(
+                batch_id=batch.batch_id,
+                success=True,
+                total_records=stats.total_records,
+                success_records=stats.success_records,
+                failed_records=stats.failed_records,
+                skipped_records=stats.skipped_records,
+            )
+
+        except Exception as e:
+            logger.error(
+                "FSS 연금저축 적재 실패",
+                {"batch_id": batch.batch_id, "error": str(e)},
+            )
+            self.batch_manager.fail_batch(batch.batch_id, str(e), stats)
+            raise DataLoadError(
+                f"FSS 연금저축 적재 실패: {e}",
+                batch_id=batch.batch_id,
+            ) from e
+
+    def load_mortgage_loan_products(
+        self,
+        operator_id: Optional[str] = None,
+        operator_reason: Optional[str] = None,
+        progress_callback: Optional[Callable[[int, str, Optional[bool]], None]] = None,
+    ) -> LoadResult:
+        """
+        FSS 주택담보대출 상품 적재
+
+        금융감독원 '금융상품 한 눈에' API에서 주택담보대출 상품을 조회하여
+        mortgage_loan_products + mortgage_loan_options 테이블에 저장합니다.
+        권역별(은행, 저축은행, 보험 등) + 다중 페이지 순차 호출.
+        """
+        from app.models.securities import MortgageLoanProduct, MortgageLoanOption
+
+        as_of_date = date.today()
+
+        if not self.mortgage_loan_fetcher:
+            self.mortgage_loan_fetcher = FssMortgageLoanFetcher()
+
+        self._ensure_data_source(
+            self.mortgage_loan_fetcher.source_id,
+            self.mortgage_loan_fetcher.source_name,
+            source_type="GOV",
+            api_type="REST",
+            update_frequency="MONTHLY",
+            license_type="PUBLIC",
+            base_url=self.mortgage_loan_fetcher.BASE_URL,
+            description="금융감독원 금융상품 한 눈에 (주택담보대출)",
+        )
+
+        batch = self.batch_manager.create_batch(
+            batch_type=BatchType.MORTGAGE_LOAN,
+            source_id=self.mortgage_loan_fetcher.source_id,
+            as_of_date=as_of_date,
+            target_start=as_of_date,
+            target_end=as_of_date,
+            operator_id=operator_id,
+            operator_reason=operator_reason or "FSS 주택담보대출 상품 적재",
+        )
+
+        logger.info(
+            "FSS 주택담보대출 적재 시작",
+            {"batch_id": batch.batch_id},
+        )
+
+        self.batch_manager.start_batch(batch.batch_id)
+        stats = BatchStats()
+
+        try:
+            result = self.mortgage_loan_fetcher.fetch(
+                DataType.MORTGAGE_LOAN_PRODUCT,
+                {},
+            )
+
+            if not result.success:
+                raise DataLoadError(
+                    result.error_message or "FSS 주택담보대출 조회 실패",
+                    batch_id=batch.batch_id,
+                )
+
+            total_count = len(result.data) if result.data else 0
+            logger.info(f"[MORTGAGE] FSS API에서 받은 데이터: 총 {total_count}건")
+
+            if progress_callback and total_count > 0:
+                progress_callback(-1, f"[TOTAL]{total_count}", True)
+
+            for idx, product_data in enumerate(result.data):
+                try:
+                    stats.total_records += 1
+                    base_info = product_data.get("base_info", {})
+                    options = product_data.get("options", [])
+
+                    fin_co_no = base_info.get("fin_co_no")
+                    fin_prdt_cd = base_info.get("fin_prdt_cd")
+                    if not fin_prdt_cd or not fin_co_no:
+                        stats.skipped_records += 1
+                        continue
+
+                    # Upsert 상품
+                    existing = (
+                        self.db.query(MortgageLoanProduct)
+                        .filter(
+                            MortgageLoanProduct.fin_co_no == fin_co_no,
+                            MortgageLoanProduct.fin_prdt_cd == fin_prdt_cd,
+                        )
+                        .first()
+                    )
+
+                    if existing:
+                        existing.name = base_info.get("fin_prdt_nm", "")
+                        existing.bank = base_info.get("kor_co_nm", "")
+                        existing.product_type = "mortgage_loan"
+                        existing.dcls_month = base_info.get("dcls_month")
+                        existing.join_way = base_info.get("join_way")
+                        existing.loan_inci_expn = base_info.get("loan_inci_expn")
+                        existing.erly_rpay_fee = base_info.get("erly_rpay_fee")
+                        existing.dly_rate = base_info.get("dly_rate")
+                        existing.loan_lmt = base_info.get("loan_lmt")
+                        product = existing
+                    else:
+                        product = MortgageLoanProduct(
+                            name=base_info.get("fin_prdt_nm", ""),
+                            bank=base_info.get("kor_co_nm", ""),
+                            product_type="mortgage_loan",
+                            fin_co_no=fin_co_no,
+                            fin_prdt_cd=fin_prdt_cd,
+                            dcls_month=base_info.get("dcls_month"),
+                            join_way=base_info.get("join_way"),
+                            loan_inci_expn=base_info.get("loan_inci_expn"),
+                            erly_rpay_fee=base_info.get("erly_rpay_fee"),
+                            dly_rate=base_info.get("dly_rate"),
+                            loan_lmt=base_info.get("loan_lmt"),
+                        )
+                        self.db.add(product)
+
+                    self.db.flush()
+
+                    # 금리 옵션: 기존 삭제 후 재삽입
+                    self.db.query(MortgageLoanOption).filter(
+                        MortgageLoanOption.mortgage_product_id == product.id
+                    ).delete()
+
+                    for opt in options:
+                        option = MortgageLoanOption(
+                            mortgage_product_id=product.id,
+                            mrtg_type=opt.get("mrtg_type"),
+                            mrtg_type_nm=opt.get("mrtg_type_nm"),
+                            rpay_type=opt.get("rpay_type"),
+                            rpay_type_nm=opt.get("rpay_type_nm"),
+                            lend_rate_type=opt.get("lend_rate_type"),
+                            lend_rate_type_nm=opt.get("lend_rate_type_nm"),
+                            lend_rate_min=opt.get("lend_rate_min"),
+                            lend_rate_max=opt.get("lend_rate_max"),
+                            lend_rate_avg=opt.get("lend_rate_avg"),
+                        )
+                        self.db.add(option)
+
+                    self.db.commit()
+                    stats.success_records += 1
+
+                    if progress_callback:
+                        product_name = base_info.get("fin_prdt_nm", f"상품 #{idx+1}")
+                        progress_callback(idx + 1, f"주담대 저장: {product_name}", True)
+
+                except Exception as e:
+                    self.db.rollback()
+                    logger.error(
+                        f"[MORTGAGE] Error processing product {idx}: {type(e).__name__}: {str(e)}",
+                        exc_info=True,
+                    )
+                    stats.failed_records += 1
+                    if progress_callback:
+                        progress_callback(idx + 1, f"실패: {str(e)}", False)
+
+            self.batch_manager.complete_batch(batch.batch_id, stats)
+
+            return LoadResult(
+                batch_id=batch.batch_id,
+                success=True,
+                total_records=stats.total_records,
+                success_records=stats.success_records,
+                failed_records=stats.failed_records,
+                skipped_records=stats.skipped_records,
+            )
+
+        except Exception as e:
+            logger.error(
+                "FSS 주택담보대출 적재 실패",
+                {"batch_id": batch.batch_id, "error": str(e)},
+            )
+            self.batch_manager.fail_batch(batch.batch_id, str(e), stats)
+            raise DataLoadError(
+                f"FSS 주택담보대출 적재 실패: {e}",
+                batch_id=batch.batch_id,
+            ) from e
+
+    def load_rent_house_loan_products(
+        self,
+        operator_id: Optional[str] = None,
+        operator_reason: Optional[str] = None,
+        progress_callback: Optional[Callable[[int, str, Optional[bool]], None]] = None,
+    ) -> LoadResult:
+        """
+        FSS 전세자금대출 상품 적재
+
+        금융감독원 '금융상품 한 눈에' API에서 전세자금대출 상품을 조회하여
+        rent_house_loan_products + rent_house_loan_options 테이블에 저장합니다.
+        """
+        from app.models.securities import RentHouseLoanProduct, RentHouseLoanOption
+
+        as_of_date = date.today()
+
+        if not self.rent_house_loan_fetcher:
+            self.rent_house_loan_fetcher = FssRentHouseLoanFetcher()
+
+        self._ensure_data_source(
+            self.rent_house_loan_fetcher.source_id,
+            self.rent_house_loan_fetcher.source_name,
+            source_type="GOV",
+            api_type="REST",
+            update_frequency="MONTHLY",
+            license_type="PUBLIC",
+            base_url=self.rent_house_loan_fetcher.BASE_URL,
+            description="금융감독원 금융상품 한 눈에 (전세자금대출)",
+        )
+
+        batch = self.batch_manager.create_batch(
+            batch_type=BatchType.RENT_HOUSE_LOAN,
+            source_id=self.rent_house_loan_fetcher.source_id,
+            as_of_date=as_of_date,
+            target_start=as_of_date,
+            target_end=as_of_date,
+            operator_id=operator_id,
+            operator_reason=operator_reason or "FSS 전세자금대출 상품 적재",
+        )
+
+        logger.info("FSS 전세자금대출 적재 시작", {"batch_id": batch.batch_id})
+        self.batch_manager.start_batch(batch.batch_id)
+        stats = BatchStats()
+
+        try:
+            result = self.rent_house_loan_fetcher.fetch(DataType.RENT_HOUSE_LOAN_PRODUCT, {})
+
+            if not result.success:
+                raise DataLoadError(
+                    result.error_message or "FSS 전세자금대출 조회 실패",
+                    batch_id=batch.batch_id,
+                )
+
+            total_count = len(result.data) if result.data else 0
+            logger.info(f"[RENT_LOAN] FSS API에서 받은 데이터: 총 {total_count}건")
+
+            if progress_callback and total_count > 0:
+                progress_callback(-1, f"[TOTAL]{total_count}", True)
+
+            for idx, product_data in enumerate(result.data):
+                try:
+                    stats.total_records += 1
+                    base_info = product_data.get("base_info", {})
+                    options = product_data.get("options", [])
+
+                    fin_co_no = base_info.get("fin_co_no")
+                    fin_prdt_cd = base_info.get("fin_prdt_cd")
+                    if not fin_prdt_cd or not fin_co_no:
+                        stats.skipped_records += 1
+                        continue
+
+                    existing = (
+                        self.db.query(RentHouseLoanProduct)
+                        .filter(
+                            RentHouseLoanProduct.fin_co_no == fin_co_no,
+                            RentHouseLoanProduct.fin_prdt_cd == fin_prdt_cd,
+                        )
+                        .first()
+                    )
+
+                    if existing:
+                        existing.name = base_info.get("fin_prdt_nm", "")
+                        existing.bank = base_info.get("kor_co_nm", "")
+                        existing.product_type = "rent_house_loan"
+                        existing.dcls_month = base_info.get("dcls_month")
+                        existing.join_way = base_info.get("join_way")
+                        existing.loan_inci_expn = base_info.get("loan_inci_expn")
+                        existing.erly_rpay_fee = base_info.get("erly_rpay_fee")
+                        existing.dly_rate = base_info.get("dly_rate")
+                        existing.loan_lmt = base_info.get("loan_lmt")
+                        product = existing
+                    else:
+                        product = RentHouseLoanProduct(
+                            name=base_info.get("fin_prdt_nm", ""),
+                            bank=base_info.get("kor_co_nm", ""),
+                            product_type="rent_house_loan",
+                            fin_co_no=fin_co_no,
+                            fin_prdt_cd=fin_prdt_cd,
+                            dcls_month=base_info.get("dcls_month"),
+                            join_way=base_info.get("join_way"),
+                            loan_inci_expn=base_info.get("loan_inci_expn"),
+                            erly_rpay_fee=base_info.get("erly_rpay_fee"),
+                            dly_rate=base_info.get("dly_rate"),
+                            loan_lmt=base_info.get("loan_lmt"),
+                        )
+                        self.db.add(product)
+
+                    self.db.flush()
+
+                    self.db.query(RentHouseLoanOption).filter(
+                        RentHouseLoanOption.rent_loan_product_id == product.id
+                    ).delete()
+
+                    for opt in options:
+                        option = RentHouseLoanOption(
+                            rent_loan_product_id=product.id,
+                            rpay_type=opt.get("rpay_type"),
+                            rpay_type_nm=opt.get("rpay_type_nm"),
+                            lend_rate_type=opt.get("lend_rate_type"),
+                            lend_rate_type_nm=opt.get("lend_rate_type_nm"),
+                            lend_rate_min=opt.get("lend_rate_min"),
+                            lend_rate_max=opt.get("lend_rate_max"),
+                            lend_rate_avg=opt.get("lend_rate_avg"),
+                        )
+                        self.db.add(option)
+
+                    self.db.commit()
+                    stats.success_records += 1
+
+                    if progress_callback:
+                        product_name = base_info.get("fin_prdt_nm", f"상품 #{idx+1}")
+                        progress_callback(idx + 1, f"전세대출 저장: {product_name}", True)
+
+                except Exception as e:
+                    self.db.rollback()
+                    logger.error(
+                        f"[RENT_LOAN] Error processing product {idx}: {type(e).__name__}: {str(e)}",
+                        exc_info=True,
+                    )
+                    stats.failed_records += 1
+                    if progress_callback:
+                        progress_callback(idx + 1, f"실패: {str(e)}", False)
+
+            self.batch_manager.complete_batch(batch.batch_id, stats)
+
+            return LoadResult(
+                batch_id=batch.batch_id,
+                success=True,
+                total_records=stats.total_records,
+                success_records=stats.success_records,
+                failed_records=stats.failed_records,
+                skipped_records=stats.skipped_records,
+            )
+
+        except Exception as e:
+            logger.error("FSS 전세자금대출 적재 실패", {"batch_id": batch.batch_id, "error": str(e)})
+            self.batch_manager.fail_batch(batch.batch_id, str(e), stats)
+            raise DataLoadError(
+                f"FSS 전세자금대출 적재 실패: {e}",
+                batch_id=batch.batch_id,
+            ) from e
+
+    def load_credit_loan_products(
+        self,
+        operator_id: Optional[str] = None,
+        operator_reason: Optional[str] = None,
+        progress_callback: Optional[Callable[[int, str, Optional[bool]], None]] = None,
+    ) -> LoadResult:
+        """
+        FSS 개인신용대출 상품 적재
+
+        금융감독원 '금융상품 한 눈에' API에서 개인신용대출 상품을 조회하여
+        credit_loan_products + credit_loan_options 테이블에 저장합니다.
+        """
+        from app.models.securities import CreditLoanProduct, CreditLoanOption
+
+        as_of_date = date.today()
+
+        if not self.credit_loan_fetcher:
+            self.credit_loan_fetcher = FssCreditLoanFetcher()
+
+        self._ensure_data_source(
+            self.credit_loan_fetcher.source_id,
+            self.credit_loan_fetcher.source_name,
+            source_type="GOV",
+            api_type="REST",
+            update_frequency="MONTHLY",
+            license_type="PUBLIC",
+            base_url=self.credit_loan_fetcher.BASE_URL,
+            description="금융감독원 금융상품 한 눈에 (개인신용대출)",
+        )
+
+        batch = self.batch_manager.create_batch(
+            batch_type=BatchType.CREDIT_LOAN,
+            source_id=self.credit_loan_fetcher.source_id,
+            as_of_date=as_of_date,
+            target_start=as_of_date,
+            target_end=as_of_date,
+            operator_id=operator_id,
+            operator_reason=operator_reason or "FSS 개인신용대출 상품 적재",
+        )
+
+        logger.info("FSS 개인신용대출 적재 시작", {"batch_id": batch.batch_id})
+        self.batch_manager.start_batch(batch.batch_id)
+        stats = BatchStats()
+
+        try:
+            result = self.credit_loan_fetcher.fetch(DataType.CREDIT_LOAN_PRODUCT, {})
+
+            if not result.success:
+                raise DataLoadError(
+                    result.error_message or "FSS 개인신용대출 조회 실패",
+                    batch_id=batch.batch_id,
+                )
+
+            total_count = len(result.data) if result.data else 0
+            logger.info(f"[CREDIT_LOAN] FSS API에서 받은 데이터: 총 {total_count}건")
+
+            if progress_callback and total_count > 0:
+                progress_callback(-1, f"[TOTAL]{total_count}", True)
+
+            for idx, product_data in enumerate(result.data):
+                try:
+                    stats.total_records += 1
+                    base_info = product_data.get("base_info", {})
+                    options = product_data.get("options", [])
+
+                    fin_co_no = base_info.get("fin_co_no")
+                    fin_prdt_cd = base_info.get("fin_prdt_cd")
+                    if not fin_prdt_cd or not fin_co_no:
+                        stats.skipped_records += 1
+                        continue
+
+                    existing = (
+                        self.db.query(CreditLoanProduct)
+                        .filter(
+                            CreditLoanProduct.fin_co_no == fin_co_no,
+                            CreditLoanProduct.fin_prdt_cd == fin_prdt_cd,
+                        )
+                        .first()
+                    )
+
+                    if existing:
+                        existing.name = base_info.get("fin_prdt_nm", "")
+                        existing.bank = base_info.get("kor_co_nm", "")
+                        existing.product_type = "credit_loan"
+                        existing.dcls_month = base_info.get("dcls_month")
+                        existing.join_way = base_info.get("join_way")
+                        existing.crdt_prdt_type = base_info.get("crdt_prdt_type")
+                        existing.crdt_prdt_type_nm = base_info.get("crdt_prdt_type_nm")
+                        existing.cb_name = base_info.get("cb_name")
+                        product = existing
+                    else:
+                        product = CreditLoanProduct(
+                            name=base_info.get("fin_prdt_nm", ""),
+                            bank=base_info.get("kor_co_nm", ""),
+                            product_type="credit_loan",
+                            fin_co_no=fin_co_no,
+                            fin_prdt_cd=fin_prdt_cd,
+                            dcls_month=base_info.get("dcls_month"),
+                            join_way=base_info.get("join_way"),
+                            crdt_prdt_type=base_info.get("crdt_prdt_type"),
+                            crdt_prdt_type_nm=base_info.get("crdt_prdt_type_nm"),
+                            cb_name=base_info.get("cb_name"),
+                        )
+                        self.db.add(product)
+
+                    self.db.flush()
+
+                    # 기존 옵션 삭제 후 재삽입
+                    self.db.query(CreditLoanOption).filter(
+                        CreditLoanOption.credit_loan_product_id == product.id
+                    ).delete()
+
+                    for opt in options:
+                        option = CreditLoanOption(
+                            credit_loan_product_id=product.id,
+                            crdt_lend_rate_type=opt.get("crdt_lend_rate_type"),
+                            crdt_lend_rate_type_nm=opt.get("crdt_lend_rate_type_nm"),
+                            crdt_grad_1=opt.get("crdt_grad_1"),
+                            crdt_grad_4=opt.get("crdt_grad_4"),
+                            crdt_grad_5=opt.get("crdt_grad_5"),
+                            crdt_grad_6=opt.get("crdt_grad_6"),
+                            crdt_grad_10=opt.get("crdt_grad_10"),
+                            crdt_grad_11=opt.get("crdt_grad_11"),
+                            crdt_grad_12=opt.get("crdt_grad_12"),
+                            crdt_grad_13=opt.get("crdt_grad_13"),
+                            crdt_grad_avg=opt.get("crdt_grad_avg"),
+                        )
+                        self.db.add(option)
+
+                    self.db.commit()
+                    stats.success_records += 1
+
+                    if progress_callback:
+                        progress_callback(
+                            idx + 1,
+                            f"신용대출 저장: {base_info.get('fin_prdt_nm', '')}",
+                            True,
+                        )
+
+                except Exception as e:
+                    self.db.rollback()
+                    logger.warning(
+                        "개인신용대출 상품 저장 실패",
+                        {
+                            "fin_co_no": base_info.get("fin_co_no"),
+                            "fin_prdt_cd": base_info.get("fin_prdt_cd"),
+                            "error": str(e),
+                        },
+                    )
+                    stats.failed_records += 1
+                    if progress_callback:
+                        progress_callback(idx + 1, f"실패: {str(e)}", False)
+
+            self.batch_manager.complete_batch(batch.batch_id, stats)
+
+            return LoadResult(
+                batch_id=batch.batch_id,
+                success=True,
+                total_records=stats.total_records,
+                success_records=stats.success_records,
+                failed_records=stats.failed_records,
+                skipped_records=stats.skipped_records,
+            )
+
+        except Exception as e:
+            logger.error("FSS 개인신용대출 적재 실패", {"batch_id": batch.batch_id, "error": str(e)})
+            self.batch_manager.fail_batch(batch.batch_id, str(e), stats)
+            raise DataLoadError(
+                f"FSS 개인신용대출 적재 실패: {e}",
+                batch_id=batch.batch_id,
+            ) from e

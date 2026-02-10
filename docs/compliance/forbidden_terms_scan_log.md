@@ -123,8 +123,8 @@ chmod +x .git/hooks/pre-commit
 
 ## 관련 문서
 
-- [금지어 목록 상세](./20260114_forbidden_terms_list.md)
-- [Phase 0 변경 로그](../changelogs/20260115_changelog_phase0.md)
+- [금지어 목록 상세](forbidden_terms_list.md)
+- [Phase 0 변경 로그](../changelogs/changelog_phase0.md)
 
 ---
 

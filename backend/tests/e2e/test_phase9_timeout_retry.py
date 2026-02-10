@@ -9,7 +9,9 @@ import time
 
 import pytest
 
-from app.models.securities import KrxTimeSeries
+from decimal import Decimal
+
+from app.models.real_data import StockPriceDaily
 
 
 def _seed_timeseries(db, ticker: str, base_price: float = 100.0) -> None:
@@ -17,15 +19,19 @@ def _seed_timeseries(db, ticker: str, base_price: float = 100.0) -> None:
     rows = []
     prices = [base_price, base_price * 1.01, base_price * 1.02, base_price * 0.99, base_price * 1.03]
     for i, price in enumerate(prices):
+        td = date(2024, 1, 2 + i)
         rows.append(
-            KrxTimeSeries(
+            StockPriceDaily(
                 ticker=ticker,
-                date=date(2024, 1, 2 + i),
-                open=price,
-                high=price * 1.02,
-                low=price * 0.98,
-                close=price,
+                trade_date=td,
+                open_price=Decimal(str(round(price, 2))),
+                high_price=Decimal(str(round(price * 1.02, 2))),
+                low_price=Decimal(str(round(price * 0.98, 2))),
+                close_price=Decimal(str(round(price, 2))),
                 volume=1000 + i * 100,
+                source_id='PYKRX',
+                as_of_date=td,
+                quality_flag='NORMAL',
             )
         )
     db.add_all(rows)

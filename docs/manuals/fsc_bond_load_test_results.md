@@ -1,7 +1,7 @@
 # FSC API 채권 실데이터 적재 테스트 결과
 
 **작성일:** 2026-02-05
-**관련 문서:** `20260205_bonds_consolidation_impl.md` (통합 구현), `20260205_table_consolidation_design.md` (설계)
+**관련 문서:** `bonds_consolidation_impl.md` (통합 구현), `table_consolidation_design.md` (설계)
 **대상 DB:** PostgreSQL `kingo.public`
 **적재 경로:** FSC OpenAPI → `load_bond_basic_info()` → `_upsert_bond()` → `bonds` 테이블
 

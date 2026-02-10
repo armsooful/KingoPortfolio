@@ -105,7 +105,7 @@ Foresto Compass는 투자 권유·추천·자문을 제공하지 않는 교육/�
 ## 14. 참고 문서
 - `README.md`
 - `docs/feature_overview.md`
-- `docs/reports/project_progress_report_20260121.md`
+- `docs/reports/project_progress_report.md`
 
 ## 15. 세부 유저 스토리
 - US-01: 초보 투자자로서 설문을 제출하고 내 투자 성향을 확인하고 싶다, 그래서 내 리스크 성향을 이해할 수 있다.

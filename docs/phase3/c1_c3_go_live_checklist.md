@@ -50,7 +50,7 @@
 - [ ] 재처리/정정/버전 전환은 reason 필수 (상태: 부분, 근거: `backend/app/routes/admin_controls.py`, 검증: reason 누락 요청 시 422 응답 확인)
 - [ ] 승인 모델(PENDING/APPROVED/REJECTED/EXECUTED) 동작 (상태: 부분, 근거: `backend/app/services/admin_approval_service.py`, `backend/tests/integration/test_admin_controls.py`, 검증: 승인 생성 → 승인/거절/실행 전이 테스트)
 - [ ] 금지 상태전이/중복 실행 방지 (상태: 미확인, 검증: 동일 실행 중복 요청 시 차단 및 감사 로그 기록 확인)
-- 참고: `docs/phase3/20260118_20260118_c4_validation_checklist.md`
+- 참고: `docs/phase3/c4_validation_checklist.md`
 
 ---
 

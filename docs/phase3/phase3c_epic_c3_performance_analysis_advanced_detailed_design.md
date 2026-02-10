@@ -171,11 +171,11 @@ Epic C-3의 목적은 포트폴리오 및 계정 단위의 성과를 **운영 �
 ---
 
 ## 13. 관련 문서
-- `docs/phase3/20260118_20260118_c3_ddl_schema.md`
+- `docs/phase3/c3_ddl_schema.md`
 - `docs/phase3/c3_ddl_schema.sql`
-- `docs/phase3/20260118_20260118_c3_performance_engine_spec.md`
-- `docs/phase3/20260118_20260118_c3_implementation_tickets.md`
-- `docs/phase3/20260118_20260118_c1_c3_go_live_checklist.md`
+- `docs/phase3/c3_performance_engine_spec.md`
+- `docs/phase3/c3_implementation_tickets.md`
+- `docs/phase3/c1_c3_go_live_checklist.md`
 - `20260118_phase3c_epic_c1_operations_stability_detailed_design.md`
 - `20260118_phase3c_epic_c2_data_quality_lineage_reproducibility_detailed_design.md`
 

@@ -23,7 +23,7 @@ No timezone found, symbol may be delisted
 pip install --upgrade yfinance
 ```
 
-**수정 파일**: [backend/requirements.txt](backend/requirements.txt)
+**수정 파일**: [backend/requirements.txt](../../backend/requirements.txt)
 ```diff
 - yfinance==0.2.32
 + yfinance>=0.2.66
@@ -31,7 +31,7 @@ pip install --upgrade yfinance
 
 ### 2. 데이터 수집 로직 개선
 
-**수정 파일**: [backend/app/data_collector.py](backend/app/data_collector.py)
+**수정 파일**: [backend/app/data_collector.py](../../backend/app/data_collector.py)
 
 #### 변경 사항:
 - `history(start=datetime, end=datetime)` → `history(period="1y")` 사용
@@ -58,7 +58,7 @@ if current_price is None:
 
 ### 3. 데이터 로더 서비스 수정
 
-**수정 파일**: [backend/app/services/data_loader.py](backend/app/services/data_loader.py)
+**수정 파일**: [backend/app/services/data_loader.py](../../backend/app/services/data_loader.py)
 
 채권 및 예적금 로딩 함수에서 반환값에 `"updated"` 키 추가:
 ```python
@@ -213,8 +213,8 @@ DELETE FROM deposit_products;
 
 ## 관련 문서
 
-- [20251219_data_collection_guide.md](20251219_data_collection_guide.md) - 전체 데이터 수집 가이드
-- [20251219_admin_troubleshooting.md](20251219_admin_troubleshooting.md) - 관리자 페이지 트러블슈팅
+- [20251219_data_collection_guide.md](data_collection_guide.md) - 전체 데이터 수집 가이드
+- [20251219_admin_troubleshooting.md](admin_troubleshooting.md) - 관리자 페이지 트러블슈팅
 - [yfinance 공식 문서](https://pypi.org/project/yfinance/)
 
 ## 완료 상태

@@ -67,4 +67,4 @@
 
 ## 8. 연계 문서
 - `docs/phase3/20260118_phase3d_design_kickoff.md`
-- `docs/reports/foresto_compass_u3_verification_report_20260119.md`
+- `docs/reports/foresto_compass_u3_verification_report.md`

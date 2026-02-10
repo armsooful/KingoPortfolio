@@ -1,7 +1,7 @@
 # bonds ← bond_basic_info 통합 구현 및 테스트 결과
 
 **작성일:** 2026-02-05
-**관련 설계 문서:** `docs/manuals/20260205_table_consolidation_design.md` (Phase A)
+**관련 설계 문서:** `docs/manuals/table_consolidation_design.md` (Phase A)
 **대상 DB:** PostgreSQL `kingo.public`
 
 ---

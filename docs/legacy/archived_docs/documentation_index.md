@@ -8,6 +8,17 @@
 
 ---
 
+## 🆕 최신 문서 경로 안내 (이전됨)
+
+이 문서는 레거시 아카이브 인덱스입니다. 아래 문서는 최신 경로로 이동되었습니다.
+
+- [PRD.md](../../PRD.md)  
+- [PHASE2_IMPLEMENTATION_SUMMARY.md](../../phase2/PHASE2_IMPLEMENTATION_SUMMARY.md)  
+- [admin_data_page_api_map.md](../../development/admin_data_page_api_map.md)  
+- [bond_data_integration_design.md](../../architecture/bond_data_integration_design.md)  
+
+---
+
 ## 📋 문서 목차
 
 ### 📖 1단계: 프로젝트 이해하기

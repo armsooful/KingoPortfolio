@@ -55,17 +55,17 @@
 
 ### 백엔드 (3개 파일)
 
-1. **[backend/app/progress_tracker.py](backend/app/progress_tracker.py)** (NEW)
+1. **[backend/app/progress_tracker.py](../../backend/app/progress_tracker.py)** (NEW)
    - 진행 상황 추적 클래스
    - 스레드 안전한 상태 관리
    - 전역 인스턴스 제공
 
-2. **[backend/app/services/data_loader.py](backend/app/services/data_loader.py)** (MODIFIED)
+2. **[backend/app/services/data_loader.py](../../backend/app/services/data_loader.py)** (MODIFIED)
    - `load_korean_stocks()` 함수에 `task_id` 파라미터 추가
    - 진행 상황 추적 코드 추가
    - 각 종목 처리 시 진행률 업데이트
 
-3. **[backend/app/routes/admin.py](backend/app/routes/admin.py)** (MODIFIED)
+3. **[backend/app/routes/admin.py](../../backend/app/routes/admin.py)** (MODIFIED)
    - `GET /admin/progress/{task_id}` - 특정 작업 진행 상황
    - `GET /admin/progress` - 모든 작업 진행 상황
    - `DELETE /admin/progress/{task_id}` - 진행 상황 제거
@@ -73,16 +73,16 @@
 
 ### 프론트엔드 (3개 파일)
 
-1. **[frontend/src/components/ProgressBar.jsx](frontend/src/components/ProgressBar.jsx)** (NEW)
+1. **[frontend/src/components/ProgressBar.jsx](../../frontend/src/components/ProgressBar.jsx)** (NEW)
    - 진행률 표시 컴포넌트
    - 1초마다 자동 폴링
    - 완료 시 콜백 호출
 
-2. **[frontend/src/services/api.js](frontend/src/services/api.js)** (MODIFIED)
+2. **[frontend/src/services/api.js](../../frontend/src/services/api.js)** (MODIFIED)
    - `getProgress(taskId)` - 진행 상황 조회
    - `getAllProgress()` - 모든 진행 상황 조회
 
-3. **[frontend/src/pages/AdminPage.jsx](frontend/src/pages/AdminPage.jsx)** (MODIFIED)
+3. **[frontend/src/pages/AdminPage.jsx](../../frontend/src/pages/AdminPage.jsx)** (MODIFIED)
    - `currentTaskId` 상태 추가
    - ProgressBar 컴포넌트 통합
    - 완료 후 데이터 현황 새로고침
@@ -346,9 +346,9 @@ curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8000/admin/progress
 
 ## 📚 관련 문서
 
-- [20251219_data_collection_guide.md](20251219_data_collection_guide.md) - 데이터 수집 전체 가이드
-- [20251219_admin_troubleshooting.md](20251219_admin_troubleshooting.md) - 관리자 페이지 문제 해결
-- [20251220_quick_start.md](20251220_quick_start.md) - 빠른 시작 가이드
+- [20251219_data_collection_guide.md](data_collection_guide.md) - 데이터 수집 전체 가이드
+- [20251219_admin_troubleshooting.md](admin_troubleshooting.md) - 관리자 페이지 문제 해결
+- [20251220_quick_start.md](quick_start.md) - 빠른 시작 가이드
 
 ---
 

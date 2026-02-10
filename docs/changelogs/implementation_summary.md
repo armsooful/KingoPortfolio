@@ -77,7 +77,7 @@
 
 ## 면책 문구 및 용어 표준화
 
-> 상세 내역: [`DISCLAIMER_AND_TERMINOLOGY_SUMMARY.md`](DISCLAIMER_AND_TERMINOLOGY_SUMMARY.md)
+> 상세 내역: [`DISCLAIMER_AND_TERMINOLOGY_SUMMARY.md`](../compliance/disclaimer_terminology_summary.md)
 
 ### 구현 내용
 
@@ -109,7 +109,7 @@
 - 교육/연구 목적 표시
 
 #### 4. 용어 표준화
-**문서**: [`TERMINOLOGY_GUIDE.md`](TERMINOLOGY_GUIDE.md)
+**문서**: [`TERMINOLOGY_GUIDE.md`](../compliance/terminology_guide.md)
 
 **주요 표준화**:
 - ✅ "투자 성향" (기존: "투자성향")
@@ -136,7 +136,7 @@
 
 ## PDF 리포트 자동 생성
 
-> 상세 내역: [`PDF_REPORT_IMPLEMENTATION_SUMMARY.md`](PDF_REPORT_IMPLEMENTATION_SUMMARY.md)
+> 상세 내역: [`PDF_REPORT_IMPLEMENTATION_SUMMARY.md`](./pdf_report_implementation.md)
 
 ### 구현 내용
 

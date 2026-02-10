@@ -50,9 +50,9 @@
 ---
 
 ## 참고 문서
-- `docs/phase3/20260118_20260118_c1_c3_go_live_checklist.md`
-- `docs/phase3/20260118_20260118_c4_validation_checklist.md`
-- `docs/phase3/20260118_20260118_c6_release_management_design.md`
+- `docs/phase3/c1_c3_go_live_checklist.md`
+- `docs/phase3/c4_validation_checklist.md`
+- `docs/phase3/c6_release_management_design.md`
 - `docs/phase3/20260118_u1_u2_ops_stabilization_plan.md`
 - `docs/phase3/20260118_u3_detailed_design.md`
 

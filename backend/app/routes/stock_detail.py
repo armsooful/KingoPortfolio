@@ -7,7 +7,8 @@ from typing import List, Optional
 from datetime import datetime, timedelta
 
 from app.database import get_db
-from app.models.securities import Stock, KrxTimeSeries
+from app.models.securities import Stock
+from app.models.real_data import StockPriceDaily
 from app.auth import get_current_user, require_admin
 from app.models.user import User
 from app.exceptions import StockNotFoundError
@@ -25,7 +26,7 @@ def get_stock_detail(
     """
     종목 상세 정보 조회
     - 기본 정보 (stocks 테이블)
-    - 시계열 데이터 (krx_timeseries 테이블, 최근 N일)
+    - 시계열 데이터 (stock_price_daily 테이블, 최근 N일)
     - 재무 지표 (stocks 테이블)
     """
 
@@ -39,16 +40,16 @@ def get_stock_detail(
     end_date = datetime.now().date()
     start_date = end_date - timedelta(days=days)
 
-    timeseries = db.query(KrxTimeSeries).filter(
-        KrxTimeSeries.ticker == ticker,
-        KrxTimeSeries.date >= start_date,
-        KrxTimeSeries.date <= end_date
-    ).order_by(KrxTimeSeries.date).all()
+    timeseries = db.query(StockPriceDaily).filter(
+        StockPriceDaily.ticker == ticker,
+        StockPriceDaily.trade_date >= start_date,
+        StockPriceDaily.trade_date <= end_date
+    ).order_by(StockPriceDaily.trade_date).all()
 
     # 3. 통계 계산
     stats = None
     if timeseries:
-        closes = [ts.close for ts in timeseries]
+        closes = [float(ts.close_price) for ts in timeseries]
         volumes = [ts.volume for ts in timeseries]
 
         first_close = closes[0]
@@ -58,8 +59,8 @@ def get_stock_detail(
         stats = {
             "period_days": len(timeseries),
             "period_return": round(period_return, 2),
-            "high": max([ts.high for ts in timeseries]),
-            "low": min([ts.low for ts in timeseries]),
+            "high": float(max([ts.high_price for ts in timeseries])),
+            "low": float(min([ts.low_price for ts in timeseries])),
             "avg_close": round(sum(closes) / len(closes), 2),
             "avg_volume": int(sum(volumes) / len(volumes)),
             "total_volume": sum(volumes)
@@ -90,11 +91,11 @@ def get_stock_detail(
             "data_count": len(timeseries),
             "data": [
                 {
-                    "date": ts.date.isoformat(),
-                    "open": ts.open,
-                    "high": ts.high,
-                    "low": ts.low,
-                    "close": ts.close,
+                    "date": ts.trade_date.isoformat(),
+                    "open": float(ts.open_price),
+                    "high": float(ts.high_price),
+                    "low": float(ts.low_price),
+                    "close": float(ts.close_price),
                     "volume": ts.volume
                 }
                 for ts in timeseries

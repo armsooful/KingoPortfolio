@@ -174,9 +174,9 @@ ORDER BY im.ticker;
 
 ## 관련 문서
 
-- [DB 설정 가이드](./db_setup.md)
+- [DB 설정 가이드](./database_setup_guide.md)
 - [API 스냅샷](./api_snapshot_simulation.md)
-- [Phase 1 백로그](../Foresto_Phase1_작업티켓_백로그.md)
+- [Phase 1 백로그](../phase1/phase1_backlog_tickets.md)
 
 ---
 

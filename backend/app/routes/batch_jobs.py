@@ -51,7 +51,8 @@ def run_full_krx_batch_job(
     # Wrap everything to catch any errors
     try:
         from pykrx import stock as pykrx_stock
-        from app.models.securities import Stock, KrxTimeSeries
+        from app.models.securities import Stock
+        from app.models.real_data import StockPriceDaily
         from app.crud import get_or_create_stock
         from sqlalchemy import and_
 
@@ -237,22 +238,27 @@ def run_full_krx_batch_job(
                     trade_date = date_idx.date() if hasattr(date_idx, 'date') else date_idx
 
                     # 이미 존재하는지 확인
-                    existing = db.query(KrxTimeSeries).filter(
+                    existing = db.query(StockPriceDaily).filter(
                         and_(
-                            KrxTimeSeries.ticker == ticker,
-                            KrxTimeSeries.date == trade_date
+                            StockPriceDaily.ticker == ticker,
+                            StockPriceDaily.trade_date == trade_date,
+                            StockPriceDaily.source_id == 'PYKRX',
                         )
                     ).first()
 
                     if not existing:
-                        timeseries_record = KrxTimeSeries(
+                        from decimal import Decimal
+                        timeseries_record = StockPriceDaily(
                             ticker=ticker,
-                            date=trade_date,
-                            open=float(row['시가']),
-                            high=float(row['고가']),
-                            low=float(row['저가']),
-                            close=float(row['종가']),
-                            volume=int(row['거래량'])
+                            trade_date=trade_date,
+                            open_price=Decimal(str(row['시가'])),
+                            high_price=Decimal(str(row['고가'])),
+                            low_price=Decimal(str(row['저가'])),
+                            close_price=Decimal(str(row['종가'])),
+                            volume=int(row['거래량']),
+                            source_id='PYKRX',
+                            as_of_date=trade_date,
+                            quality_flag='NORMAL',
                         )
                         db.add(timeseries_record)
                         records_added += 1

@@ -14,7 +14,8 @@ from typing import Dict, List, Tuple
 from sqlalchemy.orm import Session
 
 from app.models.phase7_portfolio import Phase7Portfolio
-from app.models.securities import KrxTimeSeries, Stock
+from app.models.securities import Stock
+from app.models.real_data import StockPriceDaily
 from app.services.performance_analyzer import NAVPoint, analyze_performance
 from app.services.analytics_engine_v3 import build_extensions
 from app.services.engine_input_adapter_v3 import build_input_context
@@ -116,19 +117,19 @@ def _load_security_series(
     period_end: date,
 ) -> Dict[date, float]:
     rows = (
-        db.query(KrxTimeSeries)
+        db.query(StockPriceDaily)
         .filter(
-            KrxTimeSeries.ticker == ticker,
-            KrxTimeSeries.date >= period_start,
-            KrxTimeSeries.date <= period_end,
+            StockPriceDaily.ticker == ticker,
+            StockPriceDaily.trade_date >= period_start,
+            StockPriceDaily.trade_date <= period_end,
         )
-        .order_by(KrxTimeSeries.date.asc())
+        .order_by(StockPriceDaily.trade_date.asc())
         .all()
     )
     if not rows:
         raise Phase7EvaluationError("조회기간에 해당하는 시계열 데이터가 없습니다.")
 
-    return {row.date: row.close for row in rows}
+    return {row.trade_date: float(row.close_price) for row in rows}
 
 
 def _load_sector_series(
@@ -147,13 +148,13 @@ def _load_sector_series(
         raise Phase7EvaluationError("조회기간에 해당하는 시계열 데이터가 없습니다.")
 
     rows = (
-        db.query(KrxTimeSeries)
+        db.query(StockPriceDaily)
         .filter(
-            KrxTimeSeries.ticker.in_(tickers),
-            KrxTimeSeries.date >= period_start,
-            KrxTimeSeries.date <= period_end,
+            StockPriceDaily.ticker.in_(tickers),
+            StockPriceDaily.trade_date >= period_start,
+            StockPriceDaily.trade_date <= period_end,
         )
-        .order_by(KrxTimeSeries.date.asc())
+        .order_by(StockPriceDaily.trade_date.asc())
         .all()
     )
     if not rows:
@@ -162,8 +163,8 @@ def _load_sector_series(
     sums: Dict[date, float] = {}
     counts: Dict[date, int] = {}
     for row in rows:
-        sums[row.date] = sums.get(row.date, 0.0) + row.close
-        counts[row.date] = counts.get(row.date, 0) + 1
+        sums[row.trade_date] = sums.get(row.trade_date, 0.0) + float(row.close_price)
+        counts[row.trade_date] = counts.get(row.trade_date, 0) + 1
 
     return {day: sums[day] / counts[day] for day in sums}
 

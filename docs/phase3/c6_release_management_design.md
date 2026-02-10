@@ -123,9 +123,9 @@ Epic C-6의 목적은 서비스의 안정적 배포와 환경 일관성을 확�
 ---
 
 ## 11. 관련 문서
-- `docs/phase3/20260118_20260118_phase3c_go_live_readiness_checklist.md`
-- `docs/phase3/20260118_20260118_c1_c3_go_live_checklist.md`
-- `docs/phase3/20260118_20260118_c4_validation_checklist.md`
+- `docs/phase3/phase3c_go_live_readiness_checklist.md`
+- `docs/phase3/c1_c3_go_live_checklist.md`
+- `docs/phase3/c4_validation_checklist.md`
 
 ---
 

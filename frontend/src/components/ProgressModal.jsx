@@ -138,8 +138,8 @@ function ProgressModal({ taskId, onComplete, onClose }) {
 
   const isComplete = progress.status === 'completed' || progress.status === 'failed';
 
-  // 채권 적재(bonds)의 경우 Phase 1 없음 - Phase 2만 표시
-  const isBondTask = taskId && taskId.startsWith('bonds_');
+  // 채권/예금/적금/연금저축/주담대/전세대출 적재의 경우 Phase 1 없음 - Phase 배지 숨김
+  const isBondTask = taskId && (taskId.startsWith('bonds_') || taskId.startsWith('deposits_') || taskId.startsWith('savings_') || taskId.startsWith('annuity_') || taskId.startsWith('mortgage_') || taskId.startsWith('rentloan_') || taskId.startsWith('creditloan_'));
 
   // Phase 판별: backend의 phase 필드 사용, 없으면 current_item 기반으로 판단
   const currentPhase = progress.phase ||
@@ -207,29 +207,31 @@ function ProgressModal({ taskId, onComplete, onClose }) {
                 style={{ width: `${percentage}%` }}
               />
             </div>
-            {/* Phase Badge */}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '15px', marginBottom: '10px' }}>
-              <span style={{
-                backgroundColor: currentPhase === 'Phase 1' ? '#4CAF50' : '#e0e0e0',
-                color: currentPhase === 'Phase 1' ? 'white' : '#666',
-                padding: '5px 15px',
-                borderRadius: '20px',
-                fontSize: '0.9rem',
-                fontWeight: 'bold'
-              }}>
-                Phase 1: 수집
-              </span>
-              <span style={{
-                backgroundColor: currentPhase === 'Phase 2' ? '#2196F3' : '#e0e0e0',
-                color: currentPhase === 'Phase 2' ? 'white' : '#666',
-                padding: '5px 15px',
-                borderRadius: '20px',
-                fontSize: '0.9rem',
-                fontWeight: 'bold'
-              }}>
-                Phase 2: 저장
-              </span>
-            </div>
+            {/* Phase Badge - 채권은 단일 단계이므로 숨김 */}
+            {!isBondTask && (
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '15px', marginBottom: '10px' }}>
+                <span style={{
+                  backgroundColor: currentPhase === 'Phase 1' ? '#4CAF50' : '#e0e0e0',
+                  color: currentPhase === 'Phase 1' ? 'white' : '#666',
+                  padding: '5px 15px',
+                  borderRadius: '20px',
+                  fontSize: '0.9rem',
+                  fontWeight: 'bold'
+                }}>
+                  Phase 1: 수집
+                </span>
+                <span style={{
+                  backgroundColor: currentPhase === 'Phase 2' ? '#2196F3' : '#e0e0e0',
+                  color: currentPhase === 'Phase 2' ? 'white' : '#666',
+                  padding: '5px 15px',
+                  borderRadius: '20px',
+                  fontSize: '0.9rem',
+                  fontWeight: 'bold'
+                }}>
+                  Phase 2: 저장
+                </span>
+              </div>
+            )}
 
             <div className="progress-details">
               <span className="detail-item success">

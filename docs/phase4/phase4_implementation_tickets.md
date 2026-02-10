@@ -29,7 +29,7 @@ Phase 4는 기능 추가가 아닌 운영 전환 단계다. 성능/SLA, 관측�
 - 목적: 실제 측정 결과 확보 및 Phase 3 검증 보고서에 Append
 - 산출물: 실행 로그, 결과 리포트, Appendix 업데이트
 - 상태: 완료
-- 참고: `docs/reports/foresto_compass_u3_verification_report_20260119.md`
+- 참고: `docs/reports/foresto_compass_u3_verification_report.md`
 - 완료 기준:
   - SLA Pass/Fail 판정 완료
   - 재현 가능한 실행 기록 확보

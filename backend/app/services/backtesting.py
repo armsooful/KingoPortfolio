@@ -11,7 +11,8 @@ from sqlalchemy import and_
 import math
 
 from app.models.alpha_vantage import AlphaVantageTimeSeries
-from app.models.securities import Stock, ETF, KrxTimeSeries
+from app.models.securities import Stock, ETF
+from app.models.real_data import StockPriceDaily
 
 
 class BacktestingEngine:
@@ -225,30 +226,30 @@ class BacktestingEngine:
             if nearest_data:
                 return nearest_data.adjusted_close or nearest_data.close
 
-        # 2. 한국 주식/ETF: KrxTimeSeries에서 조회
+        # 2. 한국 주식/ETF: StockPriceDaily에서 조회
         # 한국 종목의 경우 ticker가 6자리 숫자 (예: 005930)
         if ticker.isdigit() and len(ticker) == 6:
             # DB에서 해당 날짜의 가격 조회
-            krx_data = self.db.query(KrxTimeSeries).filter(
+            krx_data = self.db.query(StockPriceDaily).filter(
                 and_(
-                    KrxTimeSeries.ticker == ticker,
-                    KrxTimeSeries.date == query_date
+                    StockPriceDaily.ticker == ticker,
+                    StockPriceDaily.trade_date == query_date
                 )
             ).first()
 
             if krx_data:
-                return krx_data.close
+                return float(krx_data.close_price)
 
             # 정확한 날짜가 없으면 가장 가까운 과거 날짜 찾기
-            nearest_krx = self.db.query(KrxTimeSeries).filter(
+            nearest_krx = self.db.query(StockPriceDaily).filter(
                 and_(
-                    KrxTimeSeries.ticker == ticker,
-                    KrxTimeSeries.date <= query_date
+                    StockPriceDaily.ticker == ticker,
+                    StockPriceDaily.trade_date <= query_date
                 )
-            ).order_by(KrxTimeSeries.date.desc()).first()
+            ).order_by(StockPriceDaily.trade_date.desc()).first()
 
             if nearest_krx:
-                return nearest_krx.close
+                return float(nearest_krx.close_price)
 
         # 3. Fallback: 시뮬레이션 (실제 데이터 없을 경우)
         # 간단한 랜덤 워크 시뮬레이션

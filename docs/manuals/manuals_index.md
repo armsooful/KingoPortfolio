@@ -7,29 +7,29 @@
 ## 📚 목차
 
 ### 시작하기
-- [20251220_quick_start.md](20251220_quick_start.md) - 빠른 시작 가이드
+- [20251220_quick_start.md](quick_start.md) - 빠른 시작 가이드
 
 ### 핵심 기능 가이드
-- [20251219_data_collection_guide.md](20251219_data_collection_guide.md) - 데이터 수집 전체 가이드
-- [20251221_progress_monitoring_guide.md](20251221_progress_monitoring_guide.md) - 실시간 진행 상황 모니터링
-- [20251220_database_guide.md](20251220_database_guide.md) - 데이터베이스 조회 및 관리
+- [20251219_data_collection_guide.md](data_collection_guide.md) - 데이터 수집 전체 가이드
+- [20251221_progress_monitoring_guide.md](progress_monitoring_guide.md) - 실시간 진행 상황 모니터링
+- [20251220_database_guide.md](database_guide.md) - 데이터베이스 조회 및 관리
 
 ### 관리자 기능
-- [20251219_admin_troubleshooting.md](20251219_admin_troubleshooting.md) - 관리자 페이지 문제 해결
+- [20251219_admin_troubleshooting.md](admin_troubleshooting.md) - 관리자 페이지 문제 해결
 
 ### 인증 및 보안
-- [20251221_login_fix_summary.md](20251221_login_fix_summary.md) - 로그인 버그 수정 내역
-- [20251220_login_debug_guide.md](20251220_login_debug_guide.md) - 로그인 문제 디버깅
+- [20251221_login_fix_summary.md](login_fix_summary.md) - 로그인 버그 수정 내역
+- [20251220_login_debug_guide.md](login_debug_guide.md) - 로그인 문제 디버깅
 
 ### API 및 통합
-- [20251219_claude_api_setup.md](20251219_claude_api_setup.md) - Claude API 설정 가이드
+- [20251219_claude_api_setup.md](claude_api_setup.md) - Claude API 설정 가이드
 
 ### 테스트 및 검증
-- [20251219_test_guide.md](20251219_test_guide.md) - 테스트 가이드
-- [20251220_verification_guide.md](20251220_verification_guide.md) - 검증 가이드
+- [20251219_test_guide.md](test_guide.md) - 테스트 가이드
+- [20251220_verification_guide.md](verification_guide.md) - 검증 가이드
 
 ### 기술 문서
-- [20251220_yfinance_fix_summary.md](20251220_yfinance_fix_summary.md) - yfinance 라이브러리 수정 내역
+- [20251220_yfinance_fix_summary.md](yfinance_fix_summary.md) - yfinance 라이브러리 수정 내역
 
 ## 📂 문서 분류
 
@@ -61,17 +61,17 @@
 ## 📖 추천 읽기 순서
 
 ### 처음 사용하는 경우
-1. [20251220_quick_start.md](20251220_quick_start.md) - 프로젝트 시작
-2. [20251219_data_collection_guide.md](20251219_data_collection_guide.md) - 데이터 수집 방법
-3. [20251220_database_guide.md](20251220_database_guide.md) - 데이터 확인 방법
+1. [20251220_quick_start.md](quick_start.md) - 프로젝트 시작
+2. [20251219_data_collection_guide.md](data_collection_guide.md) - 데이터 수집 방법
+3. [20251220_database_guide.md](database_guide.md) - 데이터 확인 방법
 
 ### 문제가 발생한 경우
-1. [20251219_admin_troubleshooting.md](20251219_admin_troubleshooting.md) - 일반적인 문제
-2. [20251220_login_debug_guide.md](20251220_login_debug_guide.md) - 로그인 문제
+1. [20251219_admin_troubleshooting.md](admin_troubleshooting.md) - 일반적인 문제
+2. [20251220_login_debug_guide.md](login_debug_guide.md) - 로그인 문제
 
 ### 개발자인 경우
-1. [20251219_test_guide.md](20251219_test_guide.md) - 테스트 방법
-2. [20251220_verification_guide.md](20251220_verification_guide.md) - 검증 절차
+1. [20251219_test_guide.md](test_guide.md) - 테스트 방법
+2. [20251220_verification_guide.md](verification_guide.md) - 검증 절차
 3. 기술 문서들 (20251221_login_fix_summary.md, 20251220_yfinance_fix_summary.md)
 
 ## 🆕 최근 업데이트

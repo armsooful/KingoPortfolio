@@ -10,7 +10,8 @@ import logging
 
 from app.database import get_db
 from app.models import User
-from app.models.securities import Stock, ETF, KrxTimeSeries
+from app.models.securities import Stock, ETF
+from app.models.real_data import StockPriceDaily
 from app.auth import require_admin
 from pykrx import stock as krx_stock
 
@@ -56,23 +57,29 @@ async def load_stock_timeseries(
             )
 
         # DB에 저장
+        from decimal import Decimal
         records_added = 0
         for date_index, row in df.iterrows():
+            trade_date = date_index.date()
             # 중복 체크
-            existing = db.query(KrxTimeSeries).filter(
-                KrxTimeSeries.ticker == ticker,
-                KrxTimeSeries.date == date_index.date()
+            existing = db.query(StockPriceDaily).filter(
+                StockPriceDaily.ticker == ticker,
+                StockPriceDaily.trade_date == trade_date,
+                StockPriceDaily.source_id == 'PYKRX',
             ).first()
 
             if not existing:
-                timeseries = KrxTimeSeries(
+                timeseries = StockPriceDaily(
                     ticker=ticker,
-                    date=date_index.date(),
-                    open=float(row['시가']),
-                    high=float(row['고가']),
-                    low=float(row['저가']),
-                    close=float(row['종가']),
-                    volume=int(row['거래량'])
+                    trade_date=trade_date,
+                    open_price=Decimal(str(row['시가'])),
+                    high_price=Decimal(str(row['고가'])),
+                    low_price=Decimal(str(row['저가'])),
+                    close_price=Decimal(str(row['종가'])),
+                    volume=int(row['거래량']),
+                    source_id='PYKRX',
+                    as_of_date=trade_date,
+                    quality_flag='NORMAL',
                 )
                 db.add(timeseries)
                 records_added += 1
@@ -172,22 +179,28 @@ def _load_multiple_timeseries(db: Session, tickers: list, days: int):
                 logger.warning(f"No data found for {ticker}")
                 continue
 
+            from decimal import Decimal
             records_added = 0
             for date_index, row in df.iterrows():
-                existing = db.query(KrxTimeSeries).filter(
-                    KrxTimeSeries.ticker == ticker,
-                    KrxTimeSeries.date == date_index.date()
+                trade_date = date_index.date()
+                existing = db.query(StockPriceDaily).filter(
+                    StockPriceDaily.ticker == ticker,
+                    StockPriceDaily.trade_date == trade_date,
+                    StockPriceDaily.source_id == 'PYKRX',
                 ).first()
 
                 if not existing:
-                    timeseries = KrxTimeSeries(
+                    timeseries = StockPriceDaily(
                         ticker=ticker,
-                        date=date_index.date(),
-                        open=float(row['시가']),
-                        high=float(row['고가']),
-                        low=float(row['저가']),
-                        close=float(row['종가']),
-                        volume=int(row['거래량'])
+                        trade_date=trade_date,
+                        open_price=Decimal(str(row['시가'])),
+                        high_price=Decimal(str(row['고가'])),
+                        low_price=Decimal(str(row['저가'])),
+                        close_price=Decimal(str(row['종가'])),
+                        volume=int(row['거래량']),
+                        source_id='PYKRX',
+                        as_of_date=trade_date,
+                        quality_flag='NORMAL',
                     )
                     db.add(timeseries)
                     records_added += 1
@@ -209,28 +222,29 @@ async def get_timeseries_status(
     """시계열 데이터 현황 조회"""
     try:
         # 총 레코드 수
-        total_records = db.query(KrxTimeSeries).count()
+        total_records = db.query(StockPriceDaily).count()
 
         # 종목별 데이터 수
-        ticker_counts = db.execute("""
+        from sqlalchemy import text
+        ticker_counts = db.execute(text("""
             SELECT ticker, COUNT(*) as count
-            FROM krx_timeseries
+            FROM stock_price_daily
             GROUP BY ticker
             ORDER BY count DESC
             LIMIT 10
-        """).fetchall()
+        """)).fetchall()
 
         # 최신 데이터 날짜
-        latest_date = db.execute("""
-            SELECT MAX(date) as latest_date
-            FROM krx_timeseries
-        """).scalar()
+        latest_date = db.execute(text("""
+            SELECT MAX(trade_date) as latest_date
+            FROM stock_price_daily
+        """)).scalar()
 
         # 가장 오래된 데이터 날짜
-        oldest_date = db.execute("""
-            SELECT MIN(date) as oldest_date
-            FROM krx_timeseries
-        """).scalar()
+        oldest_date = db.execute(text("""
+            SELECT MIN(trade_date) as oldest_date
+            FROM stock_price_daily
+        """)).scalar()
 
         return {
             "total_records": total_records,

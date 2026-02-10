@@ -1,37 +1,48 @@
 from datetime import date
 
 from app.models.phase7_portfolio import Phase7Portfolio, Phase7PortfolioItem
-from app.models.securities import KrxTimeSeries
+from decimal import Decimal
+
+from app.models.real_data import StockPriceDaily
 
 
 def _seed_timeseries(db, ticker: str) -> None:
     rows = [
-        KrxTimeSeries(
+        StockPriceDaily(
             ticker=ticker,
-            date=date(2024, 1, 2),
-            open=100.0,
-            high=105.0,
-            low=99.0,
-            close=101.0,
+            trade_date=date(2024, 1, 2),
+            open_price=Decimal('100.00'),
+            high_price=Decimal('105.00'),
+            low_price=Decimal('99.00'),
+            close_price=Decimal('101.00'),
             volume=1000,
+            source_id='PYKRX',
+            as_of_date=date(2024, 1, 2),
+            quality_flag='NORMAL',
         ),
-        KrxTimeSeries(
+        StockPriceDaily(
             ticker=ticker,
-            date=date(2024, 1, 3),
-            open=101.0,
-            high=103.0,
-            low=100.0,
-            close=102.0,
+            trade_date=date(2024, 1, 3),
+            open_price=Decimal('101.00'),
+            high_price=Decimal('103.00'),
+            low_price=Decimal('100.00'),
+            close_price=Decimal('102.00'),
             volume=1100,
+            source_id='PYKRX',
+            as_of_date=date(2024, 1, 3),
+            quality_flag='NORMAL',
         ),
-        KrxTimeSeries(
+        StockPriceDaily(
             ticker=ticker,
-            date=date(2024, 1, 4),
-            open=102.0,
-            high=104.0,
-            low=101.0,
-            close=103.0,
+            trade_date=date(2024, 1, 4),
+            open_price=Decimal('102.00'),
+            high_price=Decimal('104.00'),
+            low_price=Decimal('101.00'),
+            close_price=Decimal('103.00'),
             volume=1200,
+            source_id='PYKRX',
+            as_of_date=date(2024, 1, 4),
+            quality_flag='NORMAL',
         ),
     ]
     db.add_all(rows)

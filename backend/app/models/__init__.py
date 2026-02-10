@@ -1,5 +1,4 @@
 from .user import User
-from .securities import KrxTimeSeries
 from .portfolio import Portfolio, PortfolioHistory, SimulationCache
 from .bookmark import Bookmark
 from .custom_portfolio import CustomPortfolio
@@ -30,12 +29,10 @@ from .real_data import (
     StockInfo, DataQualityLog,
     # Level 2
     FinancialStatement, DividendHistory, CorporateAction, InstitutionTrade, FdrStockListing,
-    # Phase 11
-    StocksDailyPrice
 )
 # app/models.py의 모델들을 직접 import하지 않고 lazy import 허용
 
-__all__ = ['User', 'KrxTimeSeries', 'Portfolio', 'PortfolioHistory', 'SimulationCache', 'Bookmark',
+__all__ = ['User', 'Portfolio', 'PortfolioHistory', 'SimulationCache', 'Bookmark',
            'UserPreset', 'UserNotificationSetting', 'UserActivityEvent', 'UserEventLog',
            'SimulationRun', 'SimulationPath', 'SimulationSummary',
            'ScenarioDefinition', 'PortfolioModel', 'PortfolioAllocation',
@@ -51,7 +48,7 @@ __all__ = ['User', 'KrxTimeSeries', 'Portfolio', 'PortfolioHistory', 'Simulation
            'DataSource', 'DataLoadBatch', 'StockPriceDaily', 'IndexPriceDaily',
            'StockInfo', 'DataQualityLog',
            'FinancialStatement', 'DividendHistory', 'CorporateAction', 'InstitutionTrade',
-           'FdrStockListing', 'StocksDailyPrice']
+           'FdrStockListing']
 # models.py에서 추가 모델 import
 import sys
 import os
@@ -68,4 +65,4 @@ if os.path.exists(models_file):
     DiagnosisAnswer = _models.DiagnosisAnswer
     SurveyQuestion = _models.SurveyQuestion
 
-    __all__ = ['User', 'KrxTimeSeries', 'Portfolio', 'PortfolioHistory', 'SimulationCache', 'Diagnosis', 'DiagnosisAnswer', 'SurveyQuestion']
+    __all__ = ['User', 'Portfolio', 'PortfolioHistory', 'SimulationCache', 'Diagnosis', 'DiagnosisAnswer', 'SurveyQuestion']

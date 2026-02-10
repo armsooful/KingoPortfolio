@@ -312,9 +312,9 @@ FATAL: password authentication failed for user "foresto"
 
 ## 관련 문서
 
-- [Phase 1 백로그](../Foresto_Phase1_작업티켓_백로그.md)
+- [Phase 1 백로그](../phase1/phase1_backlog_tickets.md)
 - [API 스냅샷](./api_snapshot_simulation.md)
-- [변경 이력](../CHANGELOG_20260115_phase0.md)
+- [변경 이력](../changelogs/changelog_phase0.md)
 
 ---
 

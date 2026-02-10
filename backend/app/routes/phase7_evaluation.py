@@ -10,7 +10,8 @@ from app.auth import get_current_user
 from app.database import get_db
 from app.models.phase7_evaluation import Phase7EvaluationRun
 from app.models.phase7_portfolio import Phase7Portfolio
-from app.models.securities import KrxTimeSeries, Stock
+from app.models.securities import Stock
+from app.models.real_data import StockPriceDaily
 from app.schemas import (
     Phase7AvailablePeriodResponse,
     Phase7EvaluationDetailResponse,
@@ -94,12 +95,12 @@ def get_available_period(
 
     ranges = (
         db.query(
-            KrxTimeSeries.ticker,
-            func.min(KrxTimeSeries.date).label("min_date"),
-            func.max(KrxTimeSeries.date).label("max_date"),
+            StockPriceDaily.ticker,
+            func.min(StockPriceDaily.trade_date).label("min_date"),
+            func.max(StockPriceDaily.trade_date).label("max_date"),
         )
-        .filter(KrxTimeSeries.ticker.in_(tickers))
-        .group_by(KrxTimeSeries.ticker)
+        .filter(StockPriceDaily.ticker.in_(tickers))
+        .group_by(StockPriceDaily.ticker)
         .all()
     )
 

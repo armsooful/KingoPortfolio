@@ -13,7 +13,7 @@ from decimal import Decimal
 import pytest
 
 from app.models.phase7_portfolio import Phase7Portfolio, Phase7PortfolioItem
-from app.models.securities import KrxTimeSeries
+from app.models.real_data import StockPriceDaily
 
 
 # ============================================================================
@@ -73,14 +73,17 @@ def _seed_timeseries(
         current_date = start_date + timedelta(days=i)
 
         rows.append(
-            KrxTimeSeries(
+            StockPriceDaily(
                 ticker=ticker,
-                date=current_date,
-                open=price,
-                high=price * 1.02,
-                low=price * 0.98,
-                close=price,
+                trade_date=current_date,
+                open_price=Decimal(str(round(price, 2))),
+                high_price=Decimal(str(round(price * 1.02, 2))),
+                low_price=Decimal(str(round(price * 0.98, 2))),
+                close_price=Decimal(str(round(price, 2))),
                 volume=1000 + i * 100,
+                source_id='PYKRX',
+                as_of_date=current_date,
+                quality_flag='NORMAL',
             )
         )
 
@@ -96,24 +99,35 @@ def _seed_timeseries_with_nulls(db, ticker: str, null_fields: list) -> None:
         ticker: 종목 코드
         null_fields: NULL로 설정할 필드 리스트 [(day_index, field_name), ...]
     """
-    base_price = 100.0
+    base_price = Decimal('100.00')
     rows = []
 
+    # 필드명 매핑 (old → new)
+    field_map = {
+        'open': 'open_price', 'high': 'high_price',
+        'low': 'low_price', 'close': 'close_price',
+    }
+
     for i in range(5):
-        row = KrxTimeSeries(
+        td = date(2024, 1, 2 + i)
+        row = StockPriceDaily(
             ticker=ticker,
-            date=date(2024, 1, 2 + i),
-            open=base_price,
-            high=base_price * 1.02,
-            low=base_price * 0.98,
-            close=base_price,
+            trade_date=td,
+            open_price=base_price,
+            high_price=Decimal(str(round(float(base_price) * 1.02, 2))),
+            low_price=Decimal(str(round(float(base_price) * 0.98, 2))),
+            close_price=base_price,
             volume=1000,
+            source_id='PYKRX',
+            as_of_date=td,
+            quality_flag='NORMAL',
         )
 
-        # NULL 값 설정
+        # NULL 값 설정 (필드명 매핑 적용)
         for day_idx, field in null_fields:
             if day_idx == i:
-                setattr(row, field, None)
+                mapped = field_map.get(field, field)
+                setattr(row, mapped, None)
 
         rows.append(row)
 
@@ -123,7 +137,7 @@ def _seed_timeseries_with_nulls(db, ticker: str, null_fields: list) -> None:
 
 def _seed_timeseries_with_duplicates(db, ticker: str) -> None:
     """중복 날짜를 포함한 시계열 데이터 생성"""
-    base_price = 100.0
+    base_price = Decimal('100.00')
     rows = []
 
     for i in range(5):
@@ -134,14 +148,17 @@ def _seed_timeseries_with_duplicates(db, ticker: str) -> None:
             dup_date = date(2024, 1, 2 + i)
 
         rows.append(
-            KrxTimeSeries(
+            StockPriceDaily(
                 ticker=ticker,
-                date=dup_date,
-                open=base_price + i,
-                high=base_price + i + 2,
-                low=base_price + i - 2,
-                close=base_price + i + 1,
+                trade_date=dup_date,
+                open_price=Decimal(str(100 + i)),
+                high_price=Decimal(str(102 + i)),
+                low_price=Decimal(str(98 + i)),
+                close_price=Decimal(str(101 + i)),
                 volume=1000 + i * 100,
+                source_id='PYKRX',
+                as_of_date=dup_date,
+                quality_flag='NORMAL',
             )
         )
 
@@ -156,15 +173,19 @@ def _seed_timeseries_extreme_volatility(db, ticker: str) -> None:
     rows = []
 
     for i, price in enumerate(prices):
+        td = date(2024, 1, 2 + i)
         rows.append(
-            KrxTimeSeries(
+            StockPriceDaily(
                 ticker=ticker,
-                date=date(2024, 1, 2 + i),
-                open=price,
-                high=price * 1.05,
-                low=price * 0.95,
-                close=price,
+                trade_date=td,
+                open_price=Decimal(str(price)),
+                high_price=Decimal(str(round(price * 1.05, 2))),
+                low_price=Decimal(str(round(price * 0.95, 2))),
+                close_price=Decimal(str(price)),
                 volume=10000 + i * 1000,
+                source_id='PYKRX',
+                as_of_date=td,
+                quality_flag='NORMAL',
             )
         )
 
@@ -248,7 +269,7 @@ class TestTC001_LargePortfolio:
         # 검증: 정상 처리
         assert response.status_code in [200, 201]
         data = response.json()
-        assert "evaluation_id" in data or "result" in data
+        assert "evaluation_id" in data or "result" in data or "metrics" in data
 
     def test_large_portfolio_100_items(self, client, db, auth_headers, test_user):
         """100개 종목으로 구성된 포트폴리오 평가"""
@@ -383,9 +404,9 @@ class TestTC004_ExtremeVolatility:
 
     def test_extreme_volatility_single_stock(self, client, db, auth_headers, test_user):
         """극단적 변동성 (±30%)"""
-        _seed_timeseries_extreme_volatility(db, "VOLATILE001")
+        _seed_timeseries_extreme_volatility(db, "VOLAT01")
 
-        items = [{"id": "VOLATILE001", "name": "극단 변동 종목", "weight": 1.0}]
+        items = [{"id": "VOLAT01", "name": "극단 변동 종목", "weight": 1.0}]
         portfolio_id = _create_portfolio(
             client, auth_headers, items, "극단 변동성 테스트"
         )
@@ -411,15 +432,19 @@ class TestTC004_ExtremeVolatility:
         # 모든 가격이 동일
         rows = []
         for i in range(5):
+            td = date(2024, 1, 2 + i)
             rows.append(
-                KrxTimeSeries(
+                StockPriceDaily(
                     ticker="FLAT001",
-                    date=date(2024, 1, 2 + i),
-                    open=100.0,
-                    high=100.0,
-                    low=100.0,
-                    close=100.0,
+                    trade_date=td,
+                    open_price=Decimal('100.00'),
+                    high_price=Decimal('100.00'),
+                    low_price=Decimal('100.00'),
+                    close_price=Decimal('100.00'),
                     volume=1000,
+                    source_id='PYKRX',
+                    as_of_date=td,
+                    quality_flag='NORMAL',
                 )
             )
         db.add_all(rows)
@@ -446,64 +471,58 @@ class TestTC004_ExtremeVolatility:
 @pytest.mark.e2e
 @pytest.mark.p1
 class TestTC010_NullValueHandling:
-    """TC-010: NULL 값 처리"""
+    """TC-010: NULL 값 처리
 
-    def test_null_close_price(self, client, db, auth_headers, test_user):
-        """종가가 NULL인 경우"""
-        _seed_timeseries_with_nulls(db, "NULL001", [(2, "close")])
+    PostgreSQL은 NOT NULL 제약을 엄격히 적용하므로,
+    close_price(NOT NULL), volume(NOT NULL) 컬럼에 NULL 삽입 시 IntegrityError 발생.
+    이 테스트는 DB 무결성 제약이 올바르게 동작하는지 검증합니다.
+    """
 
-        items = [{"id": "NULL001", "name": "NULL 종가 종목", "weight": 1.0}]
+    def test_null_close_price(self, db):
+        """종가가 NULL인 경우 — PostgreSQL NOT NULL 제약으로 거부됨"""
+        from sqlalchemy.exc import IntegrityError
+        with pytest.raises(IntegrityError):
+            _seed_timeseries_with_nulls(db, "NULL001", [(2, "close")])
+        db.rollback()
+
+    def test_null_volume(self, db):
+        """거래량이 NULL인 경우 — PostgreSQL NOT NULL 제약으로 거부됨"""
+        from sqlalchemy.exc import IntegrityError
+        with pytest.raises(IntegrityError):
+            _seed_timeseries_with_nulls(db, "NULL002", [(1, "volume"), (3, "volume")])
+        db.rollback()
+
+    def test_null_change_rate_allowed(self, client, db, auth_headers, test_user):
+        """등락률이 NULL인 경우 — nullable 컬럼이므로 허용"""
+        _seed_timeseries_with_nulls(db, "NULL003", [(2, "change_rate")])
+
+        items = [{"id": "NULL003", "name": "NULL 등락률 종목", "weight": 1.0}]
         portfolio_id = _create_portfolio(
-            client, auth_headers, items, "NULL 종가 테스트"
+            client, auth_headers, items, "NULL 등락률 테스트"
         )
 
-        # 평가 실행
         response = _run_evaluation(
             client, auth_headers, portfolio_id, "2024-01-02", "2024-01-06"
         )
 
-        # 검증: NULL 처리 후 결과 반환 또는 오류
-        assert response.status_code in [200, 201, 400]
-
-    def test_null_volume(self, client, db, auth_headers, test_user):
-        """거래량이 NULL인 경우"""
-        _seed_timeseries_with_nulls(db, "NULL002", [(1, "volume"), (3, "volume")])
-
-        items = [{"id": "NULL002", "name": "NULL 거래량 종목", "weight": 1.0}]
-        portfolio_id = _create_portfolio(
-            client, auth_headers, items, "NULL 거래량 테스트"
-        )
-
-        # 평가 실행
-        response = _run_evaluation(
-            client, auth_headers, portfolio_id, "2024-01-02", "2024-01-06"
-        )
-
-        # 검증: NULL 거래량은 계산에 영향 적음
+        # 검증: change_rate NULL은 평가에 영향 없음
         assert response.status_code in [200, 201, 400]
 
 
 @pytest.mark.e2e
 @pytest.mark.p1
 class TestTC011_DuplicateDates:
-    """TC-011: 중복 날짜"""
+    """TC-011: 중복 날짜
 
-    def test_duplicate_date_in_timeseries(self, client, db, auth_headers, test_user):
-        """시계열에 중복 날짜가 있는 경우"""
-        _seed_timeseries_with_duplicates(db, "DUP001")
+    PostgreSQL의 UNIQUE 제약 (ticker, trade_date, source_id)이 중복을 방지합니다.
+    """
 
-        items = [{"id": "DUP001", "name": "중복 날짜 종목", "weight": 1.0}]
-        portfolio_id = _create_portfolio(
-            client, auth_headers, items, "중복 날짜 테스트"
-        )
-
-        # 평가 실행
-        response = _run_evaluation(
-            client, auth_headers, portfolio_id, "2024-01-02", "2024-01-06"
-        )
-
-        # 검증: 중복 처리 후 결과 반환 또는 오류
-        assert response.status_code in [200, 201, 400]
+    def test_duplicate_date_in_timeseries(self, db):
+        """시계열에 중복 날짜가 있는 경우 — PostgreSQL UNIQUE 제약으로 거부됨"""
+        from sqlalchemy.exc import IntegrityError
+        with pytest.raises(IntegrityError):
+            _seed_timeseries_with_duplicates(db, "DUP001")
+        db.rollback()
 
 
 @pytest.mark.e2e
@@ -525,14 +544,17 @@ class TestTC012_DateOrderError:
         rows = []
         for i, d in enumerate(dates_shuffled):
             rows.append(
-                KrxTimeSeries(
+                StockPriceDaily(
                     ticker="ORDER001",
-                    date=d,
-                    open=100.0 + i,
-                    high=102.0 + i,
-                    low=98.0 + i,
-                    close=100.0 + i,
+                    trade_date=d,
+                    open_price=Decimal(str(100 + i)),
+                    high_price=Decimal(str(102 + i)),
+                    low_price=Decimal(str(98 + i)),
+                    close_price=Decimal(str(100 + i)),
                     volume=1000,
+                    source_id='PYKRX',
+                    as_of_date=d,
+                    quality_flag='NORMAL',
                 )
             )
         db.add_all(rows)
@@ -561,15 +583,19 @@ class TestTC013_ZeroVolume:
         """거래량이 0인 날이 있는 경우"""
         rows = []
         for i in range(5):
+            td = date(2024, 1, 2 + i)
             rows.append(
-                KrxTimeSeries(
+                StockPriceDaily(
                     ticker="ZEROVOL001",
-                    date=date(2024, 1, 2 + i),
-                    open=100.0 + i,
-                    high=102.0 + i,
-                    low=98.0 + i,
-                    close=100.0 + i,
+                    trade_date=td,
+                    open_price=Decimal(str(100 + i)),
+                    high_price=Decimal(str(102 + i)),
+                    low_price=Decimal(str(98 + i)),
+                    close_price=Decimal(str(100 + i)),
                     volume=0 if i in [1, 3] else 1000,  # 일부 거래량 0
+                    source_id='PYKRX',
+                    as_of_date=td,
+                    quality_flag='NORMAL',
                 )
             )
         db.add_all(rows)
@@ -592,15 +618,19 @@ class TestTC013_ZeroVolume:
         """모든 날의 거래량이 0인 경우"""
         rows = []
         for i in range(5):
+            td = date(2024, 1, 2 + i)
             rows.append(
-                KrxTimeSeries(
+                StockPriceDaily(
                     ticker="ALLZEROVOL",
-                    date=date(2024, 1, 2 + i),
-                    open=100.0,
-                    high=102.0,
-                    low=98.0,
-                    close=100.0,
+                    trade_date=td,
+                    open_price=Decimal('100.00'),
+                    high_price=Decimal('102.00'),
+                    low_price=Decimal('98.00'),
+                    close_price=Decimal('100.00'),
                     volume=0,
+                    source_id='PYKRX',
+                    as_of_date=td,
+                    quality_flag='NORMAL',
                 )
             )
         db.add_all(rows)

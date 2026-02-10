@@ -45,7 +45,7 @@ OAuth2 표준은 `username` 필드를 사용하지만, 우리 앱은 이메일�
 
 ## 수정 내용
 
-### [frontend/src/services/api.js](frontend/src/services/api.js#L56)
+### [frontend/src/services/api.js](../../frontend/src/services/api.js#L56)
 
 **Before**:
 ```javascript
@@ -242,8 +242,8 @@ async def signup(user_create: UserCreate, db: Session = Depends(get_db)):
 
 ## 관련 문서
 
-- [20251220_login_debug_guide.md](20251220_login_debug_guide.md) - 로그인 디버깅 가이드
-- [20251220_quick_start.md](20251220_quick_start.md) - 빠른 시작 가이드
+- [20251220_login_debug_guide.md](login_debug_guide.md) - 로그인 디버깅 가이드
+- [20251220_quick_start.md](quick_start.md) - 빠른 시작 가이드
 
 ---
 

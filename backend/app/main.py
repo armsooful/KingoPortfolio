@@ -17,7 +17,7 @@ load_dotenv()
 
 from app.config import settings
 from app.database import engine, Base, get_db
-from app.routes import auth, diagnosis, admin, admin_batch, admin_lineage, admin_data_quality, admin_data_load, market, backtesting, krx_timeseries, admin_portfolio, batch_jobs, stock_detail, portfolio_comparison, pdf_report, scenarios, analysis, performance_internal, performance_public, admin_controls, bookmarks, user_settings, event_log, phase7_portfolios, phase7_evaluation, phase7_comparison, securities, consents, admin_consents
+from app.routes import auth, diagnosis, admin, admin_batch, admin_lineage, admin_data_quality, admin_data_load, market, backtesting, admin_portfolio, batch_jobs, stock_detail, portfolio_comparison, pdf_report, scenarios, analysis, performance_internal, performance_public, admin_controls, bookmarks, user_settings, event_log, phase7_portfolios, phase7_evaluation, phase7_comparison, securities, consents, admin_consents, krx_timeseries
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.error_handlers import setup_exception_handlers
@@ -256,7 +256,6 @@ app.include_router(admin_data_quality.router)
 app.include_router(admin_data_load.router)
 app.include_router(market.router)
 app.include_router(backtesting.router)
-app.include_router(krx_timeseries.router)
 app.include_router(admin_portfolio.router)
 app.include_router(batch_jobs.router)
 app.include_router(stock_detail.router)
@@ -276,6 +275,7 @@ app.include_router(phase7_comparison.router)
 app.include_router(consents.router)
 app.include_router(securities.router)
 app.include_router(admin_consents.router)
+app.include_router(krx_timeseries.router)
 from app.routes import portfolio_public
 app.include_router(portfolio_public.router)
 

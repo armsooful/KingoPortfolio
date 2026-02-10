@@ -182,7 +182,7 @@ Total: 17 tests, all passing ✅
 ### New Files (2)
 - `backend/tests/unit/test_pykrx_batch.py` (280 lines)
   - Comprehensive unit and integration tests
-- `docs/manuals/20260206_batch_upsert_optimization.md` (350 lines)
+- `docs/manuals/batch_upsert_optimization.md` (350 lines)
   - Complete implementation documentation
 
 ### Unchanged Files
@@ -265,9 +265,9 @@ result = self.load_daily_prices(db_local, ticker, start_date, end_date, name)
 
 ## Documentation References
 
-- **Implementation Details**: `docs/manuals/20260206_batch_upsert_optimization.md`
-- **Performance Analysis**: `docs/manuals/20260206_batch_upsert_optimization.md#performance-results`
-- **Testing Strategy**: `docs/manuals/20260206_batch_upsert_optimization.md#testing`
+- **Implementation Details**: `docs/manuals/batch_upsert_optimization.md`
+- **Performance Analysis**: `docs/manuals/batch_upsert_optimization.md#performance-results`
+- **Testing Strategy**: `docs/manuals/batch_upsert_optimization.md#testing`
 - **Code Comments**: See docstrings in `load_daily_prices_batch()` method
 
 ---
@@ -281,7 +281,7 @@ backend/
 ├── tests/unit/
 │   └── test_pykrx_batch.py      # 10 new tests
 └── docs/manuals/
-    └── 20260206_batch_upsert_optimization.md  # Full documentation
+    └── batch_upsert_optimization.md  # Full documentation
 ```
 
 ---

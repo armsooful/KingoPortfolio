@@ -7,7 +7,7 @@ from unittest.mock import patch, MagicMock
 import pandas as pd
 
 from app.services.pykrx_loader import PyKrxDataLoader
-from app.models.real_data import StocksDailyPrice
+from app.models.real_data import StockPriceDaily
 
 
 @pytest.mark.unit
@@ -78,8 +78,8 @@ class TestPyKrxBatchLoading:
             assert result1['inserted'] == 5
 
             # DB에 저장된 레코드 수 확인
-            count_after_first = db.query(StocksDailyPrice).filter(
-                StocksDailyPrice.code == '005930'
+            count_after_first = db.query(StockPriceDaily).filter(
+                StockPriceDaily.ticker == '005930'
             ).count()
             assert count_after_first == 5
 
@@ -92,8 +92,8 @@ class TestPyKrxBatchLoading:
             assert result2['inserted'] == 5
 
             # DB에 저장된 레코드 수 확인 (증가하지 않아야 함)
-            count_after_second = db.query(StocksDailyPrice).filter(
-                StocksDailyPrice.code == '005930'
+            count_after_second = db.query(StockPriceDaily).filter(
+                StockPriceDaily.ticker == '005930'
             ).count()
             assert count_after_second == 5  # 중복 없이 유지
 
@@ -122,20 +122,22 @@ class TestPyKrxBatchLoading:
         assert result['inserted'] == 1000
 
         # DB에 저장된 레코드 수 확인
-        count = db.query(StocksDailyPrice).filter(
-            StocksDailyPrice.code == '999999'
+        count = db.query(StockPriceDaily).filter(
+            StockPriceDaily.ticker == '999999'
         ).count()
         assert count == 1000
 
     def test_load_daily_prices_batch_with_null_values(self, db, loader):
-        """배치 모드 NULL 값 처리"""
+        """배치 모드 NULL 값 처리 (CheckConstraint 준수 데이터)"""
+        # PostgreSQL CheckConstraint: close > 0, volume >= 0, high >= low
+        # NULL → Decimal('0') 변환 시 제약 위반하지 않도록 constrained 컬럼은 정상값 유지
         data_with_nulls = pd.DataFrame({
-            '시가': [100.0, None, 102.0, 103.0, 104.0],
-            '고가': [105.0, 106.0, None, 108.0, 109.0],
-            '저가': [95.0, 96.0, 97.0, None, 99.0],
-            '종가': [102.0, 103.0, 104.0, 105.0, None],
-            '거래량': [1000000, None, 1200000, 1300000, 1400000],
-            '등락률': [0.5, 1.0, None, 2.0, 2.5]
+            '시가': [100.0, None, 102.0, 103.0, 104.0],       # open: NULL→0 (제약 없음)
+            '고가': [105.0, 106.0, 107.0, 108.0, 109.0],      # high: 제약 high>=low
+            '저가': [95.0, 96.0, 97.0, 98.0, 99.0],           # low: 제약 high>=low
+            '종가': [102.0, 103.0, 104.0, 105.0, 106.0],      # close: 제약 close>0
+            '거래량': [1000000, None, 1200000, 1300000, 1400000],  # volume: NULL→0 (>=0 OK)
+            '등락률': [0.5, 1.0, None, 2.0, 2.5]              # change_rate: NULL→None
         }, index=pd.date_range('2025-01-01', periods=5, freq='D'))
 
         with patch('app.services.pykrx_loader.stock.get_market_ticker_name') as mock_name, \
@@ -150,17 +152,19 @@ class TestPyKrxBatchLoading:
         assert result['success'] is True
         assert result['inserted'] == 5
 
-        # DB에서 NULL 값이 제대로 저장되었는지 확인
-        records = db.query(StocksDailyPrice).filter(
-            StocksDailyPrice.code == '999999'
-        ).all()
+        # DB에서 NULL 변환 값 확인
+        records = db.query(StockPriceDaily).filter(
+            StockPriceDaily.ticker == '999999'
+        ).order_by(StockPriceDaily.trade_date).all()
 
         assert len(records) == 5
 
-        # 일부 NULL 값 확인
-        assert records[1].high_price == Decimal('106.0')  # high_price는 값 있음
-        assert records[1].open_price is None  # open_price는 NULL
-        assert records[2].high_price is None  # high_price는 NULL
+        # NULL → Decimal('0') 변환 확인
+        assert records[1].open_price == Decimal('0')   # 시가 NULL → 0
+        assert records[1].volume == 0                   # 거래량 NULL → 0
+        assert records[1].high_price == Decimal('106.0')  # 정상값 유지
+        # change_rate NULL → None 확인
+        assert records[2].change_rate is None
 
     def test_load_daily_prices_batch_exception_handling(self, db, loader):
         """배치 모드 예외 처리"""
@@ -191,14 +195,14 @@ class TestPyKrxBatchLoading:
         assert result['success'] is True
 
         # DB에서 저장된 데이터 확인
-        records = db.query(StocksDailyPrice).filter(
-            StocksDailyPrice.code == '005930'
-        ).order_by(StocksDailyPrice.date).all()
+        records = db.query(StockPriceDaily).filter(
+            StockPriceDaily.ticker == '005930'
+        ).order_by(StockPriceDaily.trade_date).all()
 
         assert len(records) == 5
         # 첫 번째 레코드 확인
-        assert records[0].code == '005930'
-        assert records[0].date == date(2025, 1, 1)
+        assert records[0].ticker == '005930'
+        assert records[0].trade_date == date(2025, 1, 1)
         assert records[0].open_price == Decimal('100.0')
         assert records[0].close_price == Decimal('102.0')
         assert records[0].volume == 1000000
@@ -258,8 +262,8 @@ class TestPyKrxBatchIntegration:
         assert result2['inserted'] == 5
 
         # DB에서 실제 데이터 확인
-        count = db.query(StocksDailyPrice).filter(
-            StocksDailyPrice.code.in_(['005930', '000660'])
+        count = db.query(StockPriceDaily).filter(
+            StockPriceDaily.ticker.in_(['005930', '000660'])
         ).count()
         assert count == 10
 
@@ -291,14 +295,14 @@ class TestPyKrxBatchIntegration:
         assert result['success'] is True
 
         # DB에서 데이터 검증
-        records = db.query(StocksDailyPrice).filter(
-            StocksDailyPrice.code == '005930'
-        ).order_by(StocksDailyPrice.date).all()
+        records = db.query(StockPriceDaily).filter(
+            StockPriceDaily.ticker == '005930'
+        ).order_by(StockPriceDaily.trade_date).all()
 
         assert len(records) == 5
 
         # 각 레코드의 값 확인
         for i, record in enumerate(records):
-            assert record.code == '005930'
+            assert record.ticker == '005930'
             assert record.open_price == Decimal(str(open_prices[i]))
             assert record.volume == 1000000 + (i * 100000)

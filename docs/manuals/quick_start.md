@@ -165,10 +165,10 @@ finally:
 
 ## 📚 자세한 문서
 
-- **[20251220_yfinance_fix_summary.md](20251220_yfinance_fix_summary.md)**: yfinance 오류 수정 내역
-- **[20251220_verification_guide.md](20251220_verification_guide.md)**: 상세 검증 가이드
-- **[20251219_data_collection_guide.md](20251219_data_collection_guide.md)**: 데이터 수집 전체 가이드
-- **[20251219_admin_troubleshooting.md](20251219_admin_troubleshooting.md)**: 관리자 페이지 트러블슈팅
+- **[20251220_yfinance_fix_summary.md](yfinance_fix_summary.md)**: yfinance 오류 수정 내역
+- **[20251220_verification_guide.md](verification_guide.md)**: 상세 검증 가이드
+- **[20251219_data_collection_guide.md](data_collection_guide.md)**: 데이터 수집 전체 가이드
+- **[20251219_admin_troubleshooting.md](admin_troubleshooting.md)**: 관리자 페이지 트러블슈팅
 
 ## 🎉 완료!
 

@@ -182,13 +182,13 @@ cat docs/manuals/20251219_data_collection_guide.md
 
 | 상황 | 매뉴얼 |
 |------|--------|
-| 프로젝트를 처음 시작할 때 | [QUICK_START.md](docs/manuals/20251220_quick_start.md) |
-| 데이터를 수집하고 싶을 때 | [DATA_COLLECTION_GUIDE.md](docs/manuals/20251219_data_collection_guide.md) |
-| 진행 상황을 모니터링하고 싶을 때 | [PROGRESS_MONITORING_GUIDE.md](docs/manuals/20251221_progress_monitoring_guide.md) |
-| DB를 확인하고 싶을 때 | [DATABASE_GUIDE.md](docs/manuals/20251220_database_guide.md) |
-| 관리자 페이지 문제 | [ADMIN_TROUBLESHOOTING.md](docs/manuals/20251219_admin_troubleshooting.md) |
-| 로그인 문제 | [LOGIN_DEBUG_GUIDE.md](docs/manuals/20251220_login_debug_guide.md) |
-| 테스트를 실행하고 싶을 때 | [TEST_GUIDE.md](docs/manuals/20251219_test_guide.md) |
+| 프로젝트를 처음 시작할 때 | [QUICK_START.md](../manuals/quick_start.md) |
+| 데이터를 수집하고 싶을 때 | [DATA_COLLECTION_GUIDE.md](../manuals/data_collection_guide.md) |
+| 진행 상황을 모니터링하고 싶을 때 | [PROGRESS_MONITORING_GUIDE.md](../manuals/progress_monitoring_guide.md) |
+| DB를 확인하고 싶을 때 | [DATABASE_GUIDE.md](../manuals/database_guide.md) |
+| 관리자 페이지 문제 | [ADMIN_TROUBLESHOOTING.md](../manuals/admin_troubleshooting.md) |
+| 로그인 문제 | [LOGIN_DEBUG_GUIDE.md](../manuals/login_debug_guide.md) |
+| 테스트를 실행하고 싶을 때 | [TEST_GUIDE.md](../manuals/test_guide.md) |
 
 ### 자주 사용하는 스크립트
 
@@ -253,9 +253,9 @@ After:  ./docs/manuals/20251220_quick_start.md
 
 ## 🔗 관련 문서
 
-- [메인 README](README.md)
-- [매뉴얼 인덱스](docs/manuals/20251221_manuals_index.md)
-- [스크립트 가이드](scripts/README.md)
+- [메인 README](../../README.md)
+- [매뉴얼 인덱스](../manuals/manuals_index.md)
+- [스크립트 가이드](../../scripts/README.md)
 
 ---
 

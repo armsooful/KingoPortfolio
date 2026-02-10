@@ -240,9 +240,9 @@
 
 ## 13. 관련 문서
 
-- [Phase 3-B 프리미엄 리포트 구성안](docs/phase3/20260117_phase3b_premium_report_outline.md)
-- [Phase 3-B 기능 정의서](docs/phase3/20260117_phase3b_feature_definition.md)
-- [Phase 3-A 기능 정의서](docs/phase3/20260116_phase3a_feature_definition.md)
+- [Phase 3-B 프리미엄 리포트 구성안](phase3b_premium_report_outline.md)
+- [Phase 3-B 기능 정의서](phase3b_feature_definition.md)
+- [Phase 3-A 기능 정의서](phase3a_feature_definition.md)
 
 ---
 

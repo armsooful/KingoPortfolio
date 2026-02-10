@@ -50,11 +50,11 @@
 
 ### 문서
 - `docs/phase3/c4_ddl_schema.sql`
-- `docs/phase3/20260118_20260118_c4_ddl_schema.md`
-- `docs/phase3/20260118_20260118_c4_implementation_tickets.md`
+- `docs/phase3/c4_ddl_schema.md`
+- `docs/phase3/c4_implementation_tickets.md`
 - `20260118_phase3c_epic_c4_admin_controls_detailed_design.md`
-- `docs/phase3/20260118_20260118_c1_c3_go_live_checklist.md`
-- `docs/phase3/20260118_20260118_c4_validation_checklist.md`
+- `docs/phase3/c1_c3_go_live_checklist.md`
+- `docs/phase3/c4_validation_checklist.md`
 
 ## 4. 테스트 결과
 - 통합 테스트: `backend/tests/integration/test_admin_controls.py` 2건 통과

@@ -6,7 +6,7 @@
 
 ## C4-T01: DDL 스키마 설계
 - RBAC/감사/승인/정정 테이블 정의
-- 산출물: `docs/phase3/c4_ddl_schema.sql`, `docs/phase3/20260118_20260118_c4_ddl_schema.md`
+- 산출물: `docs/phase3/c4_ddl_schema.sql`, `docs/phase3/c4_ddl_schema.md`
 
 ## C4-T02: RBAC 모델 구현
 - 역할/권한 매핑, 관리자 권한 확인 로직 추가

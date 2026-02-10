@@ -258,9 +258,9 @@ JetBrains의 강력한 데이터베이스 도구
 
 ## 📚 관련 문서
 
-- [20251219_data_collection_guide.md](20251219_data_collection_guide.md) - 데이터 수집 방법
-- [20251220_quick_start.md](20251220_quick_start.md) - 빠른 시작 가이드
-- [README_수정완료.md](README_수정완료.md) - 시스템 개요
+- [20251219_data_collection_guide.md](data_collection_guide.md) - 데이터 수집 방법
+- [20251220_quick_start.md](quick_start.md) - 빠른 시작 가이드
+- [README_수정완료.md](../architecture/feature_overview.md) - 시스템 개요
 
 ## 💡 팁
 

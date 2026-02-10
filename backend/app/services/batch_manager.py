@@ -37,6 +37,12 @@ class BatchType(str, Enum):
     DIVIDEND = "DIVIDEND"  # 배당 이력
     ACTION = "ACTION"  # 기업 액션 (분할/합병)
     BOND_INFO = "BOND_INFO"  # 채권기본정보
+    DEPOSIT = "DEPOSIT"  # 예금 상품
+    SAVINGS = "SAVINGS"  # 적금 상품
+    ANNUITY_SAVINGS = "ANNUITY_SAVINGS"  # 연금저축 상품
+    MORTGAGE_LOAN = "MORTGAGE_LOAN"  # 주택담보대출 상품
+    RENT_HOUSE_LOAN = "RENT_HOUSE_LOAN"  # 전세자금대출 상품
+    CREDIT_LOAN = "CREDIT_LOAN"  # 개인신용대출 상품
 
 
 @dataclass

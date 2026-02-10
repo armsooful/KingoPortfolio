@@ -4,7 +4,7 @@ import pytest
 from datetime import datetime
 from unittest.mock import MagicMock, patch, PropertyMock
 from app.services.pykrx_loader import PyKrxDataLoader
-from app.models.real_data import StocksDailyPrice
+from app.models.real_data import StockPriceDaily
 from decimal import Decimal
 import pandas as pd
 from sqlalchemy.orm import Session

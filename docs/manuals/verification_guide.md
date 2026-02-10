@@ -157,7 +157,7 @@ Access to XMLHttpRequest at 'http://127.0.0.1:8000/...' from origin 'http://loca
 ```
 
 **해결**:
-[backend/app/main.py](backend/app/main.py)의 CORS 설정 확인:
+[backend/app/main.py](../../backend/app/main.py)의 CORS 설정 확인:
 ```python
 app.add_middleware(
     CORSMiddleware,
@@ -269,9 +269,9 @@ SELECT
 
 ## 📚 관련 문서
 
-- [20251220_yfinance_fix_summary.md](20251220_yfinance_fix_summary.md) - 수정 내용 상세
-- [20251219_data_collection_guide.md](20251219_data_collection_guide.md) - 데이터 수집 가이드
-- [20251219_admin_troubleshooting.md](20251219_admin_troubleshooting.md) - 트러블슈팅
+- [20251220_yfinance_fix_summary.md](yfinance_fix_summary.md) - 수정 내용 상세
+- [20251219_data_collection_guide.md](data_collection_guide.md) - 데이터 수집 가이드
+- [20251219_admin_troubleshooting.md](admin_troubleshooting.md) - 트러블슈팅
 
 ---
 

@@ -10,7 +10,7 @@
 
 ## C3-T02: 성과 계산 엔진 설계
 - 산식/지표/입력/출력 정의
-- 산출물: `docs/phase3/20260118_20260118_c3_performance_engine_spec.md`
+- 산출물: `docs/phase3/c3_performance_engine_spec.md`
 
 ## C3-T03: 성과 계산 서비스 구현
 - 결과 계산 및 `performance_result` 저장

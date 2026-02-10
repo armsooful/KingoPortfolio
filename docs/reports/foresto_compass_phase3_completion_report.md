@@ -31,5 +31,5 @@ Phase 3은 사용자 기능(U-1~U-3)과 성과·피드백 루프(Phase 3-D)를 �
 - 후속: 운영 환경에서 재검증
 
 ## 7. 참고 문서
-- `docs/reports/foresto_compass_u3_verification_report_20260119.md`
-- `docs/reports/foresto_compass_phase3_completion_statement_20260119.md`
+- `docs/reports/foresto_compass_u3_verification_report.md`
+- `docs/reports/foresto_compass_phase3_completion_statement.md`

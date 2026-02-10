@@ -131,6 +131,7 @@ class StockPriceDaily(Base):
     quality_flag = Column(String(10), default='NORMAL')  # 'NORMAL','ADJUSTED','ESTIMATED','MIGRATED'
 
     created_at = Column(DateTime, default=kst_now)
+    updated_at = Column(DateTime, onupdate=kst_now)
 
     __table_args__ = (
         UniqueConstraint('ticker', 'trade_date', 'source_id', name='uq_stock_price_daily'),
@@ -138,6 +139,7 @@ class StockPriceDaily(Base):
         Index('idx_stock_price_date', 'trade_date'),
         Index('idx_stock_price_asof', 'as_of_date'),
         Index('idx_stock_price_batch', 'batch_id'),
+        Index('idx_stock_price_source', 'source_id'),
         CheckConstraint('close_price > 0', name='chk_stock_price_close_positive'),
         CheckConstraint('volume >= 0', name='chk_stock_price_volume_nonnegative'),
         CheckConstraint('high_price >= low_price', name='chk_stock_price_high_low'),
@@ -520,38 +522,4 @@ class InstitutionTrade(Base):
 
     def __repr__(self):
         return f"<InstitutionTrade {self.ticker} {self.trade_date}>"
-
-
-# ============================================================================
-# Phase 11: 주식 일별 시세 (stocks_daily_prices DDL 기준)
-# ============================================================================
-
-class StocksDailyPrice(Base):
-    """주식 일별 시세 (stocks_daily_prices 테이블)
-
-    참조: db/ddl/phase11_stocks_daily_prices_ddl.sql
-    - stocks_meta 테이블과 FK 관계
-    - pykrx API를 통해 적재
-    """
-    __tablename__ = "stocks_daily_prices"
-
-    code = Column(String(10), primary_key=True)  # 종목코드 (FK: stocks_meta.code)
-    date = Column(Date, primary_key=True)  # 거래일
-
-    # OHLCV
-    open_price = Column(Numeric(18, 2))
-    high_price = Column(Numeric(18, 2))
-    low_price = Column(Numeric(18, 2))
-    close_price = Column(Numeric(18, 2))
-    volume = Column(BigInteger)
-
-    # 등락률
-    change_rate = Column(Numeric(8, 4))  # 전일 대비 등락률 (%)
-
-    __table_args__ = (
-        Index('idx_daily_prices_date', 'date'),
-    )
-
-    def __repr__(self):
-        return f"<StocksDailyPrice {self.code} {self.date}: {self.close_price}>"
 
