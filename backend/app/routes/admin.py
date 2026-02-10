@@ -9,6 +9,7 @@ from app.database import get_db, SessionLocal
 from app.services.data_loader import DataLoaderService
 from app.services.alpha_vantage_loader import AlphaVantageDataLoader
 from app.services.pykrx_loader import PyKrxDataLoader
+from app.services.batch_manager import BatchManager, BatchType
 from app.services.financial_analyzer import FinancialAnalyzer
 from app.services.real_data_loader import RealDataLoader
 from app.models import User
@@ -65,6 +66,13 @@ class DailyPricesLoadRequest(BaseModel):
     tickers: Optional[List[str]] = None
     parallel: bool = Field(True, description="병렬 처리 여부")
     num_workers: int = Field(8, ge=1, le=16, description="동시 작업 스레드 수")
+
+
+class IncrementalLoadRequest(BaseModel):
+    default_days: int = Field(1825, ge=30, le=3650, description="신규 종목 기본 수집 일수 (기본 5년)")
+    num_workers: int = Field(4, ge=1, le=8, description="동시 작업 스레드 수 (8GB RAM 권장: 4)")
+    market: Optional[str] = Field(None, description="시장 필터 (KOSPI, KOSDAQ, None=전체)")
+
 
 @router.post("/load-stocks")
 async def load_stocks(
@@ -312,23 +320,38 @@ async def load_bond_basic_info(
 @router.post("/load-bonds")
 async def load_bonds_full_query(
     background_tasks: BackgroundTasks,
+    quality_filter: str = Query("all", regex="^(all|investment_grade|high_quality)$"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
 ):
-    """채권 기본정보 전체 조회 (금융위원회 OpenAPI) - 기준일자는 오늘 날짜"""
+    """채권 기본정보 전체 조회 (금융위원회 OpenAPI) - 기준일자는 오늘 날짜
+
+    quality_filter:
+      - all: 전체 채권
+      - investment_grade: 투자적격등급 (AAA~BBB)
+      - high_quality: 최우량 (AAA~A)
+    """
     operator_id = str(current_user.id)
     task_id = f"bonds_{uuid.uuid4().hex[:8]}"
+
+    # 필터 레이블 (UI 메시지용)
+    filter_labels = {
+        "all": "전체",
+        "investment_grade": "투자적격등급 (AAA~BBB)",
+        "high_quality": "최우량 (AAA~A)",
+    }
+    filter_label = filter_labels.get(quality_filter, "전체")
 
     # 채권 적재: Progress를 직접 초기화 (start_task로 total 고정 방지)
     progress_tracker._progress[task_id] = {
         "status": "running",
         "total": 0,  # 초기값 0 (나중에 업데이트)
         "current": 0,
-        "current_item": "채권 데이터 조회 중...",
+        "current_item": f"채권 데이터 조회 중... (필터: {filter_label})",
         "success_count": 0,
         "failed_count": 0,
         "phase": "Phase 2",
-        "description": "채권 데이터 조회",
+        "description": f"채권 데이터 조회 ({filter_label})",
         "error_message": None,
         "items_history": [],
         "operator_id": operator_id,
@@ -368,15 +391,58 @@ async def load_bonds_full_query(
 
             logger.info(f"[BOND] FSC API 호출 시작: bas_dt={bas_dt}, as_of_date={as_of_date}")
 
-            result = loader.load_bond_basic_info(
-                crno=None,
-                bond_isur_nm=None,
-                bas_dt=bas_dt,
-                limit=None,
-                as_of_date=as_of_date,
-                operator_id=operator_id,
-                operator_reason="FSC 채권기본정보 전체 조회",
-            )
+            def bond_progress_callback(current: int, item: str, success: bool = True):
+                """채권 적재 진행률 콜백"""
+                logger.info(f"[BOND_CALLBACK] current={current}, item={item}, success={success}")
+                with progress_tracker._lock:
+                    if task_id in progress_tracker._progress:
+                        # 특수 케이스: [TOTAL] 메시지로 전체 개수 전달
+                        if current == -1 and item.startswith("[TOTAL]"):
+                            try:
+                                total_count = int(item.replace("[TOTAL]", ""))
+                                logger.info(f"[BOND_CALLBACK] Setting total_count={total_count}")
+                                progress_tracker._progress[task_id]["total"] = total_count
+                                progress_tracker._progress[task_id]["current_item"] = f"채권 {total_count}건 저장 중..."
+                                progress_tracker._progress[task_id]["items_history"].append({
+                                    "index": len(progress_tracker._progress[task_id]["items_history"]),
+                                    "item": f"전체 {total_count}건 조회됨",
+                                    "success": True,
+                                    "timestamp": datetime.now(timezone.utc).isoformat()
+                                })
+                                logger.info(f"[BOND_CALLBACK] Progress updated: total={progress_tracker._progress[task_id]['total']}")
+                            except (ValueError, IndexError) as e:
+                                logger.error(f"[BOND_CALLBACK] Error parsing total: {e}")
+                        else:
+                            progress_tracker._progress[task_id]["current"] = current
+                            progress_tracker._progress[task_id]["current_item"] = item
+                            if success:
+                                progress_tracker._progress[task_id]["success_count"] = current
+                            progress_tracker._progress[task_id]["items_history"].append({
+                                "index": len(progress_tracker._progress[task_id]["items_history"]),
+                                "item": item,
+                                "success": success,
+                                "timestamp": datetime.now(timezone.utc).isoformat()
+                            })
+                            if current % 100 == 0:  # Log every 100 records
+                                logger.info(f"[BOND_CALLBACK] Progress: {current}/{progress_tracker._progress[task_id].get('total', '?')}")
+
+            logger.info(f"[BOND] load_bond_basic_info 호출 전... (quality_filter={quality_filter})")
+            try:
+                result = loader.load_bond_basic_info(
+                    crno=None,
+                    bond_isur_nm=None,
+                    bas_dt=bas_dt,
+                    limit=None,
+                    as_of_date=as_of_date,
+                    operator_id=operator_id,
+                    operator_reason=f"FSC 채권기본정보 전체 조회 (필터: {filter_label})",
+                    progress_callback=bond_progress_callback,
+                    quality_filter=quality_filter,
+                )
+                logger.info(f"[BOND] load_bond_basic_info 완료: result type={type(result)}, success={result.success}")
+            except Exception as e:
+                logger.error(f"[BOND] load_bond_basic_info 호출 중 예외 발생: {type(e).__name__}: {str(e)}", exc_info=True)
+                raise
 
             # 실제 적재된 건수로 진행 상황 업데이트
             if result.success:
@@ -428,6 +494,742 @@ async def load_bonds_full_query(
         "status": "success",
         "task_id": task_id,
         "message": "채권 데이터 조회 시작"
+    }
+
+
+@router.post("/load-deposits")
+async def load_deposits(
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
+):
+    """FSS 정기예금 상품 적재 (금융감독원 금융상품 한 눈에 API)
+
+    은행 정기예금 상품 ~37건을 조회하여 deposit_products + deposit_rate_options 테이블에 저장합니다.
+    """
+    operator_id = str(current_user.id)
+    task_id = f"deposits_{uuid.uuid4().hex[:8]}"
+
+    # Progress 직접 초기화 (단일 단계, Phase 배지 없음)
+    progress_tracker._progress[task_id] = {
+        "status": "running",
+        "total": 0,
+        "current": 0,
+        "current_item": "FSS 정기예금 상품 조회 중...",
+        "success_count": 0,
+        "failed_count": 0,
+        "phase": "",
+        "description": "FSS 정기예금 상품 적재",
+        "error_message": None,
+        "items_history": [],
+        "operator_id": operator_id,
+        "created_at": datetime.now(timezone.utc),
+    }
+
+    progress_tracker._progress[task_id]["items_history"].append({
+        "index": 0,
+        "item": "FSS 정기예금 상품 조회 시작",
+        "success": True,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    })
+
+    def load_deposits_async():
+        try:
+            db_session = SessionLocal()
+            loader = RealDataLoader(db_session)
+
+            def deposit_progress_callback(current: int, item: str, success: bool = True):
+                with progress_tracker._lock:
+                    if task_id in progress_tracker._progress:
+                        if current == -1 and item.startswith("[TOTAL]"):
+                            try:
+                                total_count = int(item.replace("[TOTAL]", ""))
+                                progress_tracker._progress[task_id]["total"] = total_count
+                                progress_tracker._progress[task_id]["current_item"] = f"예금 상품 {total_count}건 저장 중..."
+                                progress_tracker._progress[task_id]["items_history"].append({
+                                    "index": len(progress_tracker._progress[task_id]["items_history"]),
+                                    "item": f"전체 {total_count}건 조회됨",
+                                    "success": True,
+                                    "timestamp": datetime.now(timezone.utc).isoformat()
+                                })
+                            except (ValueError, IndexError) as e:
+                                logger.error(f"[DEPOSIT] Error parsing total: {e}")
+                        else:
+                            progress_tracker._progress[task_id]["current"] = current
+                            progress_tracker._progress[task_id]["current_item"] = item
+                            if success:
+                                progress_tracker._progress[task_id]["success_count"] = current
+                            else:
+                                progress_tracker._progress[task_id]["failed_count"] = (
+                                    progress_tracker._progress[task_id].get("failed_count", 0) + 1
+                                )
+                            progress_tracker._progress[task_id]["items_history"].append({
+                                "index": len(progress_tracker._progress[task_id]["items_history"]),
+                                "item": item,
+                                "success": success,
+                                "timestamp": datetime.now(timezone.utc).isoformat()
+                            })
+
+            result = loader.load_deposit_products(
+                operator_id=operator_id,
+                operator_reason="FSS 정기예금 상품 적재",
+                progress_callback=deposit_progress_callback,
+            )
+
+            if result.success:
+                with progress_tracker._lock:
+                    if task_id in progress_tracker._progress:
+                        progress_tracker._progress[task_id]["total"] = result.total_records
+                        progress_tracker._progress[task_id]["current"] = result.total_records
+                        progress_tracker._progress[task_id]["success_count"] = result.success_records
+                        progress_tracker._progress[task_id]["failed_count"] = result.failed_records
+                        progress_tracker._progress[task_id]["current_item"] = f"예금 상품 적재 완료: {result.success_records}건"
+                        progress_tracker._progress[task_id]["items_history"].append({
+                            "index": len(progress_tracker._progress[task_id]["items_history"]),
+                            "item": f"예금 상품 적재 완료: {result.success_records}건 성공, {result.failed_records}건 실패",
+                            "success": True,
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        })
+
+                progress_tracker.complete_task(task_id, status="completed")
+                logger.info(f"[DEPOSIT] 정기예금 적재 완료: {result.success_records}건 성공")
+            else:
+                raise Exception(result.error_message or "정기예금 적재 실패")
+
+        except Exception as e:
+            logger.error(f"[DEPOSIT] 정기예금 적재 실패: {str(e)}")
+            with progress_tracker._lock:
+                if task_id in progress_tracker._progress:
+                    progress_tracker._progress[task_id]["current_item"] = f"오류: {str(e)}"
+                    progress_tracker._progress[task_id]["error_message"] = str(e)
+                    progress_tracker._progress[task_id]["items_history"].append({
+                        "index": len(progress_tracker._progress[task_id]["items_history"]),
+                        "item": f"오류 발생: {str(e)}",
+                        "success": False,
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    })
+            progress_tracker.complete_task(task_id, status="failed")
+        finally:
+            db_session.close()
+
+    background_tasks.add_task(load_deposits_async)
+
+    return {
+        "status": "success",
+        "task_id": task_id,
+        "message": "FSS 정기예금 상품 조회 시작"
+    }
+
+
+@router.post("/load-savings")
+async def load_savings(
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
+):
+    """FSS 적금 상품 적재 (금융감독원 금융상품 한 눈에 API)
+
+    은행/저축은행 적금 상품을 조회하여 savings_products + savings_rate_options 테이블에 저장합니다.
+    권역별 + 다중 페이지 순차 호출.
+    """
+    operator_id = str(current_user.id)
+    task_id = f"savings_{uuid.uuid4().hex[:8]}"
+
+    # Progress 직접 초기화 (단일 단계, Phase 배지 없음)
+    progress_tracker._progress[task_id] = {
+        "status": "running",
+        "total": 0,
+        "current": 0,
+        "current_item": "FSS 적금 상품 조회 중...",
+        "success_count": 0,
+        "failed_count": 0,
+        "phase": "",
+        "description": "FSS 적금 상품 적재",
+        "error_message": None,
+        "items_history": [],
+        "operator_id": operator_id,
+        "created_at": datetime.now(timezone.utc),
+    }
+
+    progress_tracker._progress[task_id]["items_history"].append({
+        "index": 0,
+        "item": "FSS 적금 상품 조회 시작",
+        "success": True,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    })
+
+    def load_savings_async():
+        try:
+            db_session = SessionLocal()
+            loader = RealDataLoader(db_session)
+
+            def savings_progress_callback(current: int, item: str, success: bool = True):
+                with progress_tracker._lock:
+                    if task_id in progress_tracker._progress:
+                        if current == -1 and item.startswith("[TOTAL]"):
+                            try:
+                                total_count = int(item.replace("[TOTAL]", ""))
+                                progress_tracker._progress[task_id]["total"] = total_count
+                                progress_tracker._progress[task_id]["current_item"] = f"적금 상품 {total_count}건 저장 중..."
+                                progress_tracker._progress[task_id]["items_history"].append({
+                                    "index": len(progress_tracker._progress[task_id]["items_history"]),
+                                    "item": f"전체 {total_count}건 조회됨",
+                                    "success": True,
+                                    "timestamp": datetime.now(timezone.utc).isoformat()
+                                })
+                            except (ValueError, IndexError) as e:
+                                logger.error(f"[SAVINGS] Error parsing total: {e}")
+                        else:
+                            progress_tracker._progress[task_id]["current"] = current
+                            progress_tracker._progress[task_id]["current_item"] = item
+                            if success:
+                                progress_tracker._progress[task_id]["success_count"] = current
+                            else:
+                                progress_tracker._progress[task_id]["failed_count"] = (
+                                    progress_tracker._progress[task_id].get("failed_count", 0) + 1
+                                )
+                            progress_tracker._progress[task_id]["items_history"].append({
+                                "index": len(progress_tracker._progress[task_id]["items_history"]),
+                                "item": item,
+                                "success": success,
+                                "timestamp": datetime.now(timezone.utc).isoformat()
+                            })
+
+            result = loader.load_savings_products(
+                operator_id=operator_id,
+                operator_reason="FSS 적금 상품 적재",
+                progress_callback=savings_progress_callback,
+            )
+
+            if result.success:
+                with progress_tracker._lock:
+                    if task_id in progress_tracker._progress:
+                        progress_tracker._progress[task_id]["total"] = result.total_records
+                        progress_tracker._progress[task_id]["current"] = result.total_records
+                        progress_tracker._progress[task_id]["success_count"] = result.success_records
+                        progress_tracker._progress[task_id]["failed_count"] = result.failed_records
+                        progress_tracker._progress[task_id]["current_item"] = f"적금 상품 적재 완료: {result.success_records}건"
+                        progress_tracker._progress[task_id]["items_history"].append({
+                            "index": len(progress_tracker._progress[task_id]["items_history"]),
+                            "item": f"적금 상품 적재 완료: {result.success_records}건 성공, {result.failed_records}건 실패",
+                            "success": True,
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        })
+
+                progress_tracker.complete_task(task_id, status="completed")
+                logger.info(f"[SAVINGS] 적금 적재 완료: {result.success_records}건 성공")
+            else:
+                raise Exception(result.error_message or "적금 적재 실패")
+
+        except Exception as e:
+            logger.error(f"[SAVINGS] 적금 적재 실패: {str(e)}")
+            with progress_tracker._lock:
+                if task_id in progress_tracker._progress:
+                    progress_tracker._progress[task_id]["current_item"] = f"오류: {str(e)}"
+                    progress_tracker._progress[task_id]["error_message"] = str(e)
+                    progress_tracker._progress[task_id]["items_history"].append({
+                        "index": len(progress_tracker._progress[task_id]["items_history"]),
+                        "item": f"오류 발생: {str(e)}",
+                        "success": False,
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    })
+            progress_tracker.complete_task(task_id, status="failed")
+        finally:
+            db_session.close()
+
+    background_tasks.add_task(load_savings_async)
+
+    return {
+        "status": "success",
+        "task_id": task_id,
+        "message": "FSS 적금 상품 조회 시작"
+    }
+
+
+@router.post("/load-annuity-savings")
+async def load_annuity_savings(
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
+):
+    """FSS 연금저축 상품 적재 (금융감독원 금융상품 한 눈에 API)
+
+    보험/금융투자 권역의 연금저축 상품을 조회하여 annuity_savings_products + annuity_savings_options 테이블에 저장합니다.
+    다중 페이지 순차 호출 (최대 60페이지).
+    """
+    operator_id = str(current_user.id)
+    task_id = f"annuity_{uuid.uuid4().hex[:8]}"
+
+    # Progress 직접 초기화
+    progress_tracker._progress[task_id] = {
+        "status": "running",
+        "total": 0,
+        "current": 0,
+        "current_item": "FSS 연금저축 상품 조회 중...",
+        "success_count": 0,
+        "failed_count": 0,
+        "phase": "",
+        "description": "FSS 연금저축 상품 적재",
+        "error_message": None,
+        "items_history": [],
+        "operator_id": operator_id,
+        "created_at": datetime.now(timezone.utc),
+    }
+
+    progress_tracker._progress[task_id]["items_history"].append({
+        "index": 0,
+        "item": "FSS 연금저축 상품 조회 시작",
+        "success": True,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    })
+
+    def load_annuity_async():
+        try:
+            db_session = SessionLocal()
+            loader = RealDataLoader(db_session)
+
+            def annuity_progress_callback(current: int, item: str, success: bool = True):
+                with progress_tracker._lock:
+                    if task_id in progress_tracker._progress:
+                        if current == -1 and item.startswith("[TOTAL]"):
+                            try:
+                                total_count = int(item.replace("[TOTAL]", ""))
+                                progress_tracker._progress[task_id]["total"] = total_count
+                                progress_tracker._progress[task_id]["current_item"] = f"연금저축 상품 {total_count}건 저장 중..."
+                                progress_tracker._progress[task_id]["items_history"].append({
+                                    "index": len(progress_tracker._progress[task_id]["items_history"]),
+                                    "item": f"전체 {total_count}건 조회됨",
+                                    "success": True,
+                                    "timestamp": datetime.now(timezone.utc).isoformat()
+                                })
+                            except (ValueError, IndexError) as e:
+                                logger.error(f"[ANNUITY] Error parsing total: {e}")
+                        else:
+                            progress_tracker._progress[task_id]["current"] = current
+                            progress_tracker._progress[task_id]["current_item"] = item
+                            if success:
+                                progress_tracker._progress[task_id]["success_count"] = current
+                            else:
+                                progress_tracker._progress[task_id]["failed_count"] = (
+                                    progress_tracker._progress[task_id].get("failed_count", 0) + 1
+                                )
+                            progress_tracker._progress[task_id]["items_history"].append({
+                                "index": len(progress_tracker._progress[task_id]["items_history"]),
+                                "item": item,
+                                "success": success,
+                                "timestamp": datetime.now(timezone.utc).isoformat()
+                            })
+
+            result = loader.load_annuity_savings_products(
+                operator_id=operator_id,
+                operator_reason="FSS 연금저축 상품 적재",
+                progress_callback=annuity_progress_callback,
+            )
+
+            if result.success:
+                with progress_tracker._lock:
+                    if task_id in progress_tracker._progress:
+                        progress_tracker._progress[task_id]["total"] = result.total_records
+                        progress_tracker._progress[task_id]["current"] = result.total_records
+                        progress_tracker._progress[task_id]["success_count"] = result.success_records
+                        progress_tracker._progress[task_id]["failed_count"] = result.failed_records
+                        progress_tracker._progress[task_id]["current_item"] = f"연금저축 상품 적재 완료: {result.success_records}건"
+                        progress_tracker._progress[task_id]["items_history"].append({
+                            "index": len(progress_tracker._progress[task_id]["items_history"]),
+                            "item": f"연금저축 상품 적재 완료: {result.success_records}건 성공, {result.failed_records}건 실패",
+                            "success": True,
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        })
+
+                progress_tracker.complete_task(task_id, status="completed")
+                logger.info(f"[ANNUITY] 연금저축 적재 완료: {result.success_records}건 성공")
+            else:
+                raise Exception(result.error_message or "연금저축 적재 실패")
+
+        except Exception as e:
+            logger.error(f"[ANNUITY] 연금저축 적재 실패: {str(e)}")
+            with progress_tracker._lock:
+                if task_id in progress_tracker._progress:
+                    progress_tracker._progress[task_id]["current_item"] = f"오류: {str(e)}"
+                    progress_tracker._progress[task_id]["error_message"] = str(e)
+                    progress_tracker._progress[task_id]["items_history"].append({
+                        "index": len(progress_tracker._progress[task_id]["items_history"]),
+                        "item": f"오류 발생: {str(e)}",
+                        "success": False,
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    })
+            progress_tracker.complete_task(task_id, status="failed")
+        finally:
+            db_session.close()
+
+    background_tasks.add_task(load_annuity_async)
+
+    return {
+        "status": "success",
+        "task_id": task_id,
+        "message": "FSS 연금저축 상품 조회 시작"
+    }
+
+
+@router.post("/load-mortgage-loans")
+async def load_mortgage_loans(
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
+):
+    """FSS 주택담보대출 상품 적재 (금융감독원 금융상품 한 눈에 API)
+
+    은행/저축은행/보험 권역의 주택담보대출 상품을 조회하여
+    mortgage_loan_products + mortgage_loan_options 테이블에 저장합니다.
+    """
+    operator_id = str(current_user.id)
+    task_id = f"mortgage_{uuid.uuid4().hex[:8]}"
+
+    progress_tracker._progress[task_id] = {
+        "status": "running",
+        "total": 0,
+        "current": 0,
+        "current_item": "FSS 주택담보대출 상품 조회 중...",
+        "success_count": 0,
+        "failed_count": 0,
+        "phase": "",
+        "description": "FSS 주택담보대출 상품 적재",
+        "error_message": None,
+        "items_history": [],
+        "operator_id": operator_id,
+        "created_at": datetime.now(timezone.utc),
+    }
+
+    progress_tracker._progress[task_id]["items_history"].append({
+        "index": 0,
+        "item": "FSS 주택담보대출 상품 조회 시작",
+        "success": True,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    })
+
+    def load_mortgage_async():
+        try:
+            db_session = SessionLocal()
+            loader = RealDataLoader(db_session)
+
+            def mortgage_progress_callback(current: int, item: str, success: bool = True):
+                with progress_tracker._lock:
+                    if task_id in progress_tracker._progress:
+                        if current == -1 and item.startswith("[TOTAL]"):
+                            try:
+                                total_count = int(item.replace("[TOTAL]", ""))
+                                progress_tracker._progress[task_id]["total"] = total_count
+                                progress_tracker._progress[task_id]["current_item"] = f"주택담보대출 상품 {total_count}건 저장 중..."
+                                progress_tracker._progress[task_id]["items_history"].append({
+                                    "index": len(progress_tracker._progress[task_id]["items_history"]),
+                                    "item": f"전체 {total_count}건 조회됨",
+                                    "success": True,
+                                    "timestamp": datetime.now(timezone.utc).isoformat()
+                                })
+                            except (ValueError, IndexError) as e:
+                                logger.error(f"[MORTGAGE] Error parsing total: {e}")
+                        else:
+                            progress_tracker._progress[task_id]["current"] = current
+                            progress_tracker._progress[task_id]["current_item"] = item
+                            if success:
+                                progress_tracker._progress[task_id]["success_count"] = current
+                            else:
+                                progress_tracker._progress[task_id]["failed_count"] = (
+                                    progress_tracker._progress[task_id].get("failed_count", 0) + 1
+                                )
+                            progress_tracker._progress[task_id]["items_history"].append({
+                                "index": len(progress_tracker._progress[task_id]["items_history"]),
+                                "item": item,
+                                "success": success,
+                                "timestamp": datetime.now(timezone.utc).isoformat()
+                            })
+
+            result = loader.load_mortgage_loan_products(
+                operator_id=operator_id,
+                operator_reason="FSS 주택담보대출 상품 적재",
+                progress_callback=mortgage_progress_callback,
+            )
+
+            if result.success:
+                with progress_tracker._lock:
+                    if task_id in progress_tracker._progress:
+                        progress_tracker._progress[task_id]["total"] = result.total_records
+                        progress_tracker._progress[task_id]["current"] = result.total_records
+                        progress_tracker._progress[task_id]["success_count"] = result.success_records
+                        progress_tracker._progress[task_id]["failed_count"] = result.failed_records
+                        progress_tracker._progress[task_id]["current_item"] = f"주택담보대출 상품 적재 완료: {result.success_records}건"
+                        progress_tracker._progress[task_id]["items_history"].append({
+                            "index": len(progress_tracker._progress[task_id]["items_history"]),
+                            "item": f"주택담보대출 상품 적재 완료: {result.success_records}건 성공, {result.failed_records}건 실패",
+                            "success": True,
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        })
+
+                progress_tracker.complete_task(task_id, status="completed")
+                logger.info(f"[MORTGAGE] 주택담보대출 적재 완료: {result.success_records}건 성공")
+            else:
+                raise Exception(result.error_message or "주택담보대출 적재 실패")
+
+        except Exception as e:
+            logger.error(f"[MORTGAGE] 주택담보대출 적재 실패: {str(e)}")
+            with progress_tracker._lock:
+                if task_id in progress_tracker._progress:
+                    progress_tracker._progress[task_id]["current_item"] = f"오류: {str(e)}"
+                    progress_tracker._progress[task_id]["error_message"] = str(e)
+                    progress_tracker._progress[task_id]["items_history"].append({
+                        "index": len(progress_tracker._progress[task_id]["items_history"]),
+                        "item": f"오류 발생: {str(e)}",
+                        "success": False,
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    })
+            progress_tracker.complete_task(task_id, status="failed")
+        finally:
+            db_session.close()
+
+    background_tasks.add_task(load_mortgage_async)
+
+    return {
+        "status": "success",
+        "task_id": task_id,
+        "message": "FSS 주택담보대출 상품 조회 시작"
+    }
+
+
+@router.post("/load-rent-house-loans")
+async def load_rent_house_loans(
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
+):
+    """FSS 전세자금대출 상품 적재 (금융감독원 금융상품 한 눈에 API)"""
+    operator_id = str(current_user.id)
+    task_id = f"rentloan_{uuid.uuid4().hex[:8]}"
+
+    progress_tracker._progress[task_id] = {
+        "status": "running",
+        "total": 0,
+        "current": 0,
+        "current_item": "FSS 전세자금대출 상품 조회 중...",
+        "success_count": 0,
+        "failed_count": 0,
+        "phase": "",
+        "description": "FSS 전세자금대출 상품 적재",
+        "error_message": None,
+        "items_history": [],
+        "operator_id": operator_id,
+        "created_at": datetime.now(timezone.utc),
+    }
+
+    progress_tracker._progress[task_id]["items_history"].append({
+        "index": 0,
+        "item": "FSS 전세자금대출 상품 조회 시작",
+        "success": True,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    })
+
+    def load_rent_loan_async():
+        try:
+            db_session = SessionLocal()
+            loader = RealDataLoader(db_session)
+
+            def rent_loan_progress_callback(current: int, item: str, success: bool = True):
+                with progress_tracker._lock:
+                    if task_id in progress_tracker._progress:
+                        if current == -1 and item.startswith("[TOTAL]"):
+                            try:
+                                total_count = int(item.replace("[TOTAL]", ""))
+                                progress_tracker._progress[task_id]["total"] = total_count
+                                progress_tracker._progress[task_id]["current_item"] = f"전세자금대출 상품 {total_count}건 저장 중..."
+                                progress_tracker._progress[task_id]["items_history"].append({
+                                    "index": len(progress_tracker._progress[task_id]["items_history"]),
+                                    "item": f"전체 {total_count}건 조회됨",
+                                    "success": True,
+                                    "timestamp": datetime.now(timezone.utc).isoformat()
+                                })
+                            except (ValueError, IndexError) as e:
+                                logger.error(f"[RENT_LOAN] Error parsing total: {e}")
+                        else:
+                            progress_tracker._progress[task_id]["current"] = current
+                            progress_tracker._progress[task_id]["current_item"] = item
+                            if success:
+                                progress_tracker._progress[task_id]["success_count"] = current
+                            else:
+                                progress_tracker._progress[task_id]["failed_count"] = (
+                                    progress_tracker._progress[task_id].get("failed_count", 0) + 1
+                                )
+                            progress_tracker._progress[task_id]["items_history"].append({
+                                "index": len(progress_tracker._progress[task_id]["items_history"]),
+                                "item": item,
+                                "success": success,
+                                "timestamp": datetime.now(timezone.utc).isoformat()
+                            })
+
+            result = loader.load_rent_house_loan_products(
+                operator_id=operator_id,
+                operator_reason="FSS 전세자금대출 상품 적재",
+                progress_callback=rent_loan_progress_callback,
+            )
+
+            if result.success:
+                with progress_tracker._lock:
+                    if task_id in progress_tracker._progress:
+                        progress_tracker._progress[task_id]["total"] = result.total_records
+                        progress_tracker._progress[task_id]["current"] = result.total_records
+                        progress_tracker._progress[task_id]["success_count"] = result.success_records
+                        progress_tracker._progress[task_id]["failed_count"] = result.failed_records
+                        progress_tracker._progress[task_id]["current_item"] = f"전세자금대출 상품 적재 완료: {result.success_records}건"
+                        progress_tracker._progress[task_id]["items_history"].append({
+                            "index": len(progress_tracker._progress[task_id]["items_history"]),
+                            "item": f"전세자금대출 상품 적재 완료: {result.success_records}건 성공, {result.failed_records}건 실패",
+                            "success": True,
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        })
+                progress_tracker.complete_task(task_id, status="completed")
+                logger.info(f"[RENT_LOAN] 전세자금대출 적재 완료: {result.success_records}건 성공")
+            else:
+                raise Exception(result.error_message or "전세자금대출 적재 실패")
+
+        except Exception as e:
+            logger.error(f"[RENT_LOAN] 전세자금대출 적재 실패: {str(e)}")
+            with progress_tracker._lock:
+                if task_id in progress_tracker._progress:
+                    progress_tracker._progress[task_id]["current_item"] = f"오류: {str(e)}"
+                    progress_tracker._progress[task_id]["error_message"] = str(e)
+                    progress_tracker._progress[task_id]["items_history"].append({
+                        "index": len(progress_tracker._progress[task_id]["items_history"]),
+                        "item": f"오류 발생: {str(e)}",
+                        "success": False,
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    })
+            progress_tracker.complete_task(task_id, status="failed")
+        finally:
+            db_session.close()
+
+    background_tasks.add_task(load_rent_loan_async)
+
+    return {
+        "status": "success",
+        "task_id": task_id,
+        "message": "FSS 전세자금대출 상품 조회 시작"
+    }
+
+
+@router.post("/load-credit-loans")
+async def load_credit_loans(
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
+):
+    """FSS 개인신용대출 상품 적재 (금융감독원 금융상품 한 눈에 API)"""
+    operator_id = str(current_user.id)
+    task_id = f"creditloan_{uuid.uuid4().hex[:8]}"
+
+    progress_tracker._progress[task_id] = {
+        "status": "running",
+        "total": 0,
+        "current": 0,
+        "current_item": "FSS 개인신용대출 상품 조회 중...",
+        "success_count": 0,
+        "failed_count": 0,
+        "phase": "",
+        "description": "FSS 개인신용대출 상품 적재",
+        "error_message": None,
+        "items_history": [],
+        "operator_id": operator_id,
+        "created_at": datetime.now(timezone.utc),
+    }
+
+    progress_tracker._progress[task_id]["items_history"].append({
+        "index": 0,
+        "item": "FSS 개인신용대출 상품 조회 시작",
+        "success": True,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    })
+
+    def load_credit_loan_async():
+        try:
+            db_session = SessionLocal()
+            loader = RealDataLoader(db_session)
+
+            def credit_loan_progress_callback(current: int, item: str, success: bool = True):
+                with progress_tracker._lock:
+                    if task_id in progress_tracker._progress:
+                        if current == -1 and item.startswith("[TOTAL]"):
+                            try:
+                                total_count = int(item.replace("[TOTAL]", ""))
+                                progress_tracker._progress[task_id]["total"] = total_count
+                                progress_tracker._progress[task_id]["current_item"] = f"개인신용대출 상품 {total_count}건 저장 중..."
+                                progress_tracker._progress[task_id]["items_history"].append({
+                                    "index": len(progress_tracker._progress[task_id]["items_history"]),
+                                    "item": f"전체 {total_count}건 조회됨",
+                                    "success": True,
+                                    "timestamp": datetime.now(timezone.utc).isoformat()
+                                })
+                            except (ValueError, IndexError) as e:
+                                logger.error(f"[CREDIT_LOAN] Error parsing total: {e}")
+                        else:
+                            progress_tracker._progress[task_id]["current"] = current
+                            progress_tracker._progress[task_id]["current_item"] = item
+                            if success:
+                                progress_tracker._progress[task_id]["success_count"] = current
+                            else:
+                                progress_tracker._progress[task_id]["failed_count"] = (
+                                    progress_tracker._progress[task_id].get("failed_count", 0) + 1
+                                )
+                            progress_tracker._progress[task_id]["items_history"].append({
+                                "index": len(progress_tracker._progress[task_id]["items_history"]),
+                                "item": item,
+                                "success": success,
+                                "timestamp": datetime.now(timezone.utc).isoformat()
+                            })
+
+            result = loader.load_credit_loan_products(
+                operator_id=operator_id,
+                operator_reason="FSS 개인신용대출 상품 적재",
+                progress_callback=credit_loan_progress_callback,
+            )
+
+            if result.success:
+                with progress_tracker._lock:
+                    if task_id in progress_tracker._progress:
+                        progress_tracker._progress[task_id]["total"] = result.total_records
+                        progress_tracker._progress[task_id]["current"] = result.total_records
+                        progress_tracker._progress[task_id]["success_count"] = result.success_records
+                        progress_tracker._progress[task_id]["failed_count"] = result.failed_records
+                        progress_tracker._progress[task_id]["current_item"] = f"개인신용대출 상품 적재 완료: {result.success_records}건"
+                        progress_tracker._progress[task_id]["items_history"].append({
+                            "index": len(progress_tracker._progress[task_id]["items_history"]),
+                            "item": f"개인신용대출 상품 적재 완료: {result.success_records}건 성공, {result.failed_records}건 실패",
+                            "success": True,
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        })
+                progress_tracker.complete_task(task_id, status="completed")
+                logger.info(f"[CREDIT_LOAN] 개인신용대출 적재 완료: {result.success_records}건 성공")
+            else:
+                raise Exception(result.error_message or "개인신용대출 적재 실패")
+
+        except Exception as e:
+            logger.error(f"[CREDIT_LOAN] 개인신용대출 적재 실패: {str(e)}")
+            with progress_tracker._lock:
+                if task_id in progress_tracker._progress:
+                    progress_tracker._progress[task_id]["current_item"] = f"오류: {str(e)}"
+                    progress_tracker._progress[task_id]["error_message"] = str(e)
+                    progress_tracker._progress[task_id]["items_history"].append({
+                        "index": len(progress_tracker._progress[task_id]["items_history"]),
+                        "item": f"오류 발생: {str(e)}",
+                        "success": False,
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    })
+            progress_tracker.complete_task(task_id, status="failed")
+        finally:
+            db_session.close()
+
+    background_tasks.add_task(load_credit_loan_async)
+
+    return {
+        "status": "success",
+        "task_id": task_id,
+        "message": "FSS 개인신용대출 상품 조회 시작"
     }
 
 
@@ -564,19 +1366,29 @@ async def get_data_status(
 ):
     """DB 종목 통계"""
     from sqlalchemy import func
-    from app.models.securities import Stock, ETF, Bond, DepositProduct
-    
+    from app.models.securities import Stock, ETF, Bond, DepositProduct, SavingsProduct, AnnuitySavingsProduct, MortgageLoanProduct, RentHouseLoanProduct, CreditLoanProduct
+
     stock_count = db.query(func.count(Stock.ticker)).scalar()
     etf_count = db.query(func.count(ETF.ticker)).scalar()
     bond_count = db.query(func.count(Bond.name)).scalar()
     deposit_count = db.query(func.count(DepositProduct.name)).scalar()
-    
+    savings_count = db.query(func.count(SavingsProduct.name)).scalar()
+    annuity_count = db.query(func.count(AnnuitySavingsProduct.id)).scalar()
+    mortgage_count = db.query(func.count(MortgageLoanProduct.id)).scalar()
+    rent_loan_count = db.query(func.count(RentHouseLoanProduct.id)).scalar()
+    credit_loan_count = db.query(func.count(CreditLoanProduct.id)).scalar()
+
     return {
         "stocks": stock_count,
         "etfs": etf_count,
         "bonds": bond_count,
         "deposits": deposit_count,
-        "total": stock_count + etf_count + bond_count + deposit_count
+        "savings": savings_count,
+        "annuity_savings": annuity_count,
+        "mortgage_loans": mortgage_count,
+        "rent_house_loans": rent_loan_count,
+        "credit_loans": credit_loan_count,
+        "total": stock_count + etf_count + bond_count + deposit_count + savings_count + annuity_count + mortgage_count + rent_loan_count + credit_loan_count
     }
 
 @router.get("/progress/{task_id}")
@@ -1918,6 +2730,27 @@ async def load_daily_prices(
             try:
                 loader = PyKrxDataLoader()
 
+                # BatchManager로 배치 생성 (실패해도 적재는 계속)
+                batch_id = None
+                try:
+                    from datetime import datetime as dt
+                    start_dt = dt.strptime(req.start_date, "%Y%m%d").date()
+                    end_dt = dt.strptime(req.end_date, "%Y%m%d").date()
+                    bm = BatchManager(db_local)
+                    batch = bm.create_batch(
+                        batch_type=BatchType.PRICE,
+                        source_id='PYKRX',
+                        as_of_date=end_dt,
+                        target_start=start_dt,
+                        target_end=end_dt,
+                        operator_id=operator_id,
+                        operator_reason="pykrx 일별 시세 적재",
+                    )
+                    batch_id = batch.batch_id
+                    logger.info(f"Created batch {batch_id} for daily prices")
+                except Exception as be:
+                    logger.warning(f"BatchManager create failed (continuing without batch): {be}")
+
                 if req.parallel:
                     # 병렬 처리 (권장)
                     result = loader.load_all_daily_prices_parallel(
@@ -1926,7 +2759,9 @@ async def load_daily_prices(
                         end_date=req.end_date,
                         tickers=req.tickers,
                         task_id=task_id,
-                        num_workers=req.num_workers
+                        num_workers=req.num_workers,
+                        source_id='PYKRX',
+                        batch_id=batch_id,
                     )
                 else:
                     # 순차 처리 (호환성)
@@ -1961,4 +2796,112 @@ async def load_daily_prices(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Failed to start daily prices loading: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ========================================================================
+# 증분 시계열 적재 (stocks 테이블 기준 5년치)
+# ========================================================================
+
+@router.post("/pykrx/load-stocks-incremental")
+async def load_stocks_incremental(
+    req: IncrementalLoadRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
+):
+    """stocks 테이블 전체 종목 대상 증분 시계열 적재
+
+    - 이미 적재된 종목: 마지막 적재일 다음 날부터 오늘까지
+    - 미적재 종목: default_days 이전부터 오늘까지
+    - 모든 종목이 최신이면 스킵
+
+    Parameters:
+    - default_days: 신규 종목 수집 일수 (기본 1825 = 5년)
+    - num_workers: 스레드 수 (기본 4, 최대 8)
+    - market: 시장 필터 (KOSPI/KOSDAQ/None=전체)
+    """
+    try:
+        task_id = f"incremental_{uuid.uuid4().hex[:8]}"
+        operator_id = str(current_user.id)
+
+        # 사전 통계 조회 (즉시 응답에 포함)
+        from app.models.securities import Stock
+        from app.models.real_data import StockPriceDaily
+        from sqlalchemy import func as sa_func
+
+        stock_query = db.query(sa_func.count(Stock.ticker))
+        if req.market:
+            stock_query = stock_query.filter(Stock.market == req.market.upper())
+        total_stocks = stock_query.scalar() or 0
+
+        existing_tickers = (
+            db.query(sa_func.count(sa_func.distinct(StockPriceDaily.ticker)))
+            .filter(StockPriceDaily.source_id == 'PYKRX')
+            .scalar() or 0
+        )
+
+        new_stocks = max(0, total_stocks - existing_tickers)
+
+        def run_incremental_load():
+            db_local = SessionLocal()
+            try:
+                loader = PyKrxDataLoader()
+
+                # BatchManager로 배치 생성
+                batch_id_val = None
+                try:
+                    from datetime import datetime as dt
+                    bm = BatchManager(db_local)
+                    batch = bm.create_batch(
+                        batch_type=BatchType.PRICE,
+                        source_id='PYKRX',
+                        as_of_date=dt.now().date(),
+                        target_start=dt.now().date(),
+                        target_end=dt.now().date(),
+                        operator_id=operator_id,
+                        operator_reason=f"증분 시계열 적재 (default_days={req.default_days})",
+                    )
+                    batch_id_val = batch.batch_id
+                    logger.info(f"Created batch {batch_id_val} for incremental load")
+                except Exception as be:
+                    logger.warning(f"BatchManager create failed (continuing): {be}")
+
+                result = loader.load_all_stocks_incremental(
+                    db=db_local,
+                    default_days=req.default_days,
+                    task_id=task_id,
+                    num_workers=req.num_workers,
+                    source_id='PYKRX',
+                    batch_id=batch_id_val,
+                    market=req.market,
+                )
+
+                logger.info(f"Incremental load completed: {result.get('success', 0)} success, "
+                           f"{result.get('failed', 0)} failed, {result.get('skipped', 0)} skipped")
+
+            except Exception as e:
+                logger.error(f"Failed incremental load: {str(e)}")
+                progress_tracker.complete_task(task_id, "failed", error=str(e))
+            finally:
+                db_local.close()
+
+        background_tasks.add_task(run_incremental_load)
+
+        return {
+            "success": True,
+            "task_id": task_id,
+            "message": f"증분 적재 시작 (대상: {total_stocks}종목, 신규 추정: {new_stocks}, 스레드: {req.num_workers})",
+            "stats": {
+                "total_stocks": total_stocks,
+                "existing_tickers": existing_tickers,
+                "new_stocks_estimate": new_stocks,
+                "default_days": req.default_days,
+                "num_workers": req.num_workers,
+                "market": req.market or "전체",
+            }
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to start incremental load: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

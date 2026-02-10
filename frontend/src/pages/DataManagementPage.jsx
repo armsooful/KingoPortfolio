@@ -25,6 +25,7 @@ export default function DataManagementPage() {
   const [dartFinLimit, setDartFinLimit] = useState('');
   const [fdrMarket, setFdrMarket] = useState('KRX');
   const [fdrAsOf, setFdrAsOf] = useState(new Date().toISOString().split('T')[0]);
+  const [bondQualityFilter, setBondQualityFilter] = useState('all');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -79,7 +80,14 @@ export default function DataManagementPage() {
   };
 
   const handleLoadBonds = async () => {
-    if (!window.confirm('채권 데이터를 조회하시겠습니까?')) {
+    const filterLabels = {
+      all: '전체 채권',
+      investment_grade: '투자적격등급 (AAA~BBB) 채권',
+      high_quality: '최우량 (AAA~A) 채권',
+    };
+    const label = filterLabels[bondQualityFilter] || '전체 채권';
+
+    if (!window.confirm(`${label}을 조회하시겠습니까?`)) {
       return;
     }
 
@@ -92,7 +100,7 @@ export default function DataManagementPage() {
     setCurrentTaskId(tempTaskId);
 
     try {
-      const response = await api.loadBonds();
+      const response = await api.loadBonds(bondQualityFilter);
 
       setLoadResult(response.data);
 
@@ -157,9 +165,39 @@ export default function DataManagementPage() {
                   </div>
                 </div>
                 <div className="score-card">
-                  <div className="score-label">🏦 예적금</div>
+                  <div className="score-label">🏦 예금</div>
                   <div className="score-value" style={{ color: '#FF9800' }}>
                     {dataStatus.deposits}개
+                  </div>
+                </div>
+                <div className="score-card">
+                  <div className="score-label">🏦 적금</div>
+                  <div className="score-value" style={{ color: '#E91E63' }}>
+                    {dataStatus.savings || 0}개
+                  </div>
+                </div>
+                <div className="score-card">
+                  <div className="score-label">🏛️ 연금저축</div>
+                  <div className="score-value" style={{ color: '#673AB7' }}>
+                    {dataStatus.annuity_savings || 0}개
+                  </div>
+                </div>
+                <div className="score-card">
+                  <div className="score-label">🏠 주담대</div>
+                  <div className="score-value" style={{ color: '#795548' }}>
+                    {dataStatus.mortgage_loans || 0}개
+                  </div>
+                </div>
+                <div className="score-card">
+                  <div className="score-label">🏠 전세대출</div>
+                  <div className="score-value" style={{ color: '#607D8B' }}>
+                    {dataStatus.rent_house_loans || 0}개
+                  </div>
+                </div>
+                <div className="score-card">
+                  <div className="score-label">💳 신용대출</div>
+                  <div className="score-value" style={{ color: '#E91E63' }}>
+                    {dataStatus.credit_loans || 0}개
                   </div>
                 </div>
               </div>
@@ -618,6 +656,109 @@ export default function DataManagementPage() {
                 ⚠️ 백그라운드에서 실행되며 시간이 걸릴 수 있습니다. 약 {Math.ceil(document.getElementById('krx-timeseries-limit')?.value / 10 || 5)}분 예상됩니다.
               </div>
             </div>
+
+            <div style={{ marginTop: '20px', padding: '20px', background: '#e8f5e9', borderRadius: '8px', border: '1px solid #66bb6a' }}>
+              <h3 style={{ marginBottom: '15px', fontSize: '1.1rem' }}>📦 전체 종목 5년치 증분 적재 (stocks 테이블 기준)</h3>
+              <p style={{ margin: '0 0 15px 0', fontSize: '0.85rem', color: '#555' }}>
+                stocks 테이블에 등록된 전 종목을 대상으로 시계열 데이터를 적재합니다.<br />
+                이미 적재된 종목은 마지막 적재일 이후부터만 수집하여 부하를 줄입니다.
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem', fontWeight: '600' }}>
+                    시장 선택
+                  </label>
+                  <select
+                    id="incremental-market"
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      fontSize: '1rem',
+                      border: '2px solid #ddd',
+                      borderRadius: '6px'
+                    }}
+                  >
+                    <option value="">KRX 전체</option>
+                    <option value="KOSPI">KOSPI</option>
+                    <option value="KOSDAQ">KOSDAQ</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem', fontWeight: '600' }}>
+                    스레드 수
+                  </label>
+                  <select
+                    id="incremental-workers"
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      fontSize: '1rem',
+                      border: '2px solid #ddd',
+                      borderRadius: '6px'
+                    }}
+                  >
+                    <option value="2">2 (저부하)</option>
+                    <option value="4" selected>4 (권장)</option>
+                    <option value="6">6</option>
+                    <option value="8">8 (고성능)</option>
+                  </select>
+                </div>
+              </div>
+              <button
+                onClick={async () => {
+                  const market = document.getElementById('incremental-market').value || null;
+                  const numWorkers = Number(document.getElementById('incremental-workers').value) || 4;
+                  const marketLabel = market || 'KRX 전체';
+
+                  if (!window.confirm(
+                    `[${marketLabel}] stocks 테이블 전 종목의 5년치 시계열 데이터를 증분 적재하시겠습니까?\n\n` +
+                    `- 신규 종목: 5년치 수집\n` +
+                    `- 기존 종목: 마지막 적재일 이후만 수집\n` +
+                    `- 스레드: ${numWorkers}개\n\n` +
+                    `⚠️ 첫 실행 시 4-6시간 소요될 수 있습니다.`
+                  )) {
+                    return;
+                  }
+
+                  setLoading(true);
+                  setError(null);
+                  const tempTaskId = `temp_incremental_${Date.now()}`;
+                  setCurrentTaskId(tempTaskId);
+
+                  try {
+                    const res = await api.loadStocksIncremental({
+                      default_days: 1825,
+                      num_workers: numWorkers,
+                      market: market,
+                    });
+                    if (res.data.task_id) {
+                      setCurrentTaskId(res.data.task_id);
+                    }
+                    const stats = res.data.stats || {};
+                    alert(
+                      `✅ 증분 적재 시작\n` +
+                      `대상: ${stats.total_stocks || '?'}종목\n` +
+                      `신규 추정: ${stats.new_stocks_estimate || '?'}종목\n` +
+                      `task_id: ${res.data.task_id}`
+                    );
+                    await fetchDataStatus();
+                  } catch (err) {
+                    alert('❌ ' + (err.response?.data?.detail || '증분 적재 시작 실패'));
+                    setCurrentTaskId(null);
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                disabled={loading}
+                className="btn btn-success"
+                style={{ width: '100%', padding: '15px', fontSize: '1rem', fontWeight: 'bold', background: '#2e7d32' }}
+              >
+                {loading ? '🔄 시작 중...' : '📦 전체 종목 5년치 증분 적재'}
+              </button>
+              <div style={{ marginTop: '10px', fontSize: '0.85rem', color: '#555', padding: '10px', background: '#fff', borderRadius: '5px' }}>
+                💡 첫 실행: 약 4-6시간 (야간 실행 권장) / 매일 재실행: 약 10-30분 (증분만 수집)
+              </div>
+            </div>
           </div>
 
           <div className="description-section" style={{ marginTop: '40px', borderTop: '2px solid #e0e0e0', paddingTop: '30px' }}>
@@ -733,6 +874,16 @@ export default function DataManagementPage() {
 
               <div style={{ padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#ffffff' }}>
                 <h3 style={{ marginBottom: '10px', fontSize: '1rem' }}>채권 기본정보 (금융위원회 OpenAPI)</h3>
+                <label style={{ fontSize: '0.82rem', color: '#555' }}>등급 필터</label>
+                <select
+                  value={bondQualityFilter}
+                  onChange={(e) => setBondQualityFilter(e.target.value)}
+                  style={{ width: '100%', padding: '8px', fontSize: '0.9rem', border: '1px solid #ddd', borderRadius: '6px', marginBottom: '10px', boxSizing: 'border-box' }}
+                >
+                  <option value="all">전체 채권</option>
+                  <option value="investment_grade">투자적격등급 (AAA~BBB)</option>
+                  <option value="high_quality">최우량 (AAA~A)</option>
+                </select>
                 <button
                   onClick={handleLoadBonds}
                   disabled={loading}
@@ -742,7 +893,7 @@ export default function DataManagementPage() {
                   📊 채권 데이터 조회
                 </button>
                 <div style={{ marginTop: '8px', fontSize: '0.8rem', color: '#666' }}>
-                  💡 오늘 기준일로 모든 채권을 조회합니다
+                  💡 오늘 기준일로 선택한 등급의 채권을 조회합니다
                 </div>
               </div>
 
@@ -813,6 +964,211 @@ export default function DataManagementPage() {
                 </div>
               </div>
 
+            </div>
+          </div>
+
+          {/* 금융감독원 금융상품 한 눈에 Section */}
+          <div className="description-section" style={{ marginTop: '40px', borderTop: '2px solid #e0e0e0', paddingTop: '30px' }}>
+            <h2>🏛️ 금융감독원 - 금융상품 한 눈에</h2>
+            <div style={{ marginTop: '15px', padding: '15px', background: '#f3e5f5', borderRadius: '8px', borderLeft: '4px solid #9C27B0' }}>
+              <p style={{ margin: 0, color: '#333', fontSize: '0.9rem' }}>
+                🔑 금융감독원 금융상품통합비교공시 API를 통해 예금·적금·연금·대출 상품을 수집합니다.<br />
+                📋 FSS API Key가 필요합니다. (finlife.fss.or.kr)
+              </p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '15px', marginTop: '20px' }}>
+              {/* FSS 정기예금 카드 */}
+              <div style={{ padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#ffffff' }}>
+                <h3 style={{ marginBottom: '10px', fontSize: '1rem' }}>🏦 정기예금 상품</h3>
+                <p style={{ fontSize: '0.82rem', color: '#666', margin: '0 0 12px' }}>
+                  은행 정기예금 상품 및 기간별 금리 옵션을 수집합니다.
+                </p>
+                <button
+                  onClick={async () => {
+                    if (!window.confirm('FSS 정기예금 상품을 조회하시겠습니까?')) return;
+                    setLoading(true);
+                    setError(null);
+                    const tempTaskId = `temp_deposits_${Date.now()}`;
+                    setCurrentTaskId(tempTaskId);
+                    try {
+                      const res = await api.loadDeposits();
+                      if (res.data.task_id) setCurrentTaskId(res.data.task_id);
+                      await fetchDataStatus();
+                    } catch (err) {
+                      alert('❌ ' + (err.response?.data?.detail || '정기예금 적재 실패'));
+                      setCurrentTaskId(null);
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  disabled={loading}
+                  className="btn btn-primary"
+                  style={{ width: '100%', padding: '10px', fontSize: '0.95rem' }}
+                >
+                  정기예금 조회
+                </button>
+              </div>
+
+              {/* FSS 적금 카드 */}
+              <div style={{ padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#ffffff' }}>
+                <h3 style={{ marginBottom: '10px', fontSize: '1rem' }}>🏦 적금 상품</h3>
+                <p style={{ fontSize: '0.82rem', color: '#666', margin: '0 0 12px' }}>
+                  은행 적금 상품 및 기간별 금리 옵션을 수집합니다.
+                </p>
+                <button
+                  onClick={async () => {
+                    if (!window.confirm('FSS 적금 상품을 조회하시겠습니까?')) return;
+                    setLoading(true);
+                    setError(null);
+                    const tempTaskId = `temp_savings_${Date.now()}`;
+                    setCurrentTaskId(tempTaskId);
+                    try {
+                      const res = await api.loadSavings();
+                      if (res.data.task_id) setCurrentTaskId(res.data.task_id);
+                      await fetchDataStatus();
+                    } catch (err) {
+                      alert('❌ ' + (err.response?.data?.detail || '적금 적재 실패'));
+                      setCurrentTaskId(null);
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  disabled={loading}
+                  className="btn btn-primary"
+                  style={{ width: '100%', padding: '10px', fontSize: '0.95rem' }}
+                >
+                  적금 조회
+                </button>
+              </div>
+
+              {/* FSS 연금저축 카드 */}
+              <div style={{ padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#ffffff' }}>
+                <h3 style={{ marginBottom: '10px', fontSize: '1rem' }}>🏛️ 연금저축 상품</h3>
+                <p style={{ fontSize: '0.82rem', color: '#666', margin: '0 0 12px' }}>
+                  연금저축 상품 및 수익률 정보를 수집합니다.
+                </p>
+                <button
+                  onClick={async () => {
+                    if (!window.confirm('FSS 연금저축 상품을 조회하시겠습니까?')) return;
+                    setLoading(true);
+                    setError(null);
+                    const tempTaskId = `temp_annuity_${Date.now()}`;
+                    setCurrentTaskId(tempTaskId);
+                    try {
+                      const res = await api.loadAnnuitySavings();
+                      if (res.data.task_id) setCurrentTaskId(res.data.task_id);
+                      await fetchDataStatus();
+                    } catch (err) {
+                      alert('❌ ' + (err.response?.data?.detail || '연금저축 적재 실패'));
+                      setCurrentTaskId(null);
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  disabled={loading}
+                  className="btn btn-primary"
+                  style={{ width: '100%', padding: '10px', fontSize: '0.95rem' }}
+                >
+                  연금저축 조회
+                </button>
+              </div>
+
+              {/* FSS 주택담보대출 카드 */}
+              <div style={{ padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#ffffff' }}>
+                <h3 style={{ marginBottom: '10px', fontSize: '1rem' }}>🏠 주택담보대출 상품</h3>
+                <p style={{ fontSize: '0.82rem', color: '#666', margin: '0 0 12px' }}>
+                  은행 주택담보대출 상품 및 금리 옵션을 수집합니다.
+                </p>
+                <button
+                  onClick={async () => {
+                    if (!window.confirm('FSS 주택담보대출 상품을 조회하시겠습니까?')) return;
+                    setLoading(true);
+                    setError(null);
+                    const tempTaskId = `temp_mortgage_${Date.now()}`;
+                    setCurrentTaskId(tempTaskId);
+                    try {
+                      const res = await api.loadMortgageLoans();
+                      if (res.data.task_id) setCurrentTaskId(res.data.task_id);
+                      await fetchDataStatus();
+                    } catch (err) {
+                      alert('❌ ' + (err.response?.data?.detail || '주택담보대출 적재 실패'));
+                      setCurrentTaskId(null);
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  disabled={loading}
+                  className="btn btn-primary"
+                  style={{ width: '100%', padding: '10px', fontSize: '0.95rem' }}
+                >
+                  주택담보대출 조회
+                </button>
+              </div>
+
+              {/* FSS 전세자금대출 카드 */}
+              <div style={{ padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#ffffff' }}>
+                <h3 style={{ marginBottom: '10px', fontSize: '1rem' }}>🏠 전세자금대출 상품</h3>
+                <p style={{ fontSize: '0.82rem', color: '#666', margin: '0 0 12px' }}>
+                  은행 전세자금대출 상품 및 금리 옵션을 수집합니다.
+                </p>
+                <button
+                  onClick={async () => {
+                    if (!window.confirm('FSS 전세자금대출 상품을 조회하시겠습니까?')) return;
+                    setLoading(true);
+                    setError(null);
+                    const tempTaskId = `temp_rentloan_${Date.now()}`;
+                    setCurrentTaskId(tempTaskId);
+                    try {
+                      const res = await api.loadRentHouseLoans();
+                      if (res.data.task_id) setCurrentTaskId(res.data.task_id);
+                      await fetchDataStatus();
+                    } catch (err) {
+                      alert('❌ ' + (err.response?.data?.detail || '전세자금대출 적재 실패'));
+                      setCurrentTaskId(null);
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  disabled={loading}
+                  className="btn btn-primary"
+                  style={{ width: '100%', padding: '10px', fontSize: '0.95rem' }}
+                >
+                  전세자금대출 조회
+                </button>
+              </div>
+
+              {/* FSS 개인신용대출 카드 */}
+              <div style={{ padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#ffffff' }}>
+                <h3 style={{ marginBottom: '10px', fontSize: '1rem' }}>💳 개인신용대출 상품</h3>
+                <p style={{ fontSize: '0.82rem', color: '#666', margin: '0 0 12px' }}>
+                  은행·저축은행·여신전문 개인신용대출 상품 및 신용등급별 금리를 수집합니다.
+                </p>
+                <button
+                  onClick={async () => {
+                    if (!window.confirm('FSS 개인신용대출 상품을 조회하시겠습니까?')) return;
+                    setLoading(true);
+                    setError(null);
+                    const tempTaskId = `temp_creditloan_${Date.now()}`;
+                    setCurrentTaskId(tempTaskId);
+                    try {
+                      const res = await api.loadCreditLoans();
+                      if (res.data.task_id) setCurrentTaskId(res.data.task_id);
+                      await fetchDataStatus();
+                    } catch (err) {
+                      alert('❌ ' + (err.response?.data?.detail || '개인신용대출 적재 실패'));
+                      setCurrentTaskId(null);
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  disabled={loading}
+                  className="btn btn-primary"
+                  style={{ width: '100%', padding: '10px', fontSize: '0.95rem' }}
+                >
+                  개인신용대출 조회
+                </button>
+              </div>
             </div>
           </div>
 

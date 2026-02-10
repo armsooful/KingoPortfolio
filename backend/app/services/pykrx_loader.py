@@ -3,12 +3,12 @@
 from pykrx import stock
 from datetime import datetime, timedelta, date
 from decimal import Decimal
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Callable
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert as pg_insert
-from sqlalchemy import MetaData, Table
+from sqlalchemy import MetaData, Table, func
 from app.models.securities import Stock, ETF, StockFinancials
-from app.models.real_data import StocksDailyPrice
+from app.models.real_data import StockPriceDaily
 from app.progress_tracker import progress_tracker
 from app.database import SessionLocal
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -859,7 +859,7 @@ class PyKrxDataLoader:
         return results
 
     # ========================================================================
-    # Phase 11: stocks_daily_prices 테이블 적재
+    # stock_price_daily 테이블 적재
     # ========================================================================
 
     def load_daily_prices(
@@ -868,9 +868,10 @@ class PyKrxDataLoader:
         ticker: str,
         start_date: str,
         end_date: str,
-        name: str = None
+        name: str = None,
+        source_id: str = 'PYKRX',
     ) -> Dict[str, Any]:
-        """특정 종목의 일별 시세를 stocks_daily_prices 테이블에 적재
+        """특정 종목의 일별 시세를 stock_price_daily 테이블에 적재 (순차 N+1 방식)
 
         Args:
             db: SQLAlchemy Session
@@ -878,6 +879,7 @@ class PyKrxDataLoader:
             start_date: 시작일 (YYYYMMDD 형식)
             end_date: 종료일 (YYYYMMDD 형식)
             name: 종목명 (선택)
+            source_id: 데이터 소스 ID (기본 'PYKRX')
 
         Returns:
             dict: {'success': bool, 'message': str, 'inserted': int, 'updated': int}
@@ -900,46 +902,45 @@ class PyKrxDataLoader:
                     'updated': 0
                 }
 
-            # 컬럼명 매핑 (pykrx → stocks_daily_prices)
-            # pykrx 컬럼: 시가, 고가, 저가, 종가, 거래량, 등락률
-            records = []
-            for trade_date, row in df.iterrows():
-                # trade_date가 Timestamp 또는 datetime인 경우 date로 변환
-                if hasattr(trade_date, 'date'):
-                    trade_date = trade_date.date()
-                elif isinstance(trade_date, str):
-                    trade_date = datetime.strptime(trade_date, '%Y-%m-%d').date()
-
-                record = {
-                    'code': ticker,
-                    'date': trade_date,
-                    'open_price': Decimal(str(row['시가'])) if pd.notna(row['시가']) else None,
-                    'high_price': Decimal(str(row['고가'])) if pd.notna(row['고가']) else None,
-                    'low_price': Decimal(str(row['저가'])) if pd.notna(row['저가']) else None,
-                    'close_price': Decimal(str(row['종가'])) if pd.notna(row['종가']) else None,
-                    'volume': int(row['거래량']) if pd.notna(row['거래량']) else None,
-                    'change_rate': Decimal(str(row['등락률'])) if '등락률' in row and pd.notna(row['등락률']) else None,
-                }
-                records.append(record)
-
-            # Upsert (PostgreSQL ON CONFLICT)
             inserted = 0
             updated = 0
 
-            for record in records:
-                existing = db.query(StocksDailyPrice).filter(
-                    StocksDailyPrice.code == record['code'],
-                    StocksDailyPrice.date == record['date']
+            for trade_date_idx, row in df.iterrows():
+                if hasattr(trade_date_idx, 'date'):
+                    td = trade_date_idx.date()
+                elif isinstance(trade_date_idx, str):
+                    td = datetime.strptime(trade_date_idx, '%Y-%m-%d').date()
+                else:
+                    td = trade_date_idx
+
+                existing = db.query(StockPriceDaily).filter(
+                    StockPriceDaily.ticker == ticker,
+                    StockPriceDaily.trade_date == td,
+                    StockPriceDaily.source_id == source_id,
                 ).first()
 
                 if existing:
-                    # 업데이트
-                    for key, value in record.items():
-                        setattr(existing, key, value)
+                    existing.open_price = Decimal(str(row['시가'])) if pd.notna(row['시가']) else Decimal('0')
+                    existing.high_price = Decimal(str(row['고가'])) if pd.notna(row['고가']) else Decimal('0')
+                    existing.low_price = Decimal(str(row['저가'])) if pd.notna(row['저가']) else Decimal('0')
+                    existing.close_price = Decimal(str(row['종가'])) if pd.notna(row['종가']) else Decimal('0')
+                    existing.volume = int(row['거래량']) if pd.notna(row['거래량']) else 0
+                    existing.change_rate = Decimal(str(row['등락률'])) if '등락률' in row and pd.notna(row['등락률']) else None
                     updated += 1
                 else:
-                    # 신규 삽입
-                    new_record = StocksDailyPrice(**record)
+                    new_record = StockPriceDaily(
+                        ticker=ticker,
+                        trade_date=td,
+                        open_price=Decimal(str(row['시가'])) if pd.notna(row['시가']) else Decimal('0'),
+                        high_price=Decimal(str(row['고가'])) if pd.notna(row['고가']) else Decimal('0'),
+                        low_price=Decimal(str(row['저가'])) if pd.notna(row['저가']) else Decimal('0'),
+                        close_price=Decimal(str(row['종가'])) if pd.notna(row['종가']) else Decimal('0'),
+                        volume=int(row['거래량']) if pd.notna(row['거래량']) else 0,
+                        change_rate=Decimal(str(row['등락률'])) if '등락률' in row and pd.notna(row['등락률']) else None,
+                        source_id=source_id,
+                        as_of_date=td,
+                        quality_flag='NORMAL',
+                    )
                     db.add(new_record)
                     inserted += 1
 
@@ -970,11 +971,13 @@ class PyKrxDataLoader:
         start_date: str,
         end_date: str,
         name: str = None,
-        batch_size: int = 500
+        batch_size: int = 500,
+        source_id: str = 'PYKRX',
+        batch_id: int = None,
     ) -> Dict[str, Any]:
         """일별 시세 배치 적재 (PostgreSQL ON CONFLICT 사용)
 
-        기존 load_daily_prices() 대비 500배 빠른 배치 upsert 방식.
+        stock_price_daily 테이블에 적재.
         PostgreSQL의 INSERT ... ON CONFLICT DO UPDATE를 사용하여
         N+1 쿼리 문제를 단일 쿼리로 해결합니다.
 
@@ -985,6 +988,8 @@ class PyKrxDataLoader:
             end_date: 종료일 (YYYYMMDD)
             name: 종목명 (선택, 로깅용)
             batch_size: 배치 크기 (기본 500, 대용량 시 분할 처리)
+            source_id: 데이터 소스 ID (기본 'PYKRX')
+            batch_id: 배치 ID (선택)
 
         Returns:
             dict: {
@@ -1000,7 +1005,7 @@ class PyKrxDataLoader:
 
             logger.info(f"[BATCH] Loading {name} ({ticker}): {start_date}~{end_date}")
 
-            # 1. pykrx로 OHLCV 데이터 조회 (기존과 동일)
+            # 1. pykrx로 OHLCV 데이터 조회
             df = stock.get_market_ohlcv(start_date, end_date, ticker)
 
             if df.empty:
@@ -1012,30 +1017,35 @@ class PyKrxDataLoader:
                     'updated': 0
                 }
 
-            # 2. 레코드 변환 (기존과 동일)
+            # 2. 레코드 변환 — stock_price_daily 컬럼 매핑
             records = []
-            for trade_date, row in df.iterrows():
-                if hasattr(trade_date, 'date'):
-                    trade_date = trade_date.date()
-                elif isinstance(trade_date, str):
-                    trade_date = datetime.strptime(trade_date, '%Y-%m-%d').date()
+            for trade_date_idx, row in df.iterrows():
+                if hasattr(trade_date_idx, 'date'):
+                    td = trade_date_idx.date()
+                elif isinstance(trade_date_idx, str):
+                    td = datetime.strptime(trade_date_idx, '%Y-%m-%d').date()
+                else:
+                    td = trade_date_idx
 
                 record = {
-                    'code': ticker,
-                    'date': trade_date,
-                    'open_price': Decimal(str(row['시가'])) if pd.notna(row['시가']) else None,
-                    'high_price': Decimal(str(row['고가'])) if pd.notna(row['고가']) else None,
-                    'low_price': Decimal(str(row['저가'])) if pd.notna(row['저가']) else None,
-                    'close_price': Decimal(str(row['종가'])) if pd.notna(row['종가']) else None,
-                    'volume': int(row['거래량']) if pd.notna(row['거래량']) else None,
+                    'ticker': ticker,
+                    'trade_date': td,
+                    'open_price': Decimal(str(row['시가'])) if pd.notna(row['시가']) else Decimal('0'),
+                    'high_price': Decimal(str(row['고가'])) if pd.notna(row['고가']) else Decimal('0'),
+                    'low_price': Decimal(str(row['저가'])) if pd.notna(row['저가']) else Decimal('0'),
+                    'close_price': Decimal(str(row['종가'])) if pd.notna(row['종가']) else Decimal('0'),
+                    'volume': int(row['거래량']) if pd.notna(row['거래량']) else 0,
                     'change_rate': Decimal(str(row['등락률'])) if '등락률' in row and pd.notna(row['등락률']) else None,
+                    'source_id': source_id,
+                    'as_of_date': td,
+                    'quality_flag': 'NORMAL',
                 }
+                if batch_id:
+                    record['batch_id'] = batch_id
                 records.append(record)
 
-            # 3. PostgreSQL ON CONFLICT 배치 upsert
-            # 500회 개별 SELECT/INSERT → 1회 배치 쿼리로 변환
-            meta = MetaData()
-            table = Table('stocks_daily_prices', meta, autoload_with=db.get_bind())
+            # 3. PostgreSQL ON CONFLICT 배치 upsert → stock_price_daily
+            table = StockPriceDaily.__table__
 
             total_records = 0
             for i in range(0, len(records), batch_size):
@@ -1043,7 +1053,7 @@ class PyKrxDataLoader:
 
                 stmt = pg_insert(table).values(chunk)
                 stmt = stmt.on_conflict_do_update(
-                    index_elements=['code', 'date'],  # PRIMARY KEY (code, date)
+                    constraint='uq_stock_price_daily',
                     set_={
                         'open_price': stmt.excluded.open_price,
                         'high_price': stmt.excluded.high_price,
@@ -1051,6 +1061,7 @@ class PyKrxDataLoader:
                         'close_price': stmt.excluded.close_price,
                         'volume': stmt.excluded.volume,
                         'change_rate': stmt.excluded.change_rate,
+                        'updated_at': func.now(),
                     }
                 )
 
@@ -1181,7 +1192,9 @@ class PyKrxDataLoader:
         end_date: str,
         tickers: Optional[List[str]] = None,
         task_id: str = None,
-        num_workers: int = 8
+        num_workers: int = 8,
+        source_id: str = 'PYKRX',
+        batch_id: int = None,
     ) -> Dict[str, Any]:
         """여러 종목의 일별 시세를 병렬로 적재 (성능 최적화)
 
@@ -1192,6 +1205,8 @@ class PyKrxDataLoader:
             tickers: 종목코드 리스트 (None이면 POPULAR_STOCKS 사용)
             task_id: 진행률 추적용 태스크 ID
             num_workers: 동시 스레드 수 (기본값 8, CPU 코어 수의 2배 권장)
+            source_id: 데이터 소스 ID (기본 'PYKRX')
+            batch_id: 배치 ID (선택)
 
         Returns:
             dict: 적재 결과 요약
@@ -1235,7 +1250,10 @@ class PyKrxDataLoader:
                 db_local = SessionLocal()
 
                 try:
-                    result = self.load_daily_prices_batch(db_local, ticker, start_date, end_date, name)
+                    result = self.load_daily_prices_batch(
+                        db_local, ticker, start_date, end_date, name,
+                        source_id=source_id, batch_id=batch_id,
+                    )
 
                     # 스레드 안전한 결과 누적
                     with results_lock:
@@ -1375,3 +1393,225 @@ class PyKrxDataLoader:
         logger.info(f"Loading daily prices for {len(tickers)} tickers in {market}")
 
         return self.load_all_daily_prices(db, start_date, end_date, tickers, task_id)
+
+    def load_all_stocks_incremental(
+        self,
+        db: Session,
+        default_days: int = 1825,
+        task_id: str = None,
+        num_workers: int = 4,
+        source_id: str = 'PYKRX',
+        batch_id: int = None,
+        market: str = None,
+        progress_callback: Callable = None,
+    ) -> Dict[str, Any]:
+        """stocks 테이블 전체 종목 대상 증분 시계열 적재
+
+        이미 적재된 종목은 마지막 적재일 다음 날부터, 미적재 종목은 default_days 전부터 수집.
+
+        Args:
+            db: SQLAlchemy Session (메인 스레드용, 종목 목록 조회)
+            default_days: 신규 종목 기본 수집 일수 (기본 1825 = 5년)
+            task_id: 진행률 추적용 태스크 ID
+            num_workers: 동시 스레드 수 (기본 4, 8GB RAM 환경 고려)
+            source_id: 데이터 소스 ID
+            batch_id: 배치 ID (선택)
+            market: 시장 필터 ('KOSPI', 'KOSDAQ', None=전체)
+            progress_callback: 진행 콜백 (count, message)
+
+        Returns:
+            dict: 적재 결과 요약
+        """
+        if not task_id:
+            task_id = f"incremental_{uuid.uuid4().hex[:8]}"
+
+        today = date.today()
+        today_str = today.strftime('%Y%m%d')
+
+        # Step 1: stocks 테이블에서 활성 종목 조회
+        query = db.query(Stock.ticker, Stock.name)
+        if market:
+            query = query.filter(Stock.market == market.upper())
+        all_stocks = query.all()
+
+        if not all_stocks:
+            logger.warning("No stocks found in stocks table")
+            return {
+                'success': 0, 'failed': 0, 'skipped': 0,
+                'total_inserted': 0, 'task_id': task_id,
+                'details': [], 'message': 'stocks 테이블에 종목이 없습니다'
+            }
+
+        # Step 2: 종목별 마지막 적재일 조회 (1회 쿼리)
+        last_dates_rows = (
+            db.query(
+                StockPriceDaily.ticker,
+                func.max(StockPriceDaily.trade_date).label('last_date')
+            )
+            .filter(StockPriceDaily.source_id == source_id)
+            .group_by(StockPriceDaily.ticker)
+            .all()
+        )
+        last_dates = {row.ticker: row.last_date for row in last_dates_rows}
+
+        # Step 3: 종목별 수집 기간 계산
+        tasks_list = []  # (ticker, name, start_str, end_str, is_incremental)
+        skip_count = 0
+        new_count = 0
+        incremental_count = 0
+
+        default_start = today - timedelta(days=default_days)
+
+        for ticker, name in all_stocks:
+            last_date = last_dates.get(ticker)
+            if last_date:
+                start = last_date + timedelta(days=1)
+                if start > today:
+                    skip_count += 1
+                    continue
+                tasks_list.append((ticker, name or ticker, start.strftime('%Y%m%d'), today_str, True))
+                incremental_count += 1
+            else:
+                tasks_list.append((ticker, name or ticker, default_start.strftime('%Y%m%d'), today_str, False))
+                new_count += 1
+
+        total_count = len(tasks_list)
+        logger.info(
+            f"Incremental load: total={len(all_stocks)}, "
+            f"new={new_count}, incremental={incremental_count}, skip={skip_count}"
+        )
+
+        # 진행 상황 추적 시작
+        progress_tracker.start_task(
+            task_id,
+            total_count,
+            f"증분 시계열 적재 (신규 {new_count}, 증분 {incremental_count}, 스킵 {skip_count})"
+        )
+
+        if total_count == 0:
+            progress_tracker.complete_task(task_id, "completed")
+            return {
+                'success': 0, 'failed': 0, 'skipped': skip_count,
+                'total_inserted': 0, 'task_id': task_id,
+                'new_stocks': new_count, 'incremental_stocks': incremental_count,
+                'details': [], 'message': '모든 종목이 최신 상태입니다'
+            }
+
+        # Step 4: 병렬 수집 + 배치 upsert
+        results = {
+            'success': 0,
+            'failed': 0,
+            'skipped': skip_count,
+            'total_inserted': 0,
+            'new_stocks': new_count,
+            'incremental_stocks': incremental_count,
+            'details': [],
+            'task_id': task_id,
+            'num_workers': num_workers,
+        }
+
+        results_lock = threading.Lock()
+        completed_count = [0]
+
+        def fetch_and_load(ticker: str, name: str, start_str: str, end_str: str, is_incremental: bool):
+            """스레드 워커: 개별 종목 증분 적재"""
+            try:
+                db_local = SessionLocal()
+                try:
+                    result = self.load_daily_prices_batch(
+                        db_local, ticker, start_str, end_str, name,
+                        source_id=source_id, batch_id=batch_id,
+                    )
+
+                    with results_lock:
+                        completed_count[0] += 1
+                        current = completed_count[0]
+
+                        if result['success']:
+                            results['success'] += 1
+                            results['total_inserted'] += result['inserted']
+                            success_flag = True
+                        else:
+                            results['failed'] += 1
+                            success_flag = False
+
+                        results['details'].append({
+                            'ticker': ticker,
+                            'name': name,
+                            'incremental': is_incremental,
+                            'result': result
+                        })
+
+                        # 10건마다 또는 마지막 항목에 진행률 업데이트
+                        if current % 10 == 0 or current == total_count:
+                            label = "증분" if is_incremental else "신규"
+                            progress_tracker.update_progress(
+                                task_id,
+                                current=current,
+                                current_item=f"[{label}] {name} ({ticker})",
+                                success=success_flag
+                            )
+
+                        if progress_callback and (current % 10 == 0 or current == total_count):
+                            progress_callback(current, f"{name} ({ticker})")
+
+                finally:
+                    db_local.close()
+
+                # pykrx 호출 간격 (KRX 서버 부하 방지)
+                time.sleep(0.1)
+
+            except Exception as e:
+                logger.error(f"Error processing {ticker}: {str(e)}")
+
+                with results_lock:
+                    completed_count[0] += 1
+                    current = completed_count[0]
+                    results['failed'] += 1
+                    results['details'].append({
+                        'ticker': ticker,
+                        'name': name,
+                        'incremental': is_incremental,
+                        'result': {
+                            'success': False,
+                            'message': f'{ticker} 적재 실패: {str(e)}',
+                            'inserted': 0,
+                            'updated': 0
+                        }
+                    })
+
+                    if current % 10 == 0 or current == total_count:
+                        progress_tracker.update_progress(
+                            task_id,
+                            current=current,
+                            current_item=f"{name} ({ticker})",
+                            success=False,
+                            error=str(e)
+                        )
+
+        # 병렬 처리
+        with ThreadPoolExecutor(max_workers=num_workers) as executor:
+            futures = {
+                executor.submit(
+                    fetch_and_load, ticker, name, start_str, end_str, is_inc
+                ): ticker
+                for ticker, name, start_str, end_str, is_inc in tasks_list
+            }
+
+            for future in as_completed(futures):
+                ticker = futures[future]
+                try:
+                    future.result()
+                except Exception as e:
+                    logger.error(f"Future exception for {ticker}: {e}")
+
+        # 작업 완료
+        progress_tracker.complete_task(task_id, "completed")
+
+        logger.info(
+            f"Incremental load completed: success={results['success']}, "
+            f"failed={results['failed']}, skipped={results['skipped']}, "
+            f"inserted={results['total_inserted']}"
+        )
+
+        return results

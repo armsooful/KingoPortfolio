@@ -329,13 +329,56 @@ export const loadFscBonds = (payload) => {
 
 /**
  * 채권 데이터 전체 조회 (기준일자: 오늘)
+ * @param {string} qualityFilter - 'all' | 'investment_grade' | 'high_quality'
  */
-export const loadBonds = () => {
-  return api.post('/admin/load-bonds');
+export const loadBonds = (qualityFilter = 'all') => {
+  return api.post('/admin/load-bonds', null, { params: { quality_filter: qualityFilter } });
 };
 
 export const loadDartFinancials = (params = {}) => {
   return api.post('/admin/dart/load-financials', null, { params });
+};
+
+/**
+ * FSS 정기예금 상품 조회
+ */
+export const loadDeposits = () => {
+  return api.post('/admin/load-deposits');
+};
+
+/**
+ * FSS 적금 상품 조회
+ */
+export const loadSavings = () => {
+  return api.post('/admin/load-savings');
+};
+
+/**
+ * FSS 연금저축 상품 조회
+ */
+export const loadAnnuitySavings = () => {
+  return api.post('/admin/load-annuity-savings');
+};
+
+/**
+ * FSS 주택담보대출 상품 조회
+ */
+export const loadMortgageLoans = () => {
+  return api.post('/admin/load-mortgage-loans');
+};
+
+/**
+ * FSS 전세자금대출 상품 조회
+ */
+export const loadRentHouseLoans = () => {
+  return api.post('/admin/load-rent-house-loans');
+};
+
+/**
+ * FSS 개인신용대출 상품 조회
+ */
+export const loadCreditLoans = () => {
+  return api.post('/admin/load-credit-loans');
 };
 
 /**
@@ -473,6 +516,13 @@ export const loadAllPykrxFinancials = () => {
  */
 export const loadPykrxFinancials = (ticker) => {
   return api.post(`/admin/pykrx/load-financials/${ticker}`);
+};
+
+/**
+ * pykrx: stocks 테이블 전체 종목 증분 시계열 적재
+ */
+export const loadStocksIncremental = (payload) => {
+  return api.post('/admin/pykrx/load-stocks-incremental', payload);
 };
 
 // ============================================================

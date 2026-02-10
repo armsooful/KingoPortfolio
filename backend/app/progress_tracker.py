@@ -1,9 +1,13 @@
 # backend/app/progress_tracker.py
 
 from typing import Dict, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 import threading
 from app.config import settings
+
+# 완료된 태스크 보존 시간 (기본 30분)
+COMPLETED_TASK_RETENTION_MINUTES = 30
+
 
 class ProgressTracker:
     """데이터 수집 진행 상황 추적"""
@@ -13,9 +17,26 @@ class ProgressTracker:
         self._lock = threading.Lock()
         self._history_limit = history_limit
 
+    def _cleanup_expired(self):
+        """보존 기간이 지난 완료 태스크 자동 정리 (lock 내부에서 호출)"""
+        now = datetime.utcnow()
+        expired = []
+        for task_id, task in self._progress.items():
+            if task["status"] in ("completed", "failed") and task.get("completed_at"):
+                try:
+                    completed_at = datetime.fromisoformat(task["completed_at"])
+                    if now - completed_at > timedelta(minutes=COMPLETED_TASK_RETENTION_MINUTES):
+                        expired.append(task_id)
+                except (ValueError, TypeError):
+                    pass
+        for task_id in expired:
+            del self._progress[task_id]
+
     def start_task(self, task_id: str, total_items: int, description: str = ""):
         """작업 시작"""
         with self._lock:
+            # 새 태스크 시작 시 만료된 태스크 정리
+            self._cleanup_expired()
             self._progress[task_id] = {
                 "task_id": task_id,
                 "description": description,
@@ -84,13 +105,21 @@ class ProgressTracker:
                     self._progress[task_id]["success_count"] = 0
                     self._progress[task_id]["failed_count"] = 0
 
-    def complete_task(self, task_id: str, status: str = "completed"):
-        """작업 완료"""
+    def complete_task(self, task_id: str, status: str = "completed", error: str = None):
+        """작업 완료
+
+        Args:
+            task_id: 작업 ID
+            status: 완료 상태 ('completed' 또는 'failed')
+            error: 에러 메시지 (실패 시)
+        """
         with self._lock:
             if task_id in self._progress:
                 self._progress[task_id]["status"] = status
                 self._progress[task_id]["completed_at"] = datetime.utcnow().isoformat()
                 self._progress[task_id]["updated_at"] = datetime.utcnow().isoformat()
+                if error:
+                    self._progress[task_id]["error_message"] = error
 
     def get_progress(self, task_id: str) -> Optional[dict]:
         """진행 상황 조회"""
