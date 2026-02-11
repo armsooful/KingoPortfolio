@@ -54,8 +54,10 @@ class BondInfoLoadRequest(BaseModel):
 
 
 class CorporateActionLoadRequest(BaseModel):
-    start_date: date
-    end_date: date
+    year: Optional[int] = None
+    quarter: Optional[str] = Field(None, regex="^(Q[1-4]|ALL)$")
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
     as_of_date: Optional[date] = None
     corp_cls: Optional[str] = Field(None, regex="^[YKNE]$")
 
@@ -1263,22 +1265,46 @@ async def load_corporate_actions(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin_permission("ADMIN_RUN"))
 ):
-    """DART 기업 액션(분할/합병) 적재"""
+    """DART 기업 액션(분할/합병) 적재 — year/quarter 또는 start_date/end_date"""
     try:
+        # quarter → 날짜 변환
+        quarter_ranges = {
+            "Q1": (1, 1, 3, 31),
+            "Q2": (4, 1, 6, 30),
+            "Q3": (7, 1, 9, 30),
+            "Q4": (10, 1, 12, 31),
+            "ALL": (1, 1, 12, 31),
+        }
+
+        if payload.year and payload.quarter:
+            sm, sd, em, ed = quarter_ranges[payload.quarter]
+            start = date(payload.year, sm, sd)
+            end = date(payload.year, em, ed)
+        elif payload.start_date and payload.end_date:
+            start = payload.start_date
+            end = payload.end_date
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="year+quarter 또는 start_date+end_date를 입력하세요",
+            )
+
         loader = RealDataLoader(db)
         result = loader.load_corporate_actions(
-            start_date=payload.start_date,
-            end_date=payload.end_date,
+            start_date=start,
+            end_date=end,
             as_of_date=payload.as_of_date or date.today(),
             corp_cls=payload.corp_cls,
             operator_id=str(current_user.id),
-            operator_reason="DART 기업 액션 적재",
+            operator_reason=f"DART 기업 액션 적재 ({payload.quarter or f'{start}~{end}'})",
         )
         return {
             "status": "success",
-            "message": "기업 액션 적재 완료",
+            "message": f"기업 액션 적재 완료 ({start}~{end})",
             "result": result.__dict__,
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

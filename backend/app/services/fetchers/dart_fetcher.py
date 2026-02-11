@@ -506,7 +506,7 @@ class DartFetcher(BaseFetcher):
         return records
 
     def _fetch_disclosure(self, params: Dict[str, Any]) -> FetchResult:
-        """공시 목록 조회"""
+        """공시 목록 조회 (페이징 지원)"""
         start_date = params["start_date"]
         end_date = params["end_date"]
         as_of_date = params["as_of_date"]
@@ -521,18 +521,13 @@ class DartFetcher(BaseFetcher):
         api_params = {
             "bgn_de": start_date.replace("-", ""),
             "end_de": end_date.replace("-", ""),
-            "page_no": 1,
             "page_count": 100,
         }
 
-        # DART 공시 목록 호출 URL 로그 (디버그/검증용)
-        request_url_parts = [
-            f"crtfc_key={self.api_key}",
-            f"bgn_de={api_params['bgn_de']}",
-            f"end_de={api_params['end_de']}",
-            "page_no=1",
-            f"page_count={api_params['page_count']}",
-        ]
+        # 공시 유형 필터 (B=주요사항보고서 등)
+        pblntf_ty = params.get("pblntf_ty")
+        if pblntf_ty:
+            api_params["pblntf_ty"] = pblntf_ty
 
         if ticker:
             corp_code = self._get_corp_code(ticker)
@@ -541,33 +536,46 @@ class DartFetcher(BaseFetcher):
         corp_cls = params.get("corp_cls")
         if corp_cls:
             api_params["corp_cls"] = corp_cls
-            request_url_parts.append(f"corp_cls={corp_cls}")
 
-        request_url = f"{self.BASE_URL}/list.json?" + "&".join(request_url_parts)
-        self.logger.info(request_url)
+        # 디버그 로그
+        self.logger.info(
+            f"공시 조회: bgn_de={api_params['bgn_de']}, end_de={api_params['end_de']}, "
+            f"corp_cls={corp_cls}, pblntf_ty={pblntf_ty}"
+        )
 
-        data = self._call_api("list.json", api_params)
+        # 전체 페이지 순회
+        all_records = []
+        page_no = 1
 
-        # 응답 파싱
-        items = data.get("list", [])
-        records = []
+        while True:
+            api_params["page_no"] = page_no
+            data = self._call_api("list.json", api_params)
 
-        for item in items:
-            record = {
-                "corp_code": item.get("corp_code", ""),
-                "corp_name": item.get("corp_name", ""),
-                "stock_code": item.get("stock_code", ""),
-                "report_nm": item.get("report_nm", ""),
-                "rcept_no": item.get("rcept_no", ""),
-                "flr_nm": item.get("flr_nm", ""),
-                "rcept_dt": item.get("rcept_dt", ""),
-                "rm": item.get("rm", ""),
-                "as_of_date": as_of_date.isoformat() if isinstance(as_of_date, date) else as_of_date,
-            }
-            records.append(record)
+            items = data.get("list", [])
+            for item in items:
+                record = {
+                    "corp_code": item.get("corp_code", ""),
+                    "corp_name": item.get("corp_name", ""),
+                    "stock_code": item.get("stock_code", ""),
+                    "report_nm": item.get("report_nm", ""),
+                    "rcept_no": item.get("rcept_no", ""),
+                    "flr_nm": item.get("flr_nm", ""),
+                    "rcept_dt": item.get("rcept_dt", ""),
+                    "rm": item.get("rm", ""),
+                    "as_of_date": as_of_date.isoformat() if isinstance(as_of_date, date) else as_of_date,
+                }
+                all_records.append(record)
+
+            total_page = int(data.get("total_page", 1))
+            if page_no >= total_page:
+                break
+            page_no += 1
+            self._rate_limit_wait()
+
+        self.logger.info(f"공시 조회 완료: {len(all_records)}건 (총 {total_page}페이지)")
 
         return FetchResult.success_result(
-            data=records,
+            data=all_records,
             source_id=self.source_id,
             data_type=DataType.DISCLOSURE,
             params=params,

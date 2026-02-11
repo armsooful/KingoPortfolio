@@ -11,9 +11,9 @@ Phase 11: 실 데이터 적재 서비스
 """
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
@@ -1415,17 +1415,12 @@ class RealDataLoader:
         stats = BatchStats()
 
         try:
-            result = self.dart_fetcher.fetch(
-                DataType.DISCLOSURE,
-                {
-                    "start_date": start_date,
-                    "end_date": end_date,
-                    "as_of_date": as_of_date,
-                    "corp_cls": corp_cls,
-                },
+            # DART는 3개월(90일) 범위 제한 → 90일 단위로 분할 조회
+            chunks = self._split_date_range(start_date, end_date, max_days=90)
+            logger.info(
+                "기업 액션 날짜 분할",
+                {"chunks": len(chunks), "start": str(start_date), "end": str(end_date)},
             )
-            if not result.success:
-                raise DataLoadError(result.error_message or "기업 액션 조회 실패", batch_id=batch.batch_id)
 
             action_keywords = {
                 "주식분할": "SPLIT",
@@ -1435,28 +1430,46 @@ class RealDataLoader:
                 "분할": "SPINOFF",
             }
 
-            for record in result.data:
-                report_name = record.get("report_nm", "") or ""
-                action_type = None
-                for keyword, mapped in action_keywords.items():
-                    if keyword in report_name:
-                        action_type = mapped
-                        break
-                if not action_type:
+            for chunk_start, chunk_end in chunks:
+                result = self.dart_fetcher.fetch(
+                    DataType.DISCLOSURE,
+                    {
+                        "start_date": chunk_start,
+                        "end_date": chunk_end,
+                        "as_of_date": as_of_date,
+                        "corp_cls": corp_cls,
+                        "pblntf_ty": "B",  # 주요사항보고서만
+                    },
+                )
+                if not result.success:
+                    logger.warning(
+                        "기업 액션 분할 조회 실패",
+                        {"chunk": f"{chunk_start}~{chunk_end}", "error": result.error_message},
+                    )
                     continue
 
-                stats.total_records += 1
-                inserted = self._insert_corporate_action(
-                    record=record,
-                    action_type=action_type,
-                    batch_id=batch.batch_id,
-                    as_of_date=as_of_date,
-                    source_id=result.source_id,
-                )
-                if inserted:
-                    stats.success_records += 1
-                else:
-                    stats.skipped_records += 1
+                for record in result.data:
+                    report_name = record.get("report_nm", "") or ""
+                    action_type = None
+                    for keyword, mapped in action_keywords.items():
+                        if keyword in report_name:
+                            action_type = mapped
+                            break
+                    if not action_type:
+                        continue
+
+                    stats.total_records += 1
+                    inserted = self._insert_corporate_action(
+                        record=record,
+                        action_type=action_type,
+                        batch_id=batch.batch_id,
+                        as_of_date=as_of_date,
+                        source_id=result.source_id,
+                    )
+                    if inserted:
+                        stats.success_records += 1
+                    else:
+                        stats.skipped_records += 1
 
             self.batch_manager.complete_batch(batch.batch_id, stats)
 
@@ -1478,6 +1491,17 @@ class RealDataLoader:
                 f"기업 액션 적재 실패: {e}",
                 batch_id=batch.batch_id,
             ) from e
+
+    @staticmethod
+    def _split_date_range(start: date, end: date, max_days: int = 90) -> List[Tuple[date, date]]:
+        """날짜 범위를 max_days 단위로 분할"""
+        chunks = []
+        current = start
+        while current <= end:
+            chunk_end = min(current + timedelta(days=max_days - 1), end)
+            chunks.append((current, chunk_end))
+            current = chunk_end + timedelta(days=1)
+        return chunks
 
     def load_financials_from_dart(
         self,
