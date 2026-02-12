@@ -252,7 +252,7 @@ const PortfolioBuilderPage = () => {
   return (
     <div className="portfolio-builder-page">
       <div className="page-header">
-        <h1>포트폴리오 구성</h1>
+        <h1>📊 포트폴리오 구성</h1>
         <p className="subtitle">종목 또는 섹터를 선택해 포트폴리오를 만들어 보세요.</p>
       </div>
 

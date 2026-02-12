@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   getValuationMultiples,
   getDCFValuation,
@@ -8,6 +9,7 @@ import {
 import '../styles/Valuation.css';
 
 const Valuation = () => {
+  const navigate = useNavigate();
   const [symbol, setSymbol] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -288,7 +290,7 @@ const Valuation = () => {
   return (
     <div className="valuation">
       <div className="valuation-header">
-        <h2>💼 밸류에이션 분석</h2>
+        <h2>⚙️ 밸류에이션 분석</h2>
         <div className="search-box">
           <input
             type="text"
@@ -334,6 +336,16 @@ const Valuation = () => {
       {error && <div className="error-message">{error}</div>}
 
       {comprehensive && renderComprehensive()}
+
+      {/* 워크플로우 내비게이션 */}
+      <div className="admin-workflow-nav">
+        <button
+          className="admin-workflow-link"
+          onClick={() => navigate('/admin/quant')}
+        >
+          퀀트 분석 →
+        </button>
+      </div>
     </div>
   );
 };

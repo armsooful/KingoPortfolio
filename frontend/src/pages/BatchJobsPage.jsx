@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import '../styles/BatchJobs.css';
 
 export default function BatchJobsPage() {
   const navigate = useNavigate();
@@ -171,26 +172,13 @@ export default function BatchJobsPage() {
   return (
     <div className="main-content">
       <div className="result-container">
-        <div className="result-card" style={{ maxWidth: '1400px' }}>
+        <div className="result-card bj-card">
           {/* Header */}
           <div className="result-header">
-            <button
-              onClick={() => navigate('/admin')}
-              style={{
-                position: 'absolute',
-                top: '20px',
-                left: '20px',
-                background: 'white',
-                border: '2px solid #e0e0e0',
-                borderRadius: '8px',
-                padding: '8px 16px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
-            >
-              ← 뒤로
+            <button className="admin-back-btn" onClick={() => navigate('/admin')}>
+              ← 관리자 홈
             </button>
-            <div className="result-icon" style={{ fontSize: '3rem' }}>
+            <div className="result-icon">
               ⚙️
             </div>
             <h1 className="result-type" style={{ color: '#FF9800' }}>
@@ -202,17 +190,12 @@ export default function BatchJobsPage() {
           </div>
 
           {/* New Batch Job Section */}
-          <div style={{
-            background: '#f5f5f5',
-            borderRadius: '12px',
-            padding: '24px',
-            marginTop: '32px'
-          }}>
-            <h2 style={{ marginBottom: '20px' }}>🚀 새 배치 작업 시작</h2>
+          <div className="bj-new-job-section">
+            <h2>🚀 새 배치 작업 시작</h2>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+            <div className="bj-config-grid">
               <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600' }}>
+                <label className="bj-label">
                   처리할 종목 수 (최대 500개)
                 </label>
                 <input
@@ -221,30 +204,18 @@ export default function BatchJobsPage() {
                   onChange={(e) => setLimit(parseInt(e.target.value))}
                   min="1"
                   max="500"
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '2px solid #e0e0e0',
-                    borderRadius: '8px',
-                    fontSize: '16px'
-                  }}
+                  className="bj-input"
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600' }}>
+                <label className="bj-label">
                   시계열 데이터 수집 기간
                 </label>
                 <select
                   value={days}
                   onChange={(e) => setDays(parseInt(e.target.value))}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '2px solid #e0e0e0',
-                    borderRadius: '8px',
-                    fontSize: '16px'
-                  }}
+                  className="bj-select"
                 >
                   <option value="90">3개월 (90일)</option>
                   <option value="180">6개월 (180일)</option>
@@ -256,20 +227,14 @@ export default function BatchJobsPage() {
               </div>
             </div>
 
-            <div style={{
-              background: '#e3f2fd',
-              borderRadius: '8px',
-              padding: '16px',
-              marginBottom: '20px',
-              borderLeft: '4px solid #2196F3'
-            }}>
-              <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', color: '#333' }}>📋 작업 내용</h3>
-              <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '14px', color: '#666' }}>
+            <div className="bj-info-box">
+              <h3>📋 작업 내용</h3>
+              <ol>
                 <li>기본 정보 수집 (종목명, 현재가, 시가총액)</li>
                 <li>시계열 데이터 수집 (최근 {days}일, OHLCV)</li>
                 <li>재무지표 수집 (PER, PBR, EPS, ROE, 배당률)</li>
               </ol>
-              <div style={{ marginTop: '12px', fontSize: '13px', color: '#666' }}>
+              <div className="bj-estimate">
                 ⏱️ 예상 소요 시간: 약 {Math.ceil(limit / 10)}분 (백그라운드 실행)
               </div>
             </div>
@@ -277,17 +242,7 @@ export default function BatchJobsPage() {
             <button
               onClick={startBatchJob}
               disabled={loading || pollingJobId}
-              style={{
-                width: '100%',
-                padding: '16px',
-                background: loading || pollingJobId ? '#ccc' : '#FF9800',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '18px',
-                fontWeight: '600',
-                cursor: loading || pollingJobId ? 'not-allowed' : 'pointer'
-              }}
+              className="bj-start-btn"
             >
               {loading ? '시작 중...' : pollingJobId ? '다른 작업 실행 중' : '배치 작업 시작'}
             </button>
@@ -295,97 +250,66 @@ export default function BatchJobsPage() {
 
           {/* Current Job Status */}
           {currentJob && (
-            <div style={{
-              background: 'white',
-              border: '2px solid #e0e0e0',
-              borderRadius: '12px',
-              padding: '24px',
-              marginTop: '24px'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h2 style={{ margin: 0 }}>📊 작업 상세 정보</h2>
+            <div className="bj-detail-panel">
+              <div className="bj-detail-header">
+                <h2>📊 작업 상세 정보</h2>
                 <button
                   onClick={() => setCurrentJob(null)}
-                  style={{
-                    padding: '8px 16px',
-                    background: '#f5f5f5',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: 'pointer'
-                  }}
+                  className="bj-close-btn"
                 >
                   닫기
                 </button>
               </div>
 
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+              <div className="bj-info-grid">
+                <div className="bj-info-grid-inner">
                   <div>
-                    <div style={{ fontSize: '13px', color: '#666' }}>작업 ID</div>
-                    <div style={{ fontSize: '16px', fontWeight: '600', fontFamily: 'monospace' }}>{currentJob.job_id}</div>
+                    <div className="bj-info-label">작업 ID</div>
+                    <div className="bj-info-value">{currentJob.job_id}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '13px', color: '#666' }}>상태</div>
-                    <div style={{
-                      display: 'inline-block',
-                      padding: '4px 12px',
-                      background: getStatusColor(currentJob.status) + '20',
-                      color: getStatusColor(currentJob.status),
-                      borderRadius: '12px',
-                      fontSize: '14px',
-                      fontWeight: '600'
-                    }}>
+                    <div className="bj-info-label">상태</div>
+                    <span
+                      className="bj-status-badge"
+                      style={{
+                        background: getStatusColor(currentJob.status) + '20',
+                        color: getStatusColor(currentJob.status)
+                      }}
+                    >
                       {getStatusText(currentJob.status)}
-                    </div>
+                    </span>
                   </div>
                   <div>
-                    <div style={{ fontSize: '13px', color: '#666' }}>시작 시간</div>
-                    <div style={{ fontSize: '14px' }}>{formatDateTime(currentJob.started_at)}</div>
+                    <div className="bj-info-label">시작 시간</div>
+                    <div className="bj-info-value-sm">{formatDateTime(currentJob.started_at)}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '13px', color: '#666' }}>완료 시간</div>
-                    <div style={{ fontSize: '14px' }}>{formatDateTime(currentJob.completed_at)}</div>
+                    <div className="bj-info-label">완료 시간</div>
+                    <div className="bj-info-value-sm">{formatDateTime(currentJob.completed_at)}</div>
                   </div>
                 </div>
               </div>
 
               {/* Progress */}
               {currentJob.status === 'running' && currentJob.progress && (
-                <div style={{
-                  background: '#f5f5f5',
-                  borderRadius: '8px',
-                  padding: '16px',
-                  marginBottom: '20px'
-                }}>
-                  <div style={{ marginBottom: '12px' }}>
-                    <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>
+                <div className="bj-progress-section">
+                  <div className="bj-progress-info">
+                    <div className="bj-progress-phase">
                       {currentJob.progress.phase}
                     </div>
-                    <div style={{ fontSize: '13px', color: '#666' }}>
+                    <div className="bj-progress-details">
                       {currentJob.progress.details}
                     </div>
                   </div>
-                  <div style={{
-                    width: '100%',
-                    height: '24px',
-                    background: '#e0e0e0',
-                    borderRadius: '12px',
-                    overflow: 'hidden'
-                  }}>
-                    <div style={{
-                      width: currentJob.progress.total > 0
-                        ? `${(currentJob.progress.current / currentJob.progress.total * 100)}%`
-                        : '0%',
-                      height: '100%',
-                      background: 'linear-gradient(90deg, #2196F3, #4CAF50)',
-                      transition: 'width 0.3s ease',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'white',
-                      fontSize: '12px',
-                      fontWeight: '600'
-                    }}>
+                  <div className="bj-progress-track">
+                    <div
+                      className="bj-progress-fill"
+                      style={{
+                        width: currentJob.progress.total > 0
+                          ? `${(currentJob.progress.current / currentJob.progress.total * 100)}%`
+                          : '0%'
+                      }}
+                    >
                       {currentJob.progress.total > 0
                         ? `${currentJob.progress.current} / ${currentJob.progress.total}`
                         : ''}
@@ -396,38 +320,33 @@ export default function BatchJobsPage() {
 
               {/* Result */}
               {currentJob.status === 'completed' && currentJob.result && (
-                <div style={{
-                  background: '#E8F5E9',
-                  borderRadius: '8px',
-                  padding: '16px',
-                  borderLeft: '4px solid #4CAF50'
-                }}>
-                  <h3 style={{ margin: '0 0 16px 0', color: '#2E7D32' }}>✅ 작업 완료</h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-                    <div style={{ background: 'white', borderRadius: '8px', padding: '12px' }}>
-                      <div style={{ fontSize: '13px', color: '#666', marginBottom: '4px' }}>기본 정보</div>
-                      <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#4CAF50' }}>
+                <div className="bj-result-success">
+                  <h3>✅ 작업 완료</h3>
+                  <div className="bj-result-grid">
+                    <div className="bj-result-card">
+                      <div className="bj-result-card-label">기본 정보</div>
+                      <div className="bj-result-card-success">
                         {currentJob.result.basic_info?.success || 0} 성공
                       </div>
-                      <div style={{ fontSize: '12px', color: '#F44336' }}>
+                      <div className="bj-result-card-failed">
                         {currentJob.result.basic_info?.failed || 0} 실패
                       </div>
                     </div>
-                    <div style={{ background: 'white', borderRadius: '8px', padding: '12px' }}>
-                      <div style={{ fontSize: '13px', color: '#666', marginBottom: '4px' }}>시계열 데이터</div>
-                      <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#4CAF50' }}>
+                    <div className="bj-result-card">
+                      <div className="bj-result-card-label">시계열 데이터</div>
+                      <div className="bj-result-card-success">
                         {currentJob.result.timeseries?.success || 0} 성공
                       </div>
-                      <div style={{ fontSize: '12px', color: '#F44336' }}>
+                      <div className="bj-result-card-failed">
                         {currentJob.result.timeseries?.failed || 0} 실패
                       </div>
                     </div>
-                    <div style={{ background: 'white', borderRadius: '8px', padding: '12px' }}>
-                      <div style={{ fontSize: '13px', color: '#666', marginBottom: '4px' }}>재무지표</div>
-                      <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#4CAF50' }}>
+                    <div className="bj-result-card">
+                      <div className="bj-result-card-label">재무지표</div>
+                      <div className="bj-result-card-success">
                         {currentJob.result.financial?.success || 0} 성공
                       </div>
-                      <div style={{ fontSize: '12px', color: '#F44336' }}>
+                      <div className="bj-result-card-failed">
                         {currentJob.result.financial?.failed || 0} 실패
                       </div>
                     </div>
@@ -437,14 +356,9 @@ export default function BatchJobsPage() {
 
               {/* Error */}
               {currentJob.status === 'failed' && currentJob.error && (
-                <div style={{
-                  background: '#FFEBEE',
-                  borderRadius: '8px',
-                  padding: '16px',
-                  borderLeft: '4px solid #F44336'
-                }}>
-                  <h3 style={{ margin: '0 0 12px 0', color: '#C62828' }}>❌ 작업 실패</h3>
-                  <div style={{ fontSize: '14px', color: '#666', fontFamily: 'monospace' }}>
+                <div className="bj-result-error">
+                  <h3>❌ 작업 실패</h3>
+                  <div className="bj-result-error-msg">
                     {currentJob.error}
                   </div>
                 </div>
@@ -453,98 +367,67 @@ export default function BatchJobsPage() {
           )}
 
           {/* Job History */}
-          <div style={{ marginTop: '32px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div className="bj-history-section">
+            <div className="bj-history-header">
               <h2>📜 작업 기록</h2>
               <button
                 onClick={loadJobs}
-                style={{
-                  padding: '8px 16px',
-                  background: '#2196F3',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '14px'
-                }}
+                className="bj-refresh-btn"
               >
                 🔄 새로고침
               </button>
             </div>
 
             {jobs.length === 0 ? (
-              <div style={{
-                textAlign: 'center',
-                padding: '40px',
-                color: '#999',
-                fontSize: '14px'
-              }}>
+              <div className="bj-empty">
                 배치 작업 기록이 없습니다.
               </div>
             ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <div className="bj-table-wrap">
+                <table className="bj-table">
                   <thead>
-                    <tr style={{ background: '#f5f5f5' }}>
-                      <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #e0e0e0' }}>작업 ID</th>
-                      <th style={{ padding: '12px', textAlign: 'center', borderBottom: '2px solid #e0e0e0' }}>상태</th>
-                      <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #e0e0e0' }}>시작 시간</th>
-                      <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #e0e0e0' }}>완료 시간</th>
-                      <th style={{ padding: '12px', textAlign: 'center', borderBottom: '2px solid #e0e0e0' }}>작업</th>
+                    <tr>
+                      <th>작업 ID</th>
+                      <th className="center">상태</th>
+                      <th>시작 시간</th>
+                      <th>완료 시간</th>
+                      <th className="center">작업</th>
                     </tr>
                   </thead>
                   <tbody>
                     {jobs.map((job) => (
                       <tr key={job.job_id}>
-                        <td style={{ padding: '12px', borderBottom: '1px solid #e0e0e0', fontFamily: 'monospace', fontSize: '13px' }}>
+                        <td className="mono">
                           {job.job_id}
                         </td>
-                        <td style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid #e0e0e0' }}>
-                          <span style={{
-                            padding: '4px 12px',
-                            background: getStatusColor(job.status) + '20',
-                            color: getStatusColor(job.status),
-                            borderRadius: '12px',
-                            fontSize: '12px',
-                            fontWeight: '600'
-                          }}>
+                        <td className="center">
+                          <span
+                            className="bj-status-badge-sm"
+                            style={{
+                              background: getStatusColor(job.status) + '20',
+                              color: getStatusColor(job.status)
+                            }}
+                          >
                             {getStatusText(job.status)}
                           </span>
                         </td>
-                        <td style={{ padding: '12px', borderBottom: '1px solid #e0e0e0', fontSize: '13px' }}>
+                        <td className="small">
                           {formatDateTime(job.started_at)}
                         </td>
-                        <td style={{ padding: '12px', borderBottom: '1px solid #e0e0e0', fontSize: '13px' }}>
+                        <td className="small">
                           {formatDateTime(job.completed_at)}
                         </td>
-                        <td style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid #e0e0e0' }}>
+                        <td className="center">
                           <button
                             onClick={() => viewJobDetail(job.job_id)}
-                            style={{
-                              padding: '6px 12px',
-                              background: '#2196F3',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '12px',
-                              marginRight: '8px'
-                            }}
+                            className="bj-action-btn detail"
                           >
                             상세
                           </button>
                           <button
                             onClick={() => deleteJob(job.job_id)}
                             disabled={job.status === 'running'}
-                            style={{
-                              padding: '6px 12px',
-                              background: job.status === 'running' ? '#ccc' : '#F44336',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: job.status === 'running' ? 'not-allowed' : 'pointer',
-                              fontSize: '12px'
-                            }}
+                            className="bj-action-btn delete"
                           >
                             삭제
                           </button>

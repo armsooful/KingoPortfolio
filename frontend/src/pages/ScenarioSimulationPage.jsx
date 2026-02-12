@@ -180,11 +180,8 @@ function ScenarioSimulationPage() {
                   <span>주식</span>
                   <div className="bar-container">
                     <div
-                      className="bar"
-                      style={{
-                        width: `${scenarioDetail.allocation.stocks}%`,
-                        backgroundColor: '#f44336'
-                      }}
+                      className="bar bar-stocks"
+                      style={{ width: `${scenarioDetail.allocation.stocks}%` }}
                     />
                   </div>
                   <span>{scenarioDetail.allocation.stocks}%</span>
@@ -193,11 +190,8 @@ function ScenarioSimulationPage() {
                   <span>채권</span>
                   <div className="bar-container">
                     <div
-                      className="bar"
-                      style={{
-                        width: `${scenarioDetail.allocation.bonds}%`,
-                        backgroundColor: '#2196F3'
-                      }}
+                      className="bar bar-bonds"
+                      style={{ width: `${scenarioDetail.allocation.bonds}%` }}
                     />
                   </div>
                   <span>{scenarioDetail.allocation.bonds}%</span>
@@ -206,11 +200,8 @@ function ScenarioSimulationPage() {
                   <span>단기금융</span>
                   <div className="bar-container">
                     <div
-                      className="bar"
-                      style={{
-                        width: `${scenarioDetail.allocation.money_market}%`,
-                        backgroundColor: '#4CAF50'
-                      }}
+                      className="bar bar-money-market"
+                      style={{ width: `${scenarioDetail.allocation.money_market}%` }}
                     />
                   </div>
                   <span>{scenarioDetail.allocation.money_market}%</span>
@@ -219,11 +210,8 @@ function ScenarioSimulationPage() {
                   <span>금</span>
                   <div className="bar-container">
                     <div
-                      className="bar"
-                      style={{
-                        width: `${scenarioDetail.allocation.gold}%`,
-                        backgroundColor: '#FFC107'
-                      }}
+                      className="bar bar-gold"
+                      style={{ width: `${scenarioDetail.allocation.gold}%` }}
                     />
                   </div>
                   <span>{scenarioDetail.allocation.gold}%</span>
@@ -361,16 +349,8 @@ function ScenarioSimulationPage() {
           <p>
             투자 용어가 생소하다면{' '}
             <button
+              className="ss-link-btn"
               onClick={() => navigate('/terminology')}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#667eea',
-                textDecoration: 'underline',
-                cursor: 'pointer',
-                padding: 0,
-                font: 'inherit'
-              }}
             >
               용어학습 도구
             </button>

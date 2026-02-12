@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
-import api from '../services/api';
+import api, { getMarketSubscriptionStatus, subscribeMarketEmail } from '../services/api';
 import '../styles/MarketDashboard.css';
 
 function MarketDashboardPage() {
@@ -10,10 +10,34 @@ function MarketDashboardPage() {
   const [marketData, setMarketData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [emailSub, setEmailSub] = useState(null);
+  const [subLoading, setSubLoading] = useState(false);
 
   useEffect(() => {
     fetchMarketData();
+    fetchEmailSub();
   }, []);
+
+  const fetchEmailSub = async () => {
+    try {
+      const res = await getMarketSubscriptionStatus();
+      setEmailSub(res.data);
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleSubscribe = async () => {
+    setSubLoading(true);
+    try {
+      await subscribeMarketEmail();
+      await fetchEmailSub();
+    } catch {
+      // ignore
+    } finally {
+      setSubLoading(false);
+    }
+  };
 
   const fetchMarketData = async () => {
     try {
@@ -204,6 +228,25 @@ function MarketDashboardPage() {
           <button onClick={() => navigate('/profile')} className="btn-cta">
             프로필 설정하기
           </button>
+        </div>
+        <div className="cta-card">
+          <h3>📧 시장 요약 이메일</h3>
+          <p>매일 아침 전일 시장 현황을 이메일로 받아보세요 (교육용)</p>
+          {emailSub?.subscribed ? (
+            <span className="cta-subscribed-badge">구독 중</span>
+          ) : emailSub?.is_email_verified === false ? (
+            <button className="btn-cta" disabled>
+              이메일 인증 필요
+            </button>
+          ) : (
+            <button
+              className="btn-cta"
+              onClick={handleSubscribe}
+              disabled={subLoading}
+            >
+              {subLoading ? '처리 중...' : '이메일 구독하기'}
+            </button>
+          )}
         </div>
       </section>
     </div>

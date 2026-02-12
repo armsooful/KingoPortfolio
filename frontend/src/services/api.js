@@ -953,3 +953,19 @@ export const listMarkets = () => {
 export const listCategories = () => {
   return api.get('/api/v1/securities/categories');
 };
+
+// ============================================================
+// Market Subscription API
+// ============================================================
+
+export const getMarketSubscriptionStatus = () => {
+  return api.get('/api/v1/market-subscription/status');
+};
+
+export const subscribeMarketEmail = () => {
+  return api.post('/api/v1/market-subscription/subscribe');
+};
+
+export const unsubscribeMarketEmail = () => {
+  return api.post('/api/v1/market-subscription/unsubscribe');
+};

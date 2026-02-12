@@ -329,10 +329,14 @@ def run_full_krx_batch_job(
                     stock.eps = round(float(eps), 2)
                     updates['EPS'] = stock.eps
 
-                # 배당수익률 (yfinance는 소수로 제공, 퍼센트로 변환)
+                # 배당수익률 (yfinance: KRX 종목은 이미 %단위로 반환)
                 div_yield = info.get('dividendYield')
                 if div_yield and div_yield > 0:
-                    stock.dividend_yield = round(float(div_yield) * 100, 2)
+                    # KRX 종목: 이미 %(예: 4.11), 소수점 형태(예: 0.0411)면 변환
+                    if div_yield < 1:
+                        stock.dividend_yield = round(float(div_yield) * 100, 2)
+                    else:
+                        stock.dividend_yield = round(float(div_yield), 2)
                     updates['DIV'] = stock.dividend_yield
 
                 # ROE

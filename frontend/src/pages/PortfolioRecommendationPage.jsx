@@ -160,26 +160,14 @@ function PortfolioRecommendationPage() {
       {/* 헤더 */}
       <div className="portfolio-header">
         <div className="header-content">
-          <h1>📊 포트폴리오 구성 시뮬레이션</h1>
+          <h1>📊 AI 시뮬레이션</h1>
           <p className="subtitle">학습 성향별 자산 배분 예시를 시뮬레이션으로 학습하세요 (교육용)</p>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div className="pr-header-actions">
           <button
             onClick={handleDownloadPDF}
-            className="btn-secondary"
+            className="pr-pdf-btn"
             disabled={downloadingPDF}
-            style={{
-              background: downloadingPDF ? '#ccc' : '#4caf50',
-              color: 'white',
-              border: 'none',
-              padding: '10px 20px',
-              borderRadius: '8px',
-              cursor: downloadingPDF ? 'not-allowed' : 'pointer',
-              fontWeight: '600',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
           >
             {downloadingPDF ? (
               <>⏳ 생성 중...</>
@@ -218,7 +206,7 @@ function PortfolioRecommendationPage() {
               <span className="value">{portfolio.statistics?.portfolio_risk || '중간'}</span>
             </div>
           </div>
-          <p style={{ fontSize: '0.85rem', color: '#666', marginTop: '12px' }}>
+          <p className="pr-disclaimer-text">
             ⚠️ 본 결과는 교육 목적의 시뮬레이션 예시이며, 투자 권유가 아닙니다.
           </p>
         </div>
@@ -297,7 +285,7 @@ function PortfolioRecommendationPage() {
       {/* 샘플 종목 */}
       <section className="sample-assets">
         <h2>시뮬레이션 구성 예시 종목</h2>
-        <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '16px' }}>
+        <p className="pr-sample-disclaimer">
           ⚠️ 교육 목적의 예시 종목이며, 학습용 시나리오입니다.
         </p>
         <div className="assets-grid">

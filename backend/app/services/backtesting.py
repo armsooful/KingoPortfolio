@@ -20,6 +20,8 @@ class BacktestingEngine:
 
     def __init__(self, db: Session):
         self.db = db
+        self._backtest_start_date: Optional[datetime] = None
+        self._price_cache: Dict[str, Dict[date, float]] = {}  # ticker -> {date -> price}
 
     def run_backtest(
         self,
@@ -50,10 +52,16 @@ class BacktestingEngine:
         if days < 30:
             raise ValueError("백테스트 기간은 최소 30일 이상이어야 합니다")
 
+        # 백테스트 시작일 저장 (채권/예금 이자 계산용)
+        self._backtest_start_date = start_date
+
         # 포트폴리오 초기 구성
         current_portfolio = self._initialize_portfolio(
             portfolio, initial_investment
         )
+
+        # 가격 데이터 일괄 프리로드 (성능 최적화)
+        self._preload_prices(current_portfolio, start_date, end_date)
 
         # 일별 시뮬레이션
         daily_values = []
@@ -119,6 +127,10 @@ class BacktestingEngine:
 
     def _initialize_portfolio(self, portfolio: Dict, amount: int) -> Dict:
         """포트폴리오 초기 구성"""
+        # 중첩 구조 처리 (generate 응답 전체가 넘어올 경우)
+        if "portfolio" in portfolio and isinstance(portfolio["portfolio"], dict):
+            portfolio = portfolio["portfolio"]
+
         holdings = {}
 
         # 주식
@@ -178,9 +190,9 @@ class BacktestingEngine:
                 total_value += price * holding["shares"]
 
             elif holding["type"] in ["bond", "deposit"]:
-                # 채권/예금: 원금 + 경과 이자
-                days_held = (date - datetime.now()).days
-                if days_held < 0:  # 과거 날짜
+                # 채권/예금: 원금 + 경과 이자 (백테스트 시작일 기준)
+                days_held = (date - self._backtest_start_date).days
+                if days_held < 0:
                     days_held = 0
 
                 daily_rate = holding["annual_rate"] / 365 / 100
@@ -189,70 +201,86 @@ class BacktestingEngine:
 
         return total_value
 
+    def _preload_prices(self, portfolio: Dict, start_date: datetime, end_date: datetime):
+        """백테스트 기간의 모든 가격 데이터를 일괄 로드하여 캐시"""
+        self._price_cache = {}
+        start_d = start_date.date() if isinstance(start_date, datetime) else start_date
+        end_d = end_date.date() if isinstance(end_date, datetime) else end_date
+
+        tickers = []
+        for key, holding in portfolio.items():
+            if holding["type"] in ["stock", "etf"]:
+                tickers.append(holding["ticker"])
+
+        if not tickers:
+            return
+
+        # KRX 종목 (6자리 숫자) 일괄 로드
+        krx_tickers = [t for t in tickers if t.isdigit() and len(t) == 6]
+        if krx_tickers:
+            rows = self.db.query(
+                StockPriceDaily.ticker,
+                StockPriceDaily.trade_date,
+                StockPriceDaily.close_price
+            ).filter(
+                and_(
+                    StockPriceDaily.ticker.in_(krx_tickers),
+                    StockPriceDaily.trade_date >= start_d,
+                    StockPriceDaily.trade_date <= end_d
+                )
+            ).all()
+
+            for ticker, trade_date, close_price in rows:
+                if ticker not in self._price_cache:
+                    self._price_cache[ticker] = {}
+                self._price_cache[ticker][trade_date] = float(close_price)
+
+        # 미국 종목 일괄 로드
+        us_tickers = [t for t in tickers if not (t.isdigit() and len(t) == 6)]
+        if us_tickers:
+            rows = self.db.query(
+                AlphaVantageTimeSeries.symbol,
+                AlphaVantageTimeSeries.date,
+                AlphaVantageTimeSeries.adjusted_close,
+                AlphaVantageTimeSeries.close
+            ).filter(
+                and_(
+                    AlphaVantageTimeSeries.symbol.in_(us_tickers),
+                    AlphaVantageTimeSeries.date >= start_d,
+                    AlphaVantageTimeSeries.date <= end_d
+                )
+            ).all()
+
+            for symbol, d, adj_close, close in rows:
+                if symbol not in self._price_cache:
+                    self._price_cache[symbol] = {}
+                self._price_cache[symbol][d] = adj_close or close
+
     def _get_historical_price(
         self, ticker: str, security_type: str, target_date: datetime, initial_price: float
     ) -> float:
         """
-        과거 가격 데이터 조회
+        과거 가격 데이터 조회 (캐시 우선)
 
-        1순위: DB의 실제 시계열 데이터 (AlphaVantageTimeSeries)
-        2순위: 현재가 기반 추정 (시뮬레이션)
+        1순위: 프리로드된 캐시
+        2순위: 캐시 내 가장 가까운 과거 날짜
+        3순위: 현재가 기반 시뮬레이션
         """
-        # 날짜를 date 객체로 변환
         query_date = target_date.date() if isinstance(target_date, datetime) else target_date
 
-        # 1. 미국 주식/ETF: AlphaVantageTimeSeries에서 조회
-        if security_type in ["stock", "etf"]:
-            # DB에서 해당 날짜의 가격 조회
-            timeseries_data = self.db.query(AlphaVantageTimeSeries).filter(
-                and_(
-                    AlphaVantageTimeSeries.symbol == ticker,
-                    AlphaVantageTimeSeries.date == query_date
-                )
-            ).first()
+        # 1. 캐시에서 정확한 날짜 조회
+        if ticker in self._price_cache:
+            cache = self._price_cache[ticker]
+            if query_date in cache:
+                return cache[query_date]
 
-            if timeseries_data:
-                # 조정 종가 우선, 없으면 종가 사용
-                return timeseries_data.adjusted_close or timeseries_data.close
+            # 가장 가까운 과거 날짜 찾기 (주말/공휴일 대비)
+            past_dates = [d for d in cache if d <= query_date]
+            if past_dates:
+                nearest = max(past_dates)
+                return cache[nearest]
 
-            # 정확한 날짜가 없으면 가장 가까운 과거 날짜 찾기 (주말/공휴일 대비)
-            nearest_data = self.db.query(AlphaVantageTimeSeries).filter(
-                and_(
-                    AlphaVantageTimeSeries.symbol == ticker,
-                    AlphaVantageTimeSeries.date <= query_date
-                )
-            ).order_by(AlphaVantageTimeSeries.date.desc()).first()
-
-            if nearest_data:
-                return nearest_data.adjusted_close or nearest_data.close
-
-        # 2. 한국 주식/ETF: StockPriceDaily에서 조회
-        # 한국 종목의 경우 ticker가 6자리 숫자 (예: 005930)
-        if ticker.isdigit() and len(ticker) == 6:
-            # DB에서 해당 날짜의 가격 조회
-            krx_data = self.db.query(StockPriceDaily).filter(
-                and_(
-                    StockPriceDaily.ticker == ticker,
-                    StockPriceDaily.trade_date == query_date
-                )
-            ).first()
-
-            if krx_data:
-                return float(krx_data.close_price)
-
-            # 정확한 날짜가 없으면 가장 가까운 과거 날짜 찾기
-            nearest_krx = self.db.query(StockPriceDaily).filter(
-                and_(
-                    StockPriceDaily.ticker == ticker,
-                    StockPriceDaily.trade_date <= query_date
-                )
-            ).order_by(StockPriceDaily.trade_date.desc()).first()
-
-            if nearest_krx:
-                return float(nearest_krx.close_price)
-
-        # 3. Fallback: 시뮬레이션 (실제 데이터 없을 경우)
-        # 간단한 랜덤 워크 시뮬레이션
+        # 2. Fallback: 시뮬레이션 (캐시에 데이터 없는 경우)
         days_from_now = (datetime.now() - target_date).days
         if days_from_now <= 0:
             return initial_price
@@ -260,7 +288,7 @@ class BacktestingEngine:
         import random
         random.seed(f"{ticker}_{target_date.isoformat()}")
         daily_change = random.uniform(-0.005, 0.005)
-        cumulative_change = 1 + (daily_change * days_from_now * 0.1)  # 완화된 변동
+        cumulative_change = 1 + (daily_change * days_from_now * 0.1)
 
         return initial_price * cumulative_change
 
@@ -307,6 +335,9 @@ class BacktestingEngine:
         for i in range(1, len(daily_values)):
             prev_value = daily_values[i - 1]["value"]
             curr_value = daily_values[i]["value"]
+            if prev_value == 0:
+                daily_returns.append(0)
+                continue
             daily_return = ((curr_value - prev_value) / prev_value) * 100
             daily_returns.append(daily_return)
 
@@ -360,13 +391,19 @@ class BacktestingEngine:
 
         if len(daily_values) >= 22:  # 약 1개월 (영업일 기준)
             for i in range(22, len(daily_values)):
-                period_return = ((daily_values[i]["value"] - daily_values[i-22]["value"]) / daily_values[i-22]["value"]) * 100
+                base_value = daily_values[i-22]["value"]
+                if base_value == 0:
+                    continue
+                period_return = ((daily_values[i]["value"] - base_value) / base_value) * 100
                 if period_return < worst_1m_return:
                     worst_1m_return = period_return
 
         if len(daily_values) >= 66:  # 약 3개월 (영업일 기준)
             for i in range(66, len(daily_values)):
-                period_return = ((daily_values[i]["value"] - daily_values[i-66]["value"]) / daily_values[i-66]["value"]) * 100
+                base_value = daily_values[i-66]["value"]
+                if base_value == 0:
+                    continue
+                period_return = ((daily_values[i]["value"] - base_value) / base_value) * 100
                 if period_return < worst_3m_return:
                     worst_3m_return = period_return
 

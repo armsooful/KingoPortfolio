@@ -1,0 +1,359 @@
+/* ============================================================
+   BatchJobsPage Styles
+   ============================================================ */
+
+/* Card max-width override */
+.bj-card {
+  max-width: 1400px;
+}
+
+/* New batch job section */
+.bj-new-job-section {
+  background: #f5f5f5;
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 32px;
+}
+
+.bj-new-job-section h2 {
+  margin-bottom: 20px;
+}
+
+/* Two-column config grid */
+.bj-config-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.bj-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.bj-input,
+.bj-select {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+/* Info box */
+.bj-info-box {
+  background: #e3f2fd;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  border-left: 4px solid #2196F3;
+}
+
+.bj-info-box h3 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  color: #333;
+}
+
+.bj-info-box ol {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 14px;
+  color: #666;
+}
+
+.bj-info-box .bj-estimate {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #666;
+}
+
+/* Start button */
+.bj-start-btn {
+  width: 100%;
+  padding: 16px;
+  background: #FF9800;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bj-start-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* Current job detail panel */
+.bj-detail-panel {
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 24px;
+}
+
+.bj-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.bj-detail-header h2 {
+  margin: 0;
+}
+
+.bj-close-btn {
+  padding: 8px 16px;
+  background: #f5f5f5;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Job info 2-col grid */
+.bj-info-grid {
+  margin-bottom: 20px;
+}
+
+.bj-info-grid-inner {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.bj-info-label {
+  font-size: 13px;
+  color: #666;
+}
+
+.bj-info-value {
+  font-size: 16px;
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.bj-info-value-sm {
+  font-size: 14px;
+}
+
+/* Status badge */
+.bj-status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.bj-status-badge-sm {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Progress section */
+.bj-progress-section {
+  background: #f5f5f5;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.bj-progress-info {
+  margin-bottom: 12px;
+}
+
+.bj-progress-phase {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.bj-progress-details {
+  font-size: 13px;
+  color: #666;
+}
+
+.bj-progress-track {
+  width: 100%;
+  height: 24px;
+  background: #e0e0e0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.bj-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2196F3, #4CAF50);
+  transition: width 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Completed result */
+.bj-result-success {
+  background: #E8F5E9;
+  border-radius: 8px;
+  padding: 16px;
+  border-left: 4px solid #4CAF50;
+}
+
+.bj-result-success h3 {
+  margin: 0 0 16px 0;
+  color: #2E7D32;
+}
+
+.bj-result-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.bj-result-card {
+  background: white;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.bj-result-card-label {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.bj-result-card-success {
+  font-size: 18px;
+  font-weight: bold;
+  color: #4CAF50;
+}
+
+.bj-result-card-failed {
+  font-size: 12px;
+  color: #F44336;
+}
+
+/* Failed result */
+.bj-result-error {
+  background: #FFEBEE;
+  border-radius: 8px;
+  padding: 16px;
+  border-left: 4px solid #F44336;
+}
+
+.bj-result-error h3 {
+  margin: 0 0 12px 0;
+  color: #C62828;
+}
+
+.bj-result-error-msg {
+  font-size: 14px;
+  color: #666;
+  font-family: monospace;
+}
+
+/* Job history */
+.bj-history-section {
+  margin-top: 32px;
+}
+
+.bj-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.bj-refresh-btn {
+  padding: 8px 16px;
+  background: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.bj-empty {
+  text-align: center;
+  padding: 40px;
+  color: #999;
+  font-size: 14px;
+}
+
+/* Table */
+.bj-table-wrap {
+  overflow-x: auto;
+}
+
+.bj-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.bj-table thead tr {
+  background: #f5f5f5;
+}
+
+.bj-table th {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.bj-table th.center {
+  text-align: center;
+}
+
+.bj-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.bj-table td.center {
+  text-align: center;
+}
+
+.bj-table td.mono {
+  font-family: monospace;
+  font-size: 13px;
+}
+
+.bj-table td.small {
+  font-size: 13px;
+}
+
+/* Action buttons in table */
+.bj-action-btn {
+  padding: 6px 12px;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.bj-action-btn.detail {
+  background: #2196F3;
+  margin-right: 8px;
+}
+
+.bj-action-btn.delete {
+  background: #F44336;
+}
+
+.bj-action-btn.delete:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}

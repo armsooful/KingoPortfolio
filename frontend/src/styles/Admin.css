@@ -1,0 +1,76 @@
+/* ============================================================
+   AdminPage Styles
+   ============================================================ */
+
+.admin-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-top: 40px;
+}
+
+.admin-menu-card {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 2px solid transparent;
+}
+
+.admin-menu-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  border-color: var(--card-color);
+}
+
+.admin-menu-card-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+}
+
+.admin-menu-card-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.admin-menu-card-desc {
+  font-size: 0.95rem;
+  color: #666;
+  line-height: 1.6;
+}
+
+.admin-info-section {
+  margin-top: 48px;
+  padding: 24px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border-left: 4px solid #667eea;
+}
+
+.admin-info-section h3 {
+  font-size: 1.2rem;
+  margin-bottom: 12px;
+  color: #1a1a1a;
+}
+
+.admin-info-section ul {
+  font-size: 0.95rem;
+  color: #666;
+  line-height: 1.8;
+  padding-left: 20px;
+}
+
+.admin-quick-links {
+  margin-top: 32px;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.admin-quick-links .btn {
+  padding: 12px 24px;
+}

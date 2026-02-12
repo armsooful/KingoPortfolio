@@ -453,6 +453,22 @@
   box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
+.btn-cta:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.cta-subscribed-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  color: white;
+  padding: 0.625rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
 /* Loading & Error States */
 .loading-container,
 .error-container {

@@ -332,6 +332,26 @@ function BacktestPage() {
             <p>초기 투자: {formatCurrency(result.initial_investment)}원</p>
             <p>리밸런싱 주기: 분기별 (3개월)</p>
           </div>
+
+          {/* 성과 해석 이동 */}
+          <div className="nav-link-section">
+            <button
+              className="btn-primary"
+              onClick={() => navigate('/analysis', {
+                state: {
+                  metrics: {
+                    total_return: result.historical_observation?.total_return ?? result.total_return,
+                    cagr: result.historical_observation?.cagr ?? result.annualized_return,
+                    volatility: result.risk_metrics?.volatility ?? result.volatility,
+                    sharpe_ratio: result.historical_observation?.sharpe_ratio ?? result.sharpe_ratio,
+                    max_drawdown: result.risk_metrics?.max_drawdown ?? result.max_drawdown,
+                  }
+                }
+              })}
+            >
+              성과 해석하기 →
+            </button>
+          </div>
         </div>
       )}
 

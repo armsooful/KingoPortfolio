@@ -17,7 +17,7 @@ load_dotenv()
 
 from app.config import settings
 from app.database import engine, Base, get_db
-from app.routes import auth, diagnosis, admin, admin_batch, admin_lineage, admin_data_quality, admin_data_load, market, backtesting, admin_portfolio, batch_jobs, stock_detail, portfolio_comparison, pdf_report, scenarios, analysis, performance_internal, performance_public, admin_controls, bookmarks, user_settings, event_log, phase7_portfolios, phase7_evaluation, phase7_comparison, securities, consents, admin_consents, krx_timeseries
+from app.routes import auth, diagnosis, admin, admin_batch, admin_lineage, admin_data_quality, admin_data_load, market, backtesting, admin_portfolio, batch_jobs, stock_detail, portfolio_comparison, pdf_report, scenarios, analysis, performance_internal, performance_public, admin_controls, bookmarks, user_settings, event_log, phase7_portfolios, phase7_evaluation, phase7_comparison, securities, consents, admin_consents, krx_timeseries, market_subscription, admin_market_email
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.error_handlers import setup_exception_handlers
@@ -38,6 +38,7 @@ from app.models import portfolio as portfolio_models  # noqa
 from app.models import bookmark as bookmark_models  # noqa
 from app.models import user_preferences as user_preferences_models  # noqa
 from app.models import event_log as event_log_models  # noqa
+from app.models import market_email_log as market_email_log_models  # noqa
 from app.models import simulation as simulation_models  # noqa
 from app.models import scenario as scenario_models  # noqa
 from app.models import rebalancing as rebalancing_models  # noqa
@@ -82,8 +83,30 @@ async def lifespan(app: FastAPI):
         print(f"❌ Database initialization FAILED: {e}")
         import traceback
         traceback.print_exc()
-        # 테이블 생성 실패 시 앱을 중단하지 않고 계속 진행 (경고만 출력)
+
+    # APScheduler: 매일 07:30 KST 시장 요약 이메일 발송
+    scheduler = None
+    try:
+        from apscheduler.schedulers.asyncio import AsyncIOScheduler
+        from apscheduler.triggers.cron import CronTrigger
+        from app.services.market_email_service import scheduled_daily_email
+
+        scheduler = AsyncIOScheduler()
+        scheduler.add_job(
+            scheduled_daily_email,
+            CronTrigger(hour=7, minute=30, timezone="Asia/Seoul"),
+            id="daily_market_email",
+            replace_existing=True,
+        )
+        scheduler.start()
+        print("✅ APScheduler started (daily_market_email @ 07:30 KST)")
+    except Exception as e:
+        print(f"⚠️ APScheduler setup failed: {e}")
+
     yield
+
+    if scheduler:
+        scheduler.shutdown(wait=False)
     print("🛑 Lifespan shutdown")
 
 
@@ -276,6 +299,8 @@ app.include_router(consents.router)
 app.include_router(securities.router)
 app.include_router(admin_consents.router)
 app.include_router(krx_timeseries.router)
+app.include_router(market_subscription.router)
+app.include_router(admin_market_email.router)
 from app.routes import portfolio_public
 app.include_router(portfolio_public.router)
 

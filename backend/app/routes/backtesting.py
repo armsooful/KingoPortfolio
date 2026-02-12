@@ -92,6 +92,33 @@ async def run_backtest(
             "rebalance_frequency": backtest_request.rebalance_frequency
         }
 
+        # allocation-only 포트폴리오 → simple 모드로 전환
+        # 시나리오 시뮬레이션: {allocation: {...}, securities: []} 형태
+        portfolio_data = backtest_request.portfolio
+        if portfolio_data and "allocation" in portfolio_data:
+            has_securities = any(
+                portfolio_data.get(k)
+                for k in ("stocks", "etfs", "bonds", "deposits", "securities")
+                if isinstance(portfolio_data.get(k), list) and portfolio_data.get(k)
+            )
+            if not has_securities:
+                # allocation의 주식 비중으로 investment_type 결정
+                alloc = portfolio_data["allocation"]
+                stocks_pct = alloc.get("stocks", 0)
+                if stocks_pct <= 20:
+                    mapped_type = "conservative"
+                elif stocks_pct <= 40:
+                    mapped_type = "moderate"
+                else:
+                    mapped_type = "aggressive"
+
+                logger.info(f"Scenario allocation (stocks={stocks_pct}%) → {mapped_type} simple backtest")
+                backtest_request.investment_type = mapped_type
+                backtest_request.portfolio = None
+                # cache_params 업데이트
+                cache_params["investment_type"] = mapped_type
+                cache_params["portfolio"] = None
+
         # 정확 모드: 실제 포트폴리오 백테스트
         if backtest_request.portfolio:
             def compute_portfolio_backtest():

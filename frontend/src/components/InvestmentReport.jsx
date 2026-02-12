@@ -40,7 +40,7 @@ const InvestmentReport = () => {
   return (
     <div className="investment-report">
       <div className="report-header">
-        <h2>📄 종합 투자 리포트</h2>
+        <h2>⚙️ 종합 투자 리포트</h2>
         <p className="report-subtitle">객관적 분석 정보 제공 (투자 권고 아님)</p>
 
         <div className="input-group">

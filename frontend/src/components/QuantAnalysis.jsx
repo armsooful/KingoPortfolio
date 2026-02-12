@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   getComprehensiveQuant,
   getTechnicalIndicators,
@@ -7,6 +8,7 @@ import {
 import '../styles/QuantAnalysis.css';
 
 const QuantAnalysis = () => {
+  const navigate = useNavigate();
   const [symbol, setSymbol] = useState('');
   const [marketSymbol, setMarketSymbol] = useState('SPY');
   const [days, setDays] = useState(252);
@@ -332,7 +334,7 @@ const QuantAnalysis = () => {
   return (
     <div className="quant-analysis">
       <div className="quant-header">
-        <h2>📈 퀀트/기술 분석</h2>
+        <h2>⚙️ 퀀트/기술 분석</h2>
         <div className="input-group">
           <input
             type="text"
@@ -412,6 +414,16 @@ const QuantAnalysis = () => {
           {activeTab === 'risk' && renderRiskMetrics()}
         </div>
       )}
+
+      {/* 워크플로우 내비게이션 */}
+      <div className="admin-workflow-nav">
+        <button
+          className="admin-workflow-link"
+          onClick={() => navigate('/admin/report')}
+        >
+          종합 리포트 →
+        </button>
+      </div>
     </div>
   );
 };

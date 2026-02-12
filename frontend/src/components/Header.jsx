@@ -7,7 +7,14 @@ function Header() {
   const location = useLocation();
   const { user, logout } = useAuth();
   const [openGroup, setOpenGroup] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navRef = useRef(null);
+  const drawerRef = useRef(null);
+
+  const closeMobileMenu = () => {
+    setMobileMenuOpen(false);
+    setOpenGroup(null);
+  };
 
   const handleLogout = () => {
     logout();
@@ -43,15 +50,18 @@ function Header() {
       {
         label: '포트폴리오',
         items: [
-          { label: '포트폴리오 시뮬레이션', path: '/portfolio' },
-          { label: '백테스팅', path: '/backtest' },
-          { label: '성과해석', path: '/analysis' },
+          { label: '직접 구성', separator: true },
           { label: '포트폴리오 구성', path: '/portfolio-builder' },
           {
             label: '포트폴리오 평가',
             path: '/portfolio-evaluation',
             activePaths: ['/portfolio-evaluation', '/phase7-evaluation'],
           },
+          { label: 'AI 추천', separator: true },
+          { label: 'AI 시뮬레이션', path: '/portfolio' },
+          { label: '백테스팅', path: '/backtest' },
+          { label: '분석·리포트', separator: true },
+          { label: '성과해석', path: '/analysis' },
           { label: '리포트', path: '/report-history' },
         ],
       },
@@ -65,13 +75,17 @@ function Header() {
       groups.push({
         label: '관리',
         items: [
+          { label: '운영', separator: true },
           { label: '관리자 홈', path: '/admin' },
-          { label: '데이터 관리', path: '/admin/data' },
           { label: '사용자 관리', path: '/admin/users' },
           { label: '동의 이력', path: '/admin/consents' },
+          { label: '데이터', separator: true },
+          { label: '데이터 관리', path: '/admin/data' },
+          { label: '배치 작업', path: '/admin/batch' },
+          { label: '포트폴리오', separator: true },
           { label: '포트폴리오 관리', path: '/admin/portfolio' },
           { label: '포트폴리오 비교', path: '/admin/portfolio-comparison' },
-          { label: '배치 작업', path: '/admin/batch' },
+          { label: '분석', separator: true },
           { label: '종목 상세', path: '/admin/stock-detail' },
           { label: '재무 분석', path: '/admin/financial-analysis' },
           { label: '밸류에이션', path: '/admin/valuation' },
@@ -90,18 +104,34 @@ function Header() {
 
   const handleNavigate = (path) => {
     setOpenGroup(null);
+    setMobileMenuOpen(false);
     navigate(path);
   };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (navRef.current && !navRef.current.contains(event.target)) {
+      if (
+        navRef.current && !navRef.current.contains(event.target) &&
+        (!drawerRef.current || !drawerRef.current.contains(event.target))
+      ) {
         setOpenGroup(null);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // body 스크롤 잠금
+  useEffect(() => {
+    document.body.style.overflow = mobileMenuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileMenuOpen]);
+
+  // 라우트 변경 시 메뉴 닫기
+  useEffect(() => {
+    setMobileMenuOpen(false);
+    setOpenGroup(null);
+  }, [location.pathname]);
 
   return (
     <header className="header">
@@ -118,12 +148,26 @@ function Header() {
           </button>
         </div>
 
+        {/* 모바일 햄버거 */}
+        <button
+          className="mobile-menu-toggle"
+          onClick={() => setMobileMenuOpen(prev => !prev)}
+          aria-label={mobileMenuOpen ? '메뉴 닫기' : '메뉴 열기'}
+          aria-expanded={mobileMenuOpen}
+        >
+          <span className={`hamburger-icon ${mobileMenuOpen ? 'open' : ''}`}>
+            <span /><span /><span />
+          </span>
+        </button>
+
         {/* 네비게이션 */}
         <nav className="header-nav" ref={navRef}>
           {navGroups.map((group) => {
-            const groupPaths = group.items.flatMap((item) =>
-              item.activePaths ? item.activePaths : [item.path]
-            );
+            const groupPaths = group.items
+              .filter((item) => !item.separator)
+              .flatMap((item) =>
+                item.activePaths ? item.activePaths : [item.path]
+              );
             const isGroupActive = isAnyActive(groupPaths);
             const isOpen = openGroup === group.label;
             return (
@@ -141,6 +185,13 @@ function Header() {
                 {isOpen && (
                   <div className="nav-dropdown">
                     {group.items.map((item) => {
+                      if (item.separator) {
+                        return (
+                          <div key={item.label} className="nav-dropdown-separator">
+                            {item.label}
+                          </div>
+                        );
+                      }
                       const itemPaths = item.activePaths || [item.path];
                       const isItemActive = isAnyActive(itemPaths);
                       return (
@@ -214,6 +265,107 @@ function Header() {
             로그아웃
           </button>
         </div>
+      </div>
+
+      {/* 모바일 드로어 */}
+      {mobileMenuOpen && (
+        <div className="mobile-menu-backdrop" onClick={closeMobileMenu} />
+      )}
+      <div ref={drawerRef} className={`mobile-menu-drawer ${mobileMenuOpen ? 'open' : ''}`}>
+        <div className="mobile-menu-header">
+          <span>메뉴</span>
+          <button
+            className="mobile-menu-close"
+            onClick={closeMobileMenu}
+            aria-label="메뉴 닫기"
+          >
+            ✕
+          </button>
+        </div>
+
+        <nav className="mobile-nav">
+          {navGroups.map((group) => {
+            const isOpen = openGroup === group.label;
+            return (
+              <div key={group.label} className="mobile-nav-group">
+                <button
+                  className={`mobile-nav-group-button ${isOpen ? 'open' : ''}`}
+                  onClick={() => handleToggleGroup(group.label)}
+                >
+                  {group.label}
+                  <span className={`mobile-nav-caret ${isOpen ? 'open' : ''}`}>▾</span>
+                </button>
+                {isOpen && (
+                  <div className="mobile-nav-items">
+                    {group.items.map((item) => {
+                      if (item.separator) {
+                        return (
+                          <div key={item.label} className="mobile-nav-separator">
+                            {item.label}
+                          </div>
+                        );
+                      }
+                      const itemPaths = item.activePaths || [item.path];
+                      const isItemActive = isAnyActive(itemPaths);
+                      return (
+                        <button
+                          key={item.label}
+                          className={`mobile-nav-item ${isItemActive ? 'active' : ''}`}
+                          onClick={() => handleNavigate(item.path)}
+                        >
+                          {item.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </nav>
+
+        {user && (
+          <div className="mobile-menu-user">
+            <div className="mobile-user-info">
+              <span className="mobile-user-name">{user.name || user.email}</span>
+              <div className="mobile-user-tiers">
+                <span
+                  className="tier-badge vip-tier"
+                  style={{
+                    color: user.vip_tier === 'diamond' ? '#b9f2ff' :
+                           user.vip_tier === 'platinum' ? '#e5e4e2' :
+                           user.vip_tier === 'gold' ? '#ffd700' :
+                           user.vip_tier === 'silver' ? '#c0c0c0' : '#cd7f32'
+                  }}
+                >
+                  {user.vip_tier === 'diamond' && '💠'}
+                  {user.vip_tier === 'platinum' && '💎'}
+                  {user.vip_tier === 'gold' && '🥇'}
+                  {user.vip_tier === 'silver' && '🥈'}
+                  {(!user.vip_tier || user.vip_tier === 'bronze') && '🥉'}
+                  {' '}{(user.vip_tier || 'bronze').toUpperCase()}
+                </span>
+                <span
+                  className="tier-badge membership-tier"
+                  style={{
+                    color: user.membership_plan === 'enterprise' ? '#8b5cf6' :
+                           user.membership_plan === 'pro' ? '#3b82f6' :
+                           user.membership_plan === 'starter' ? '#10b981' : '#6b7280'
+                  }}
+                >
+                  {user.membership_plan === 'enterprise' && '🏢'}
+                  {user.membership_plan === 'pro' && '🚀'}
+                  {user.membership_plan === 'starter' && '🌱'}
+                  {(!user.membership_plan || user.membership_plan === 'free') && '🆓'}
+                  {' '}{(user.membership_plan || 'free').toUpperCase()}
+                </span>
+              </div>
+            </div>
+            <button className="btn btn-logout mobile-logout" onClick={handleLogout}>
+              로그아웃
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );

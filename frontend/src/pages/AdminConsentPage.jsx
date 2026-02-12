@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { listAdminConsents } from '../services/api';
 import '../styles/AdminConsentPage.css';
 
 function AdminConsentPage() {
+  const navigate = useNavigate();
   const [filters, setFilters] = useState({
     q: '',
     consent_type: '',
@@ -51,8 +53,11 @@ function AdminConsentPage() {
   return (
     <div className="admin-consent-page">
       <div className="admin-consent-card">
+        <button className="admin-back-btn" onClick={() => navigate('/admin')}>
+          ← 관리자 홈
+        </button>
         <div className="admin-consent-header">
-          <h1>동의 이력 조회</h1>
+          <h1>⚙️ 동의 이력 조회</h1>
           <p>투자 성향 진단 유의사항 동의 내역을 조회합니다.</p>
         </div>
 

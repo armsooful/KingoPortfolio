@@ -553,3 +553,25 @@
     grid-template-columns: 1fr;
   }
 }
+
+.phase7-nav-link {
+  margin-top: 1.2rem;
+  text-align: center;
+}
+
+.phase7-btn-link {
+  background: none;
+  border: 1px solid #6366f1;
+  color: #6366f1;
+  padding: 0.5rem 1.2rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.phase7-btn-link:hover {
+  background: #6366f1;
+  color: #ffffff;
+}

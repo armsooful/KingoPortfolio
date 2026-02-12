@@ -1,0 +1,50 @@
+/* ============================================================
+   DiagnosisHistoryPage Styles
+   ============================================================ */
+
+/* PDF download button */
+.dh-pdf-btn {
+  margin-top: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.dh-pdf-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* Disclaimer text */
+.dh-disclaimer-text {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+/* Reference disclaimer */
+.dh-reference-disclaimer {
+  font-size: 0.85rem;
+  color: #888;
+  margin-top: 8px;
+}
+
+/* Legal notice box */
+.dh-legal-notice {
+  margin-top: 24px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.dh-legal-notice p {
+  margin: 0;
+}

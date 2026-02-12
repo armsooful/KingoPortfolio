@@ -206,6 +206,22 @@
   transition: width 0.5s ease;
 }
 
+.bar-stocks { background-color: #f44336; }
+.bar-bonds { background-color: #2196F3; }
+.bar-money-market { background-color: #4CAF50; }
+.bar-gold { background-color: #FFC107; }
+
+/* Inline link button */
+.ss-link-btn {
+  background: none;
+  border: none;
+  color: #667eea;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+}
+
 /* 위험 지표 카드 */
 .risk-card {
   background: linear-gradient(135deg, #fff5f5 0%, #fff 100%);

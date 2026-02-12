@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDiagnosisHistory, getDiagnosis, downloadDiagnosisPDF } from '../services/api';
+import '../styles/DiagnosisHistory.css';
 
 function DiagnosisHistoryPage() {
   const [historyList, setHistoryList] = useState([]);
@@ -158,23 +159,12 @@ function DiagnosisHistoryPage() {
                     )}
 
                     <button
+                      className="dh-pdf-btn"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleDownloadPDF(diagnosis.diagnosis_id);
                       }}
                       disabled={downloadingPDF === diagnosis.diagnosis_id}
-                      style={{
-                        marginTop: '10px',
-                        width: '100%',
-                        padding: '8px 12px',
-                        background: downloadingPDF === diagnosis.diagnosis_id ? '#ccc' : '#667eea',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '6px',
-                        cursor: downloadingPDF === diagnosis.diagnosis_id ? 'not-allowed' : 'pointer',
-                        fontSize: '0.9rem',
-                        fontWeight: '500'
-                      }}
                     >
                       {downloadingPDF === diagnosis.diagnosis_id ? '⏳ 생성 중...' : '📄 PDF 다운로드'}
                     </button>
@@ -246,7 +236,7 @@ function DiagnosisHistoryPage() {
               {/* 포트폴리오 */}
               <div className="detail-portfolio">
                 <h3>시뮬레이션용 자산 배분 예시</h3>
-                <p style={{ fontSize: '0.85rem', color: '#666', marginBottom: '12px' }}>
+                <p className="dh-disclaimer-text">
                   ⚠️ 교육 목적의 일반적 예시이며, 투자 권유가 아닙니다.
                 </p>
                 <div className="portfolio-items">
@@ -271,7 +261,7 @@ function DiagnosisHistoryPage() {
                   <p className="return-value">
                     {selectedDiagnosis.reference_only.historical_avg_return}
                   </p>
-                  <p style={{ fontSize: '0.85rem', color: '#888', marginTop: '8px' }}>
+                  <p className="dh-reference-disclaimer">
                     * {selectedDiagnosis.reference_only.disclaimer}
                   </p>
                 </div>
@@ -296,15 +286,8 @@ function DiagnosisHistoryPage() {
               </div>
 
               {/* 법적 고지사항 */}
-              <div style={{
-                marginTop: '24px',
-                padding: '16px',
-                background: '#f8f9fa',
-                borderRadius: '8px',
-                fontSize: '0.85rem',
-                color: '#666'
-              }}>
-                <p style={{ margin: 0 }}>
+              <div className="dh-legal-notice">
+                <p>
                   ⚠️ 본 진단 결과는 교육 목적의 학습 성향 분석이며, 투자 권유·추천·자문을 제공하지 않습니다.
                 </p>
               </div>

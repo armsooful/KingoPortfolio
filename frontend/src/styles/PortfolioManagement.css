@@ -1,0 +1,335 @@
+/* ============================================================
+   PortfolioManagementPage Styles
+   ============================================================ */
+
+/* Tab bar */
+.pm-tabs {
+  display: flex;
+  gap: 10px;
+  margin-top: 32px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.pm-tab {
+  padding: 12px 24px;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  background: white;
+  color: #666;
+  border-bottom: 3px solid transparent;
+}
+
+.pm-tab.active {
+  background: #667eea;
+  color: white;
+  border-bottom-color: #667eea;
+}
+
+/* Tab content area */
+.pm-tab-content {
+  margin-top: 32px;
+}
+
+.pm-tab-content h2 {
+  margin-bottom: 24px;
+}
+
+/* Strategy card */
+.pm-strategy-card {
+  background: #f5f5f5;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.pm-strategy-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.pm-strategy-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.pm-strategy-detail-btn {
+  padding: 8px 16px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+/* 4-column grid */
+.pm-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.pm-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 16px;
+}
+
+/* White stat box */
+.pm-stat-box {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+
+.pm-stat-box-compact {
+  background: white;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.pm-stat-label {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.pm-stat-label-sm {
+  font-size: 13px;
+  color: #666;
+}
+
+.pm-stat-value {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.pm-stat-value-lg {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.pm-stat-range {
+  font-size: 12px;
+  color: #999;
+}
+
+/* Type selector (conservative/moderate/aggressive) */
+.pm-type-selector {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.pm-type-btn {
+  flex: 1;
+  padding: 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  background: white;
+  color: #666;
+  border: 2px solid #e0e0e0;
+}
+
+.pm-type-btn.active {
+  background: #667eea;
+  color: white;
+  border: none;
+}
+
+/* Loading */
+.pm-loading {
+  text-align: center;
+  padding: 40px;
+}
+
+/* Stats panel */
+.pm-stats-panel {
+  background: #f5f5f5;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.pm-stats-panel h3 {
+  margin-bottom: 16px;
+}
+
+/* Section spacing */
+.pm-asset-section {
+  margin-bottom: 32px;
+}
+
+.pm-asset-section h3 {
+  margin-bottom: 16px;
+}
+
+.pm-top-section {
+  margin-top: 40px;
+}
+
+.pm-top-section h3 {
+  margin-bottom: 16px;
+}
+
+.pm-top-section h4 {
+  margin-top: 24px;
+  margin-bottom: 12px;
+  font-size: 1.1rem;
+}
+
+/* Tables */
+.pm-table-wrap {
+  overflow-x: auto;
+}
+
+.pm-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.pm-table-sm {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.pm-table thead tr {
+  background: #f5f5f5;
+}
+
+.pm-table th,
+.pm-table-sm th {
+  padding: 12px;
+  border-bottom: 2px solid #e0e0e0;
+  text-align: left;
+}
+
+.pm-table th.right,
+.pm-table-sm th.right {
+  text-align: right;
+}
+
+.pm-table th.center,
+.pm-table-sm th.center {
+  text-align: center;
+}
+
+.pm-table-sm th {
+  padding: 10px;
+}
+
+.pm-table-sm thead tr {
+  background: #f5f5f5;
+}
+
+.pm-table td,
+.pm-table-sm td {
+  padding: 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.pm-table-sm td {
+  padding: 10px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.pm-table td.right,
+.pm-table-sm td.right {
+  text-align: right;
+}
+
+.pm-table td.center,
+.pm-table-sm td.center {
+  text-align: center;
+}
+
+.pm-table-sm td.bold {
+  font-weight: bold;
+}
+
+.pm-cell-name {
+  font-weight: bold;
+}
+
+.pm-cell-ticker {
+  font-size: 12px;
+  color: #666;
+}
+
+.pm-cell-name-sm {
+  font-weight: 600;
+}
+
+.pm-cell-ticker-sm {
+  font-size: 11px;
+  color: #999;
+}
+
+.pm-cell-bold {
+  font-weight: 600;
+}
+
+/* Risk badge */
+.pm-risk-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.pm-risk-badge-sm {
+  padding: 3px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+
+/* Securities pool totals */
+.pm-pool-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.pm-pool-card {
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+}
+
+.pm-pool-card-label {
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.pm-pool-card-value {
+  font-size: 32px;
+  font-weight: bold;
+}
+
+/* Info box */
+.pm-info-box {
+  margin-top: 24px;
+  padding: 16px;
+  background: #fff3e0;
+  border-radius: 8px;
+  border-left: 4px solid #FF9800;
+}
+
+.pm-info-box p {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+}

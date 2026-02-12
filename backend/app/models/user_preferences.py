@@ -4,7 +4,7 @@ Phase 3-C / U-3: 사용자 설정/이력 모델
 
 import uuid
 
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, JSON, Index, UniqueConstraint
+from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, JSON, Index, UniqueConstraint, Date, Integer, Text
 
 from app.database import Base
 from app.utils.kst_now import kst_now
@@ -42,6 +42,9 @@ class UserNotificationSetting(Base):
     user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
     enable_alerts = Column(Boolean, nullable=False, default=False)
     exposure_frequency = Column(String(20), nullable=False, default="STANDARD")
+    daily_market_email = Column(Boolean, nullable=False, default=False)
+    daily_market_email_subscribed_at = Column(DateTime, nullable=True)
+    daily_market_email_unsubscribed_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, nullable=False, default=kst_now)
     updated_at = Column(DateTime, nullable=False, default=kst_now, onupdate=kst_now)
 

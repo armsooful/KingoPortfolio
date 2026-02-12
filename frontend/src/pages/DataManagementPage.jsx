@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import * as api from '../services/api';
 import ProgressModal from '../components/ProgressModal';
 import DataTable from '../components/DataTable';
+import '../styles/DataManagement.css';
 
 export default function DataManagementPage() {
   const [loading, setLoading] = useState(false);
@@ -125,26 +126,22 @@ export default function DataManagementPage() {
     setCurrentTaskId(null);
   }, []);
 
-  // 공통 스타일
-  const sectionStyle = { marginTop: '40px', borderTop: '2px solid #e0e0e0', paddingTop: '30px' };
-  const cardStyle = { padding: '15px', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#ffffff' };
-  const inputStyle = { width: '100%', padding: '10px', fontSize: '0.9rem', border: '1px solid #ddd', borderRadius: '6px', boxSizing: 'border-box' };
-  const labelStyle = { fontSize: '0.82rem', color: '#555', display: 'block', marginBottom: '4px' };
-  const gridStyle = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '15px', marginTop: '20px' };
-  const btnFullStyle = { width: '100%', padding: '10px', fontSize: '0.95rem' };
   const stepBadge = (num, color) => (
-    <span style={{
-      display: 'inline-block', background: color, color: '#fff', borderRadius: '12px',
-      padding: '2px 10px', fontSize: '0.75rem', fontWeight: 'bold', marginRight: '8px', verticalAlign: 'middle',
-    }}>Step {num}</span>
+    <span className="dm-step-badge" style={{ background: color }}>Step {num}</span>
   );
 
   return (
     <div className="main-content">
       <div className="result-container">
         <div className="result-card" style={{ maxWidth: '1200px' }}>
+          <button className="admin-back-btn" onClick={() => navigate('/admin')}>
+            ← 관리자 홈
+          </button>
           {/* Header */}
           <div className="result-header">
+            <div className="result-icon" style={{ fontSize: '3rem' }}>
+              ⚙️
+            </div>
             <h1 className="result-type" style={{ color: '#667eea' }}>
               데이터 관리
             </h1>
@@ -170,14 +167,14 @@ export default function DataManagementPage() {
 
           {/* Success Message */}
           {loadResult && (
-            <div className="ai-card" style={{ background: '#f0fdf4', borderLeft: '4px solid #4CAF50' }}>
-              <h3 style={{ color: '#4CAF50', marginBottom: '15px' }}>{loadResult.message}</h3>
+            <div className="ai-card dm-success-card">
+              <h3>{loadResult.message}</h3>
               {loadResult.results && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div className="dm-success-results">
                   {Object.entries(loadResult.results).map(([key, val]) => (
-                    <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: 'white', borderRadius: '6px', border: '1px solid #e0e0e0' }}>
-                      <span style={{ fontWeight: 'bold' }}>{key}</span>
-                      <div style={{ display: 'flex', gap: '20px', fontSize: '0.9rem' }}>
+                    <div key={key} className="dm-success-row">
+                      <span className="dm-success-row-key">{key}</span>
+                      <div className="dm-success-row-vals">
                         <span style={{ color: '#4CAF50' }}>+ {val.success}</span>
                         <span style={{ color: '#2196F3' }}>~ {val.updated}</span>
                         <span style={{ color: '#f44336' }}>x {val.failed || 0}</span>
@@ -201,7 +198,7 @@ export default function DataManagementPage() {
           {dataStatus && (
             <div className="description-section">
               <h2>현재 데이터 현황</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginTop: '15px' }}>
+              <div className="dm-status-grid">
                 {[
                   { label: '주식', count: dataStatus.stocks, color: '#2196F3' },
                   { label: 'ETF', count: dataStatus.etfs, color: '#9C27B0' },
@@ -223,30 +220,30 @@ export default function DataManagementPage() {
           )}
 
           {/* ─── Step 1: FDR 종목 마스터 ─── */}
-          <div className="description-section" style={sectionStyle}>
+          <div className="description-section dm-section">
             <h2>{stepBadge(1, '#64748b')} FDR 종목 마스터</h2>
-            <p style={{ margin: '10px 0 0', fontSize: '0.85rem', color: '#666' }}>
+            <p className="dm-section-subtitle">
               종목 마스터 적재 (Stage 1). Marcap/발행주식수 포함. 이후 모든 수집의 기초 데이터입니다.
             </p>
-            <div style={gridStyle}>
-              <div style={cardStyle}>
-                <label style={labelStyle}>시장</label>
+            <div className="dm-grid">
+              <div className="dm-card">
+                <label className="dm-label">시장</label>
                 <select
                   value={fdrMarket}
                   onChange={(e) => setFdrMarket(e.target.value)}
-                  style={{ ...inputStyle, marginBottom: '8px' }}
+                  className="dm-input dm-input-mb"
                 >
                   <option value="KRX">KRX 전체</option>
                   <option value="KOSPI">KOSPI</option>
                   <option value="KOSDAQ">KOSDAQ</option>
                   <option value="KONEX">KONEX</option>
                 </select>
-                <label style={labelStyle}>기준일</label>
+                <label className="dm-label">기준일</label>
                 <input
                   type="date"
                   value={fdrAsOf}
                   onChange={(e) => setFdrAsOf(e.target.value)}
-                  style={{ ...inputStyle, marginBottom: '10px' }}
+                  className="dm-input dm-input-mb-lg"
                 />
                 <button
                   onClick={async () => {
@@ -265,8 +262,7 @@ export default function DataManagementPage() {
                     }
                   }}
                   disabled={loading}
-                  className="btn btn-secondary"
-                  style={btnFullStyle}
+                  className="btn btn-secondary dm-btn-full"
                 >
                   FDR 종목 마스터 적재
                 </button>
@@ -275,25 +271,23 @@ export default function DataManagementPage() {
           </div>
 
           {/* ─── Step 2: 주식/ETF 수집 (yfinance) ─── */}
-          <div className="description-section" style={sectionStyle}>
+          <div className="description-section dm-section">
             <h2>{stepBadge(2, '#2196F3')} 주식 / ETF 수집</h2>
-            <p style={{ margin: '10px 0 0', fontSize: '0.85rem', color: '#666' }}>
+            <p className="dm-section-subtitle">
               FDR 종목 마스터 기반으로 yfinance에서 시가총액, 섹터, 상장일 등을 수집합니다.
             </p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '20px' }}>
+            <div className="dm-grid-2col">
               <button
                 onClick={() => handleLoadData('stocks')}
                 disabled={loading}
-                className="btn btn-primary"
-                style={{ padding: '18px', fontSize: '1rem', fontWeight: 'bold' }}
+                className="btn btn-primary dm-btn-action"
               >
                 주식 데이터 수집
               </button>
               <button
                 onClick={() => handleLoadData('etfs')}
                 disabled={loading}
-                className="btn btn-primary"
-                style={{ padding: '18px', fontSize: '1rem', fontWeight: 'bold' }}
+                className="btn btn-primary dm-btn-action"
               >
                 ETF 데이터 수집
               </button>
@@ -301,33 +295,30 @@ export default function DataManagementPage() {
           </div>
 
           {/* ─── Step 3: pykrx 시계열 ─── */}
-          <div className="description-section" style={sectionStyle}>
+          <div className="description-section dm-section">
             <h2>{stepBadge(3, '#1565c0')} pykrx 시계열 데이터</h2>
-            <p style={{ margin: '10px 0 0', fontSize: '0.85rem', color: '#666' }}>
+            <p className="dm-section-subtitle">
               KRX 공식 데이터로 과거 가격(OHLCV)을 수집합니다. API 제한 없음.
             </p>
 
             {/* 단일 종목 */}
-            <div style={{ marginTop: '20px', padding: '20px', background: '#f5f5f5', borderRadius: '8px' }}>
-              <h3 style={{ marginBottom: '12px', fontSize: '1rem' }}>단일 종목 시계열</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+            <div className="dm-panel">
+              <h3>단일 종목 시계열</h3>
+              <div className="dm-grid-2col-sm">
                 <div>
-                  <label style={labelStyle}>종목 코드 (6자리)</label>
+                  <label className="dm-label">종목 코드 (6자리)</label>
                   <input
                     type="text"
                     placeholder="005930"
                     maxLength={6}
                     value={symbolInput}
                     onChange={(e) => setSymbolInput(e.target.value.replace(/[^0-9]/g, ''))}
-                    style={inputStyle}
+                    className="dm-input"
                   />
                 </div>
                 <div>
-                  <label style={labelStyle}>수집 기간</label>
-                  <select
-                    id="krx-timeseries-days"
-                    style={inputStyle}
-                  >
+                  <label className="dm-label">수집 기간</label>
+                  <select id="krx-timeseries-days" className="dm-input">
                     <option value="90">3개월</option>
                     <option value="180">6개월</option>
                     <option value="365">1년</option>
@@ -370,34 +361,33 @@ export default function DataManagementPage() {
                   }
                 }}
                 disabled={loading}
-                className="btn btn-primary"
-                style={{ ...btnFullStyle, fontWeight: 'bold' }}
+                className="btn btn-primary dm-btn-full-bold"
               >
                 시계열 데이터 수집
               </button>
-              <p style={{ marginTop: '8px', fontSize: '0.8rem', color: '#888' }}>
+              <p className="dm-hint">
                 예: 005930 (삼성전자), 000660 (SK하이닉스), 035420 (NAVER)
               </p>
             </div>
 
             {/* 전체 종목 증분 적재 */}
-            <div style={{ marginTop: '15px', padding: '20px', background: '#e8f5e9', borderRadius: '8px', border: '1px solid #66bb6a' }}>
-              <h3 style={{ marginBottom: '8px', fontSize: '1rem' }}>전체 종목 5년치 증분 적재</h3>
-              <p style={{ margin: '0 0 12px 0', fontSize: '0.82rem', color: '#555' }}>
+            <div className="dm-panel-green">
+              <h3>전체 종목 5년치 증분 적재</h3>
+              <p className="dm-panel-green-desc">
                 stocks 테이블 기준 전 종목 대상. 기존 종목은 마지막 적재일 이후만 수집합니다.
               </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+              <div className="dm-grid-2col-sm">
                 <div>
-                  <label style={labelStyle}>시장</label>
-                  <select id="incremental-market" style={inputStyle}>
+                  <label className="dm-label">시장</label>
+                  <select id="incremental-market" className="dm-input">
                     <option value="">KRX 전체</option>
                     <option value="KOSPI">KOSPI</option>
                     <option value="KOSDAQ">KOSDAQ</option>
                   </select>
                 </div>
                 <div>
-                  <label style={labelStyle}>스레드 수</label>
-                  <select id="incremental-workers" style={inputStyle}>
+                  <label className="dm-label">스레드 수</label>
+                  <select id="incremental-workers" className="dm-input">
                     <option value="2">2 (저부하)</option>
                     <option value="4">4 (권장)</option>
                     <option value="6">6</option>
@@ -449,48 +439,47 @@ export default function DataManagementPage() {
                   }
                 }}
                 disabled={loading}
-                className="btn btn-success"
-                style={{ width: '100%', padding: '14px', fontSize: '1rem', fontWeight: 'bold', background: '#2e7d32' }}
+                className="btn btn-success dm-btn-incremental"
               >
                 {loading ? '시작 중...' : '전체 종목 5년치 증분 적재'}
               </button>
-              <p style={{ marginTop: '8px', fontSize: '0.8rem', color: '#555' }}>
+              <p className="dm-hint-dark">
                 첫 실행: 약 4-6시간 (야간 권장) / 재실행: 약 10-30분 (증분만)
               </p>
             </div>
           </div>
 
           {/* ─── Step 4: 재무/배당/기업액션/채권 ─── */}
-          <div className="description-section" style={sectionStyle}>
+          <div className="description-section dm-section">
             <h2>{stepBadge(4, '#e65100')} 재무 / 배당 / 기업액션 / 채권</h2>
-            <p style={{ margin: '10px 0 0', fontSize: '0.85rem', color: '#666' }}>
+            <p className="dm-section-subtitle">
               DART API, 금융위원회 OpenAPI를 통해 재무제표, 배당, 기업 액션, 채권 데이터를 적재합니다.
             </p>
 
-            <div style={gridStyle}>
+            <div className="dm-grid">
               {/* 재무제표 + PER/PBR */}
-              <div style={cardStyle}>
-                <h3 style={{ marginBottom: '8px', fontSize: '1rem' }}>재무제표 + PER/PBR</h3>
-                <p style={{ fontSize: '0.78rem', color: '#888', margin: '0 0 10px' }}>DART 사업보고서 기반. 백그라운드 실행.</p>
-                <label style={labelStyle}>회계연도</label>
+              <div className="dm-card">
+                <h3>재무제표 + PER/PBR</h3>
+                <p className="dm-card-sub">DART 사업보고서 기반. 백그라운드 실행.</p>
+                <label className="dm-label">회계연도</label>
                 <input
                   type="number"
                   value={dartFiscalYear}
                   onChange={(e) => setDartFiscalYear(Number(e.target.value))}
-                  style={{ ...inputStyle, marginBottom: '8px' }}
+                  className="dm-input dm-input-mb"
                 />
-                <label style={labelStyle}>보고서 종류</label>
+                <label className="dm-label">보고서 종류</label>
                 <select
                   value={dartReportType}
                   onChange={(e) => setDartReportType(e.target.value)}
-                  style={{ ...inputStyle, marginBottom: '8px' }}
+                  className="dm-input dm-input-mb"
                 >
                   <option value="ANNUAL">사업보고서 (ANNUAL)</option>
                   <option value="Q3">3분기보고서</option>
                   <option value="Q2">반기보고서</option>
                   <option value="Q1">1분기보고서</option>
                 </select>
-                <label style={labelStyle}>종목 수 제한 (테스트)</label>
+                <label className="dm-label">종목 수 제한 (테스트)</label>
                 <input
                   type="number"
                   value={dartFinLimit}
@@ -498,7 +487,7 @@ export default function DataManagementPage() {
                   placeholder="빈 칸 = 전체"
                   min={1}
                   max={5000}
-                  style={{ ...inputStyle, marginBottom: '10px' }}
+                  className="dm-input dm-input-mb-lg"
                 />
                 <button
                   onClick={async () => {
@@ -518,40 +507,39 @@ export default function DataManagementPage() {
                     }
                   }}
                   disabled={loading}
-                  className="btn btn-primary"
-                  style={btnFullStyle}
+                  className="btn btn-primary dm-btn-full"
                 >
                   재무제표 적재 (DART)
                 </button>
-                <p style={{ marginTop: '6px', fontSize: '0.78rem', color: '#888' }}>종목당 ~1초 (DART rate limit)</p>
+                <p className="dm-hint-sm">종목당 ~1초 (DART rate limit)</p>
               </div>
 
               {/* 배당 이력 */}
-              <div style={cardStyle}>
-                <h3 style={{ marginBottom: '8px', fontSize: '1rem' }}>배당 이력</h3>
-                <p style={{ fontSize: '0.78rem', color: '#888', margin: '0 0 10px' }}>금융위원회 OpenAPI</p>
-                <label style={labelStyle}>종목 코드 (쉼표 구분)</label>
+              <div className="dm-card">
+                <h3>배당 이력</h3>
+                <p className="dm-card-sub">금융위원회 OpenAPI</p>
+                <label className="dm-label">종목 코드 (쉼표 구분)</label>
                 <input
                   type="text"
                   value={dividendTickers}
                   onChange={(e) => setDividendTickers(e.target.value)}
                   placeholder="005930,000660"
-                  style={{ ...inputStyle, marginBottom: '8px' }}
+                  className="dm-input dm-input-mb"
                 />
-                <label style={labelStyle}>기준일 (as_of_date)</label>
+                <label className="dm-label">기준일 (as_of_date)</label>
                 <input
                   type="date"
                   value={dividendAsOf}
                   onChange={(e) => setDividendAsOf(e.target.value)}
-                  style={{ ...inputStyle, marginBottom: '8px' }}
+                  className="dm-input dm-input-mb"
                 />
-                <label style={labelStyle}>기준일자 (YYYYMMDD, 선택)</label>
+                <label className="dm-label">기준일자 (YYYYMMDD, 선택)</label>
                 <input
                   type="text"
                   value={dividendBasDt}
                   onChange={(e) => setDividendBasDt(e.target.value.replace(/[^0-9]/g, '').slice(0, 8))}
                   placeholder="비워두면 전체 조회"
-                  style={{ ...inputStyle, marginBottom: '10px' }}
+                  className="dm-input dm-input-mb-lg"
                 />
                 <button
                   onClick={async () => {
@@ -576,31 +564,30 @@ export default function DataManagementPage() {
                     }
                   }}
                   disabled={loading}
-                  className="btn btn-primary"
-                  style={btnFullStyle}
+                  className="btn btn-primary dm-btn-full"
                 >
                   배당 이력 적재 (FSC)
                 </button>
               </div>
 
               {/* 기업 액션 */}
-              <div style={cardStyle}>
-                <h3 style={{ marginBottom: '8px', fontSize: '1rem' }}>기업 액션</h3>
-                <p style={{ fontSize: '0.78rem', color: '#888', margin: '0 0 10px' }}>DART 공시 (분할/합병/감자)</p>
-                <label style={labelStyle}>연도</label>
+              <div className="dm-card">
+                <h3>기업 액션</h3>
+                <p className="dm-card-sub">DART 공시 (분할/합병/감자)</p>
+                <label className="dm-label">연도</label>
                 <input
                   type="number"
                   value={actionYear}
                   onChange={(e) => setActionYear(Number(e.target.value))}
                   min={2015}
                   max={2030}
-                  style={{ ...inputStyle, marginBottom: '8px' }}
+                  className="dm-input dm-input-mb"
                 />
-                <label style={labelStyle}>분기</label>
+                <label className="dm-label">분기</label>
                 <select
                   value={actionQuarter}
                   onChange={(e) => setActionQuarter(e.target.value)}
-                  style={{ ...inputStyle, marginBottom: '10px' }}
+                  className="dm-input dm-input-mb-lg"
                 >
                   <option value="Q1">Q1 (1~3월)</option>
                   <option value="Q2">Q2 (4~6월)</option>
@@ -625,22 +612,21 @@ export default function DataManagementPage() {
                     }
                   }}
                   disabled={loading}
-                  className="btn btn-primary"
-                  style={btnFullStyle}
+                  className="btn btn-primary dm-btn-full"
                 >
                   기업 액션 적재
                 </button>
               </div>
 
               {/* 채권 */}
-              <div style={cardStyle}>
-                <h3 style={{ marginBottom: '8px', fontSize: '1rem' }}>채권 기본정보</h3>
-                <p style={{ fontSize: '0.78rem', color: '#888', margin: '0 0 10px' }}>금융위원회 OpenAPI</p>
-                <label style={labelStyle}>등급 필터</label>
+              <div className="dm-card">
+                <h3>채권 기본정보</h3>
+                <p className="dm-card-sub">금융위원회 OpenAPI</p>
+                <label className="dm-label">등급 필터</label>
                 <select
                   value={bondQualityFilter}
                   onChange={(e) => setBondQualityFilter(e.target.value)}
-                  style={{ ...inputStyle, marginBottom: '10px' }}
+                  className="dm-input dm-input-mb-lg"
                 >
                   <option value="all">전체 채권</option>
                   <option value="investment_grade">투자적격등급 (AAA~BBB)</option>
@@ -649,24 +635,23 @@ export default function DataManagementPage() {
                 <button
                   onClick={handleLoadBonds}
                   disabled={loading}
-                  className="btn btn-primary"
-                  style={{ ...btnFullStyle, fontWeight: 'bold' }}
+                  className="btn btn-primary dm-btn-full-bold"
                 >
                   채권 데이터 조회
                 </button>
-                <p style={{ marginTop: '6px', fontSize: '0.78rem', color: '#888' }}>오늘 기준일로 선택 등급 채권을 조회</p>
+                <p className="dm-hint-sm">오늘 기준일로 선택 등급 채권을 조회</p>
               </div>
             </div>
           </div>
 
           {/* ─── Step 5: 금융감독원 금융상품 ─── */}
-          <div className="description-section" style={sectionStyle}>
+          <div className="description-section dm-section">
             <h2>{stepBadge(5, '#7b1fa2')} 금융감독원 금융상품</h2>
-            <p style={{ margin: '10px 0 0', fontSize: '0.85rem', color: '#666' }}>
+            <p className="dm-section-subtitle">
               FSS API (finlife.fss.or.kr)를 통해 예금/적금/연금/대출 상품을 수집합니다.
             </p>
 
-            <div style={gridStyle}>
+            <div className="dm-grid">
               {[
                 { title: '정기예금', fn: () => api.loadDeposits(), taskPrefix: 'deposits' },
                 { title: '적금', fn: () => api.loadSavings(), taskPrefix: 'savings' },
@@ -675,8 +660,8 @@ export default function DataManagementPage() {
                 { title: '전세자금대출', fn: () => api.loadRentHouseLoans(), taskPrefix: 'rentloan' },
                 { title: '개인신용대출', fn: () => api.loadCreditLoans(), taskPrefix: 'creditloan' },
               ].map(({ title, fn, taskPrefix }) => (
-                <div key={taskPrefix} style={cardStyle}>
-                  <h3 style={{ marginBottom: '10px', fontSize: '1rem' }}>{title}</h3>
+                <div key={taskPrefix} className="dm-card">
+                  <h3 className="dm-fss-title">{title}</h3>
                   <button
                     onClick={async () => {
                       if (!window.confirm(`FSS ${title} 상품을 조회하시겠습니까?`)) return;
@@ -696,8 +681,7 @@ export default function DataManagementPage() {
                       }
                     }}
                     disabled={loading}
-                    className="btn btn-primary"
-                    style={btnFullStyle}
+                    className="btn btn-primary dm-btn-full"
                   >
                     {title} 조회
                   </button>
@@ -707,34 +691,23 @@ export default function DataManagementPage() {
           </div>
 
           {/* ─── Alpha Vantage (미국 주식) — 준비 중 ─── */}
-          <div className="description-section" style={sectionStyle}>
-            <div style={{
-              padding: '20px',
-              background: '#fafafa',
-              borderRadius: '8px',
-              border: '1px dashed #ccc',
-              textAlign: 'center',
-            }}>
-              <h2 style={{ color: '#999', fontSize: '1.1rem', margin: '0 0 8px' }}>
-                Alpha Vantage - 미국 주식
-              </h2>
-              <p style={{ color: '#aaa', fontSize: '0.85rem', margin: 0 }}>
-                추후 지원 예정입니다. 현재는 한국 시장 데이터에 집중합니다.
-              </p>
+          <div className="description-section dm-section">
+            <div className="dm-placeholder">
+              <h2>Alpha Vantage - 미국 주식</h2>
+              <p>추후 지원 예정입니다. 현재는 한국 시장 데이터에 집중합니다.</p>
             </div>
           </div>
 
           {/* ─── Data View ─── */}
           {dataStatus && dataStatus.total > 0 && (
-            <div className="description-section" style={sectionStyle}>
+            <div className="description-section dm-section">
               <h2>적재된 데이터 조회</h2>
 
-              <div style={{ display: 'flex', gap: '10px', marginTop: '20px', flexWrap: 'wrap' }}>
+              <div className="dm-tab-row">
                 {dataStatus.stocks > 0 && (
                   <button
                     onClick={() => setActiveTab('stocks')}
                     className={activeTab === 'stocks' ? 'btn btn-primary' : 'btn btn-secondary'}
-                    style={{ flex: '1', minWidth: '120px' }}
                   >
                     주식 ({dataStatus.stocks})
                   </button>
@@ -743,7 +716,6 @@ export default function DataManagementPage() {
                   <button
                     onClick={() => setActiveTab('etfs')}
                     className={activeTab === 'etfs' ? 'btn btn-primary' : 'btn btn-secondary'}
-                    style={{ flex: '1', minWidth: '120px' }}
                   >
                     ETF ({dataStatus.etfs})
                   </button>
@@ -752,7 +724,6 @@ export default function DataManagementPage() {
                   <button
                     onClick={() => setActiveTab('bonds')}
                     className={activeTab === 'bonds' ? 'btn btn-primary' : 'btn btn-secondary'}
-                    style={{ flex: '1', minWidth: '120px' }}
                   >
                     채권 ({dataStatus.bonds})
                   </button>
@@ -761,14 +732,13 @@ export default function DataManagementPage() {
                   <button
                     onClick={() => setActiveTab('deposits')}
                     className={activeTab === 'deposits' ? 'btn btn-primary' : 'btn btn-secondary'}
-                    style={{ flex: '1', minWidth: '120px' }}
                   >
                     예적금 ({dataStatus.deposits})
                   </button>
                 )}
               </div>
 
-              <div style={{ marginTop: '20px' }}>
+              <div className="dm-tab-content">
                 {activeTab === 'stocks' && dataStatus.stocks > 0 && (
                   <DataTable type="stocks" fetchData={() => api.getStocks(0, 100)} />
                 )}

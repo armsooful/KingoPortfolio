@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import Disclaimer from '../components/Disclaimer';
+import '../styles/StockDetail.css';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -115,11 +116,14 @@ export default function StockDetailPage() {
   return (
     <div className="main-content">
       <div className="result-container">
-        <div className="result-card" style={{ maxWidth: '1400px' }}>
+        <div className="result-card sd-card">
           {/* Header */}
           <div className="result-header">
-            <div className="result-icon" style={{ fontSize: '3rem' }}>
-              📊
+            <button className="admin-back-btn" onClick={() => navigate('/admin')}>
+              ← 관리자 홈
+            </button>
+            <div className="result-icon">
+              ⚙️
             </div>
             <h1 className="result-type" style={{ color: '#667eea' }}>
               종목 상세 조회
@@ -133,15 +137,10 @@ export default function StockDetailPage() {
           <Disclaimer type="stock" />
 
           {/* 검색 폼 */}
-          <div style={{
-            marginTop: '32px',
-            padding: '24px',
-            background: '#f8f9fa',
-            borderRadius: '12px'
-          }}>
-            <form onSubmit={handleSearch} style={{ display: 'flex', gap: '16px', alignItems: 'flex-end', position: 'relative' }}>
-              <div style={{ flex: 1, position: 'relative' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333' }}>
+          <div className="sd-search-panel">
+            <form onSubmit={handleSearch} className="sd-search-form">
+              <div className="sd-search-field">
+                <label className="sd-label">
                   종목 코드 또는 종목명
                 </label>
                 <input
@@ -150,48 +149,22 @@ export default function StockDetailPage() {
                   onChange={handleTickerChange}
                   onFocus={() => ticker && setShowSuggestions(true)}
                   placeholder="예: 005930 또는 삼성전자"
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: '2px solid #e0e0e0',
-                    borderRadius: '8px',
-                    fontSize: '1rem'
-                  }}
+                  className="sd-input"
                 />
 
                 {/* 자동완성 목록 */}
                 {showSuggestions && suggestions.length > 0 && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    background: 'white',
-                    border: '1px solid #ddd',
-                    borderRadius: '8px',
-                    marginTop: '4px',
-                    maxHeight: '300px',
-                    overflowY: 'auto',
-                    zIndex: 1000,
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                  }}>
+                  <div className="sd-suggestions">
                     {suggestions.map((item) => (
                       <div
                         key={item.ticker}
                         onClick={() => selectTicker(item)}
-                        style={{
-                          padding: '12px 16px',
-                          cursor: 'pointer',
-                          borderBottom: '1px solid #f0f0f0',
-                          transition: 'background 0.2s'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = '#f8f9fa'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                        className="sd-suggestion-item"
                       >
-                        <div style={{ fontWeight: '600', color: '#333' }}>
+                        <div className="sd-suggestion-name">
                           {item.ticker} - {item.name}
                         </div>
-                        <div style={{ fontSize: '0.85rem', color: '#666', marginTop: '4px' }}>
+                        <div className="sd-suggestion-meta">
                           {item.market} | {formatNumber(item.current_price)}원
                         </div>
                       </div>
@@ -200,20 +173,14 @@ export default function StockDetailPage() {
                 )}
               </div>
 
-              <div style={{ width: '150px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333' }}>
+              <div className="sd-days-field">
+                <label className="sd-label">
                   조회 기간 (일)
                 </label>
                 <select
                   value={days}
                   onChange={(e) => setDays(Number(e.target.value))}
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: '2px solid #e0e0e0',
-                    borderRadius: '8px',
-                    fontSize: '1rem'
-                  }}
+                  className="sd-select"
                 >
                   <option value={30}>30일</option>
                   <option value={60}>60일</option>
@@ -225,9 +192,8 @@ export default function StockDetailPage() {
 
               <button
                 type="submit"
-                className="btn btn-primary"
+                className="btn btn-primary sd-search-btn"
                 disabled={loading}
-                style={{ padding: '12px 32px', whiteSpace: 'nowrap' }}
               >
                 {loading ? '조회 중...' : '조회'}
               </button>
@@ -236,58 +202,45 @@ export default function StockDetailPage() {
 
           {/* 에러 메시지 */}
           {error && (
-            <div style={{
-              marginTop: '24px',
-              padding: '16px',
-              background: '#fee',
-              borderRadius: '8px',
-              color: '#c33',
-              border: '1px solid #fcc'
-            }}>
+            <div className="sd-error">
               ❌ {error}
             </div>
           )}
 
           {/* 결과 표시 */}
           {stockData && (
-            <div style={{ marginTop: '32px' }}>
+            <div className="sd-results">
               {/* 기본 정보 */}
-              <div style={{
-                padding: '24px',
-                background: 'white',
-                borderRadius: '12px',
-                border: '1px solid #e0e0e0',
-                marginBottom: '24px'
-              }}>
-                <h2 style={{ fontSize: '1.5rem', marginBottom: '20px', color: '#667eea' }}>
+              <div className="sd-section">
+                <h2 className="sd-section-title">
                   📋 기본 정보
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                <div className="sd-info-grid">
                   <div>
-                    <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '4px' }}>종목코드</div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>{stockData.basic_info.ticker}</div>
+                    <div className="sd-info-label">종목코드</div>
+                    <div className="sd-info-value">{stockData.basic_info.ticker}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '4px' }}>종목명</div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>{stockData.basic_info.name}</div>
+                    <div className="sd-info-label">종목명</div>
+                    <div className="sd-info-value">{stockData.basic_info.name}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '4px' }}>시장</div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>{stockData.basic_info.market}</div>
+                    <div className="sd-info-label">시장</div>
+                    <div className="sd-info-value">{stockData.basic_info.market}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '4px' }}>업종</div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>{stockData.basic_info.sector}</div>
+                    <div className="sd-info-label">업종</div>
+                    <div className="sd-info-value">{stockData.basic_info.sector}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '4px' }}>현재가</div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#667eea' }}>
+                    <div className="sd-info-label">현재가</div>
+                    <div className="sd-info-value-highlight">
                       {formatNumber(stockData.basic_info.current_price)}원
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '4px' }}>시가총액</div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>
+                    <div className="sd-info-label">시가총액</div>
+                    <div className="sd-info-value">
                       {formatNumber(stockData.basic_info.market_cap)}억원
                     </div>
                   </div>
@@ -295,82 +248,69 @@ export default function StockDetailPage() {
               </div>
 
               {/* 재무 지표 */}
-              <div style={{
-                padding: '24px',
-                background: 'white',
-                borderRadius: '12px',
-                border: '1px solid #e0e0e0',
-                marginBottom: '24px'
-              }}>
-                <h2 style={{ fontSize: '1.5rem', marginBottom: '20px', color: '#667eea' }}>
+              <div className="sd-section">
+                <h2 className="sd-section-title">
                   💼 재무 지표
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                <div className="sd-info-grid">
                   <div>
-                    <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '4px' }}>PER (주가수익비율)</div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>{formatDecimal(stockData.financials.pe_ratio)}</div>
+                    <div className="sd-info-label">PER (주가수익비율)</div>
+                    <div className="sd-info-value">{formatDecimal(stockData.financials.pe_ratio)}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '4px' }}>PBR (주가순자산비율)</div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>{formatDecimal(stockData.financials.pb_ratio)}</div>
+                    <div className="sd-info-label">PBR (주가순자산비율)</div>
+                    <div className="sd-info-value">{formatDecimal(stockData.financials.pb_ratio)}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '4px' }}>배당수익률</div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>{formatDecimal(stockData.financials.dividend_yield)}%</div>
+                    <div className="sd-info-label">배당수익률</div>
+                    <div className="sd-info-value">{formatDecimal(stockData.financials.dividend_yield)}%</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '4px' }}>YTD 수익률</div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>{formatDecimal(stockData.financials.ytd_return)}%</div>
+                    <div className="sd-info-label">YTD 수익률</div>
+                    <div className="sd-info-value">{formatDecimal(stockData.financials.ytd_return)}%</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '4px' }}>1년 수익률</div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>{formatDecimal(stockData.financials.one_year_return)}%</div>
+                    <div className="sd-info-label">1년 수익률</div>
+                    <div className="sd-info-value">{formatDecimal(stockData.financials.one_year_return)}%</div>
                   </div>
                 </div>
               </div>
 
               {/* 통계 */}
               {stockData.statistics && (
-                <div style={{
-                  padding: '24px',
-                  background: 'white',
-                  borderRadius: '12px',
-                  border: '1px solid #e0e0e0',
-                  marginBottom: '24px'
-                }}>
-                  <h2 style={{ fontSize: '1.5rem', marginBottom: '20px', color: '#667eea' }}>
+                <div className="sd-section">
+                  <h2 className="sd-section-title">
                     📈 기간 통계 ({days}일)
                   </h2>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                  <div className="sd-info-grid">
                     <div>
-                      <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '4px' }}>거래일 수</div>
-                      <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>{stockData.statistics.period_days}일</div>
+                      <div className="sd-info-label">거래일 수</div>
+                      <div className="sd-info-value">{stockData.statistics.period_days}일</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '4px' }}>기간 수익률</div>
-                      <div style={{
-                        fontSize: '1.1rem',
-                        fontWeight: '700',
-                        color: stockData.statistics.period_return >= 0 ? '#4caf50' : '#f44336'
-                      }}>
+                      <div className="sd-info-label">기간 수익률</div>
+                      <div
+                        className="sd-info-value-highlight"
+                        style={{ color: stockData.statistics.period_return >= 0 ? '#4caf50' : '#f44336' }}
+                      >
                         {stockData.statistics.period_return >= 0 ? '+' : ''}{formatDecimal(stockData.statistics.period_return)}%
                       </div>
                     </div>
                     <div>
-                      <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '4px' }}>최고가</div>
-                      <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>{formatNumber(stockData.statistics.high)}원</div>
+                      <div className="sd-info-label">최고가</div>
+                      <div className="sd-info-value">{formatNumber(stockData.statistics.high)}원</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '4px' }}>최저가</div>
-                      <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>{formatNumber(stockData.statistics.low)}원</div>
+                      <div className="sd-info-label">최저가</div>
+                      <div className="sd-info-value">{formatNumber(stockData.statistics.low)}원</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '4px' }}>평균 종가</div>
-                      <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>{formatNumber(stockData.statistics.avg_close)}원</div>
+                      <div className="sd-info-label">평균 종가</div>
+                      <div className="sd-info-value">{formatNumber(stockData.statistics.avg_close)}원</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '4px' }}>평균 거래량</div>
-                      <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>{formatNumber(stockData.statistics.avg_volume)}주</div>
+                      <div className="sd-info-label">평균 거래량</div>
+                      <div className="sd-info-value">{formatNumber(stockData.statistics.avg_volume)}주</div>
                     </div>
                   </div>
                 </div>
@@ -378,14 +318,8 @@ export default function StockDetailPage() {
 
               {/* 가격 차트 */}
               {stockData.timeseries.data_count > 0 && (
-                <div style={{
-                  padding: '24px',
-                  background: 'white',
-                  borderRadius: '12px',
-                  border: '1px solid #e0e0e0',
-                  marginBottom: '24px'
-                }}>
-                  <h2 style={{ fontSize: '1.5rem', marginBottom: '20px', color: '#667eea' }}>
+                <div className="sd-section">
+                  <h2 className="sd-section-title">
                     📈 가격 차트
                   </h2>
                   <Line
@@ -472,14 +406,8 @@ export default function StockDetailPage() {
 
               {/* 거래량 차트 */}
               {stockData.timeseries.data_count > 0 && (
-                <div style={{
-                  padding: '24px',
-                  background: 'white',
-                  borderRadius: '12px',
-                  border: '1px solid #e0e0e0',
-                  marginBottom: '24px'
-                }}>
-                  <h2 style={{ fontSize: '1.5rem', marginBottom: '20px', color: '#667eea' }}>
+                <div className="sd-section">
+                  <h2 className="sd-section-title">
                     📊 거래량 차트
                   </h2>
                   <Bar
@@ -547,49 +475,40 @@ export default function StockDetailPage() {
               )}
 
               {/* 시계열 데이터 테이블 */}
-              <div style={{
-                padding: '24px',
-                background: 'white',
-                borderRadius: '12px',
-                border: '1px solid #e0e0e0'
-              }}>
-                <h2 style={{ fontSize: '1.5rem', marginBottom: '20px', color: '#667eea' }}>
+              <div className="sd-section">
+                <h2 className="sd-section-title">
                   📋 시계열 데이터 상세 ({stockData.timeseries.data_count}개 레코드)
                 </h2>
 
                 {stockData.timeseries.data_count > 0 ? (
-                  <div style={{ overflowX: 'auto', maxHeight: '500px', overflowY: 'auto' }}>
-                    <table style={{
-                      width: '100%',
-                      borderCollapse: 'collapse',
-                      fontSize: '0.9rem'
-                    }}>
-                      <thead style={{ position: 'sticky', top: 0, background: '#f8f9fa' }}>
+                  <div className="sd-table-wrap">
+                    <table className="sd-table">
+                      <thead>
                         <tr>
-                          <th style={{ padding: '12px', borderBottom: '2px solid #ddd', textAlign: 'left' }}>날짜</th>
-                          <th style={{ padding: '12px', borderBottom: '2px solid #ddd', textAlign: 'right' }}>시가</th>
-                          <th style={{ padding: '12px', borderBottom: '2px solid #ddd', textAlign: 'right' }}>고가</th>
-                          <th style={{ padding: '12px', borderBottom: '2px solid #ddd', textAlign: 'right' }}>저가</th>
-                          <th style={{ padding: '12px', borderBottom: '2px solid #ddd', textAlign: 'right' }}>종가</th>
-                          <th style={{ padding: '12px', borderBottom: '2px solid #ddd', textAlign: 'right' }}>거래량</th>
+                          <th>날짜</th>
+                          <th className="right">시가</th>
+                          <th className="right">고가</th>
+                          <th className="right">저가</th>
+                          <th className="right">종가</th>
+                          <th className="right">거래량</th>
                         </tr>
                       </thead>
                       <tbody>
                         {stockData.timeseries.data.slice().reverse().map((row, idx) => (
-                          <tr key={idx} style={{ background: idx % 2 === 0 ? 'white' : '#f9f9f9' }}>
-                            <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>{row.date}</td>
-                            <td style={{ padding: '10px', borderBottom: '1px solid #eee', textAlign: 'right' }}>{formatNumber(row.open)}</td>
-                            <td style={{ padding: '10px', borderBottom: '1px solid #eee', textAlign: 'right', color: '#f44336' }}>{formatNumber(row.high)}</td>
-                            <td style={{ padding: '10px', borderBottom: '1px solid #eee', textAlign: 'right', color: '#2196f3' }}>{formatNumber(row.low)}</td>
-                            <td style={{ padding: '10px', borderBottom: '1px solid #eee', textAlign: 'right', fontWeight: '600' }}>{formatNumber(row.close)}</td>
-                            <td style={{ padding: '10px', borderBottom: '1px solid #eee', textAlign: 'right' }}>{formatNumber(row.volume)}</td>
+                          <tr key={idx}>
+                            <td>{row.date}</td>
+                            <td className="right">{formatNumber(row.open)}</td>
+                            <td className="right high">{formatNumber(row.high)}</td>
+                            <td className="right low">{formatNumber(row.low)}</td>
+                            <td className="right bold">{formatNumber(row.close)}</td>
+                            <td className="right">{formatNumber(row.volume)}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
                 ) : (
-                  <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
+                  <div className="sd-empty">
                     시계열 데이터가 없습니다.
                   </div>
                 )}
@@ -597,14 +516,13 @@ export default function StockDetailPage() {
             </div>
           )}
 
-          {/* 버튼 */}
-          <div style={{ marginTop: '32px', display: 'flex', gap: '12px', justifyContent: 'center' }}>
+          {/* 워크플로우 내비게이션 */}
+          <div className="admin-workflow-nav">
             <button
-              onClick={() => navigate('/admin')}
-              className="btn btn-secondary"
-              style={{ padding: '12px 24px' }}
+              className="admin-workflow-link"
+              onClick={() => navigate('/admin/financial-analysis')}
             >
-              🏠 관리자 메뉴로
+              재무 분석 →
             </button>
           </div>
         </div>

@@ -1,0 +1,50 @@
+/* ============================================================
+   DiagnosisResultPage Styles
+   ============================================================ */
+
+/* Guide notice banner */
+.dr-guide-notice {
+  background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid #bbdefb;
+}
+
+.dr-guide-notice p {
+  margin: 0;
+  color: #1565c0;
+  font-size: 0.95rem;
+}
+
+/* Result icon size */
+.dr-result-icon {
+  font-size: 3rem;
+  margin-bottom: 20px;
+}
+
+/* Disclaimer text */
+.dr-disclaimer-text {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+/* Reference disclaimer */
+.dr-reference-disclaimer {
+  font-size: 0.85rem;
+  color: #888;
+  margin-top: 0.5rem;
+}
+
+/* Primary button wide */
+.dr-btn-primary-wide {
+  flex: 2;
+}
+
+/* Info sub text */
+.dr-info-sub {
+  font-size: 0.85rem;
+  color: #888;
+  margin-top: 0.5rem;
+}

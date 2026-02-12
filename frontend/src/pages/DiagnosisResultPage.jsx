@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import '../styles/DiagnosisResult.css';
 
 function DiagnosisResultPage() {
   const [result, setResult] = useState(null);
@@ -69,14 +70,8 @@ function DiagnosisResultPage() {
     <div className="result-container">
       <div className="result-card">
         {/* 읽기 가이드 안내 */}
-        <div className="guide-notice" style={{
-          background: 'linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%)',
-          borderRadius: '12px',
-          padding: '1rem 1.5rem',
-          marginBottom: '1.5rem',
-          border: '1px solid #bbdefb'
-        }}>
-          <p style={{ margin: 0, color: '#1565c0', fontSize: '0.95rem' }}>
+        <div className="dr-guide-notice">
+          <p>
             📖 이 결과는 <strong>용어 이해를 돕기 위한 읽기 가이드</strong>입니다.
             실제 모의실험은 시나리오 페이지에서 직접 선택하여 진행할 수 있습니다.
           </p>
@@ -84,7 +79,7 @@ function DiagnosisResultPage() {
 
         {/* 학습 성향 결과 */}
         <div className="result-header">
-          <div className="result-icon" style={{ fontSize: '3rem' }}>
+          <div className="result-icon dr-result-icon">
             {config.icon}
           </div>
           <h1 className="result-type" style={{ color: config.color }}>
@@ -178,7 +173,7 @@ function DiagnosisResultPage() {
         {/* 시뮬레이션 예시 */}
         <div className="portfolio-section">
           <h2>시뮬레이션용 자산 배분 예시</h2>
-          <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1rem' }}>
+          <p className="dr-disclaimer-text">
             ⚠️ 본 배분은 교육 목적의 일반적 예시이며, 특정인에 대한 맞춤형 투자 권유가 아닙니다.
           </p>
           <div className="portfolio-grid">
@@ -208,7 +203,7 @@ function DiagnosisResultPage() {
             <div className="return-value" style={{ color: config.color }}>
               {reference_only.historical_avg_return}
             </div>
-            <p style={{ fontSize: '0.85rem', color: '#888', marginTop: '0.5rem' }}>
+            <p className="dr-reference-disclaimer">
               * {reference_only.disclaimer}
             </p>
           </div>
@@ -225,9 +220,8 @@ function DiagnosisResultPage() {
         {/* 버튼 영역 */}
         <div className="button-section">
           <button
-            className="btn btn-primary"
+            className="btn btn-primary dr-btn-primary-wide"
             onClick={() => navigate('/scenarios')}
-            style={{ flex: 2 }}
           >
             시나리오 모의실험 시작하기
           </button>
@@ -250,7 +244,7 @@ function DiagnosisResultPage() {
           <p>
             💡 이 결과는 투자 용어를 이해하기 위한 읽기 가이드입니다. 실제 모의실험은 시나리오 페이지에서 직접 선택하세요.
           </p>
-          <p style={{ fontSize: '0.85rem', color: '#888', marginTop: '0.5rem' }}>
+          <p className="dr-info-sub">
             ⚠️ 본 서비스는 교육 목적의 학습 도구이며, 투자 권유·자문 서비스를 제공하지 않습니다.
           </p>
         </div>

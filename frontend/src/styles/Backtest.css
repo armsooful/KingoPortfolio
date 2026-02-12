@@ -490,3 +490,8 @@
     gap: 1rem;
   }
 }
+
+.nav-link-section {
+  margin-top: 1.5rem;
+  text-align: center;
+}

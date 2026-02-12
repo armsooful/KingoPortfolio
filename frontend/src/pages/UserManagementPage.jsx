@@ -97,7 +97,7 @@ function UserManagementPage() {
   return (
     <div className="user-management-container">
       <div className="user-management-header">
-        <h1>사용자 관리</h1>
+        <h1>⚙️ 사용자 관리</h1>
         <button className="btn-back" onClick={() => navigate('/admin')}>
           관리자 페이지로 돌아가기
         </button>

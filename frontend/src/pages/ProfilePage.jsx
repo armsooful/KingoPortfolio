@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api, { changePassword, listConsents } from '../services/api';
+import api, { changePassword, listConsents, getMarketSubscriptionStatus, subscribeMarketEmail, unsubscribeMarketEmail } from '../services/api';
 import '../styles/ProfilePage.css';
 
 function ProfilePage() {
@@ -14,6 +14,11 @@ function ProfilePage() {
   const [consents, setConsents] = useState([]);
   const [consentLoading, setConsentLoading] = useState(true);
   const [consentError, setConsentError] = useState('');
+
+  // 시장 이메일 구독 관련 상태
+  const [marketSub, setMarketSub] = useState(null);
+  const [marketSubLoading, setMarketSubLoading] = useState(true);
+  const [marketSubToggling, setMarketSubToggling] = useState(false);
 
   // 비밀번호 변경 관련 상태
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -58,9 +63,39 @@ function ProfilePage() {
     }
   };
 
+  const fetchMarketSub = async () => {
+    try {
+      setMarketSubLoading(true);
+      const res = await getMarketSubscriptionStatus();
+      setMarketSub(res.data);
+    } catch {
+      // 조회 실패 시 무시
+    } finally {
+      setMarketSubLoading(false);
+    }
+  };
+
+  const handleMarketSubToggle = async () => {
+    setMarketSubToggling(true);
+    try {
+      if (marketSub?.subscribed) {
+        await unsubscribeMarketEmail();
+      } else {
+        await subscribeMarketEmail();
+      }
+      await fetchMarketSub();
+    } catch (err) {
+      setError(err.response?.data?.detail || '구독 설정 변경에 실패했습니다.');
+      setTimeout(() => setError(null), 5000);
+    } finally {
+      setMarketSubToggling(false);
+    }
+  };
+
   useEffect(() => {
     fetchProfile();
     fetchConsents();
+    fetchMarketSub();
   }, []);
 
   // 프로필 수정
@@ -234,21 +269,20 @@ function ProfilePage() {
                 disabled
                 className="disabled-input"
               />
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '5px' }}>
+              <div className="pp-email-status">
                 {profile.is_email_verified ? (
-                  <span style={{ color: '#28a745', fontSize: '14px' }}>
+                  <span className="pp-verified">
                     ✓ 인증 완료
                   </span>
                 ) : (
                   <>
-                    <span style={{ color: '#dc3545', fontSize: '14px' }}>
+                    <span className="pp-unverified">
                       ✗ 미인증
                     </span>
                     <button
                       type="button"
-                      className="btn btn-sm btn-secondary"
+                      className="btn btn-sm btn-secondary pp-verify-btn"
                       onClick={handleSendVerificationEmail}
-                      style={{ fontSize: '12px', padding: '4px 8px' }}
                     >
                       인증 이메일 발송
                     </button>
@@ -261,7 +295,7 @@ function ProfilePage() {
             {/* 등급 정보 표시 */}
             <div className="profile-field">
               <label>VIP 등급</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
+              <div className="pp-tier-row">
                 <span style={{
                   fontSize: '18px',
                   fontWeight: 'bold',
@@ -278,7 +312,7 @@ function ProfilePage() {
                   {' '}
                   {profile.vip_tier?.toUpperCase() || 'BRONZE'}
                 </span>
-                <span style={{ fontSize: '14px', color: '#666' }}>
+                <span className="pp-activity-points">
                   활동 점수: {profile.activity_points || 0}점
                 </span>
               </div>
@@ -286,7 +320,7 @@ function ProfilePage() {
 
             <div className="profile-field">
               <label>멤버십 플랜</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
+              <div className="pp-tier-row">
                 <span style={{
                   fontSize: '16px',
                   fontWeight: 'bold',
@@ -345,7 +379,7 @@ function ProfilePage() {
         {/* 직업 및 재무 정보 */}
         <div className="profile-section">
           <h2>직업 및 재무 정보</h2>
-          <p style={{ fontSize: '0.875rem', color: '#666', marginBottom: '16px' }}>
+          <p className="pp-section-disclaimer">
             ⚠️ 입력하신 정보는 학습용 시뮬레이션 생성에만 참고되며, 투자 권유·추천 목적으로 사용되지 않습니다.
           </p>
           <div className="profile-grid">
@@ -428,7 +462,7 @@ function ProfilePage() {
         {/* 학습 성향 */}
         <div className="profile-section">
           <h2>학습 성향</h2>
-          <p style={{ fontSize: '0.875rem', color: '#666', marginBottom: '16px' }}>
+          <p className="pp-section-disclaimer">
             ⚠️ 학습 성향 정보는 교육 목적의 시뮬레이션 예시 생성에 활용되며, 실제 투자 권유가 아닙니다.
           </p>
           <div className="profile-grid">
@@ -534,6 +568,46 @@ function ProfilePage() {
           )}
         </div>
       </form>
+
+      {/* 시장 정보 이메일 수신 */}
+      <div className="profile-section">
+        <h2>시장 정보 이메일 수신</h2>
+        <p className="pp-section-disclaimer">
+          매일 아침 7:30에 전일 시장 현황 요약을 이메일로 받아보세요. (교육 목적 정보 제공)
+        </p>
+
+        {marketSubLoading ? (
+          <div className="info-message">불러오는 중...</div>
+        ) : !profile?.is_email_verified ? (
+          <div className="pp-market-sub-warning">
+            이메일 인증 후 구독이 가능합니다. 위 이메일 항목에서 인증을 완료해주세요.
+          </div>
+        ) : (
+          <div className="pp-market-sub-row">
+            <label className="pp-toggle-switch">
+              <input
+                type="checkbox"
+                checked={marketSub?.subscribed || false}
+                onChange={handleMarketSubToggle}
+                disabled={marketSubToggling}
+              />
+              <span className="pp-toggle-slider"></span>
+            </label>
+            <div className="pp-market-sub-info">
+              {marketSub?.subscribed ? (
+                <span className="pp-sub-active">
+                  구독 중
+                  {marketSub.subscribed_at && (
+                    <> ({new Date(marketSub.subscribed_at).toLocaleDateString('ko-KR')}부터)</>
+                  )}
+                </span>
+              ) : (
+                <span className="pp-sub-inactive">미구독</span>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* 비밀번호 변경 */}
       <div className="profile-section">

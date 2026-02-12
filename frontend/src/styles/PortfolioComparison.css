@@ -1,0 +1,190 @@
+/* ============================================================
+   PortfolioComparisonPage Styles
+   ============================================================ */
+
+/* Card max-width override */
+.pc-card {
+  max-width: 1400px;
+}
+
+/* Section panel */
+.pc-section-panel {
+  margin-top: 32px;
+  padding: 24px;
+  background: #f8f9fa;
+  border-radius: 12px;
+}
+
+.pc-section-title {
+  font-size: 1.2rem;
+  margin-bottom: 16px;
+  color: #333;
+}
+
+/* Portfolio selection grid */
+.pc-portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.pc-portfolio-item {
+  padding: 16px;
+  background: white;
+  color: #333;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 2px solid #e0e0e0;
+  transition: all 0.2s;
+}
+
+.pc-portfolio-item:hover {
+  border-color: #667eea;
+}
+
+.pc-portfolio-item.selected {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.pc-portfolio-name {
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+}
+
+.pc-portfolio-meta {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+/* Controls row */
+.pc-controls {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.pc-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+}
+
+.pc-select {
+  padding: 12px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.pc-compare-btn {
+  padding: 12px 32px;
+  margin-top: 28px;
+}
+
+/* Error message */
+.pc-error {
+  margin-top: 24px;
+  padding: 16px;
+  background: #fee;
+  border-radius: 8px;
+  color: #c33;
+  border: 1px solid #fcc;
+}
+
+/* Results area */
+.pc-results {
+  margin-top: 32px;
+}
+
+/* Chart box */
+.pc-chart-box {
+  padding: 24px;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+  margin-bottom: 24px;
+  height: 400px;
+}
+
+/* Stats section (no fixed height) */
+.pc-stats-box {
+  padding: 24px;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+}
+
+.pc-chart-title {
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+  color: #667eea;
+}
+
+/* Table */
+.pc-table-wrap {
+  overflow-x: auto;
+}
+
+.pc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.pc-table thead {
+  background: #f8f9fa;
+}
+
+.pc-table th {
+  padding: 12px;
+  border-bottom: 2px solid #ddd;
+  text-align: left;
+}
+
+.pc-table th.right {
+  text-align: right;
+}
+
+.pc-table td {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.pc-table td.right {
+  text-align: right;
+}
+
+.pc-table td.bold {
+  font-weight: 600;
+}
+
+.pc-table td.return-positive {
+  font-weight: 600;
+  color: #4caf50;
+}
+
+.pc-table td.return-negative {
+  font-weight: 600;
+  color: #f44336;
+}
+
+.pc-table tbody tr:nth-child(even) {
+  background: #f9f9f9;
+}
+
+/* Footer buttons */
+.pc-footer {
+  margin-top: 32px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.pc-footer .btn {
+  padding: 12px 24px;
+}

@@ -66,14 +66,25 @@ async def send_email(
         message.attach(part2)
 
         # SMTP 서버에 연결하여 이메일 발송
-        await aiosmtplib.send(
-            message,
-            hostname=SMTP_HOST,
-            port=SMTP_PORT,
-            username=SMTP_USER,
-            password=SMTP_PASSWORD,
-            start_tls=True,
-        )
+        # 포트 465: implicit TLS (use_tls), 포트 587: STARTTLS
+        if SMTP_PORT == 465:
+            await aiosmtplib.send(
+                message,
+                hostname=SMTP_HOST,
+                port=SMTP_PORT,
+                username=SMTP_USER,
+                password=SMTP_PASSWORD,
+                use_tls=True,
+            )
+        else:
+            await aiosmtplib.send(
+                message,
+                hostname=SMTP_HOST,
+                port=SMTP_PORT,
+                username=SMTP_USER,
+                password=SMTP_PASSWORD,
+                start_tls=True,
+            )
 
         print(f"✅ Email sent successfully to {to_email}")
         return True

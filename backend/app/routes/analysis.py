@@ -752,7 +752,7 @@ async def save_explanation_history(
 
     # 히스토리 저장
     history = ExplanationHistory(
-        user_id=current_user.user_id,
+        user_id=current_user.id,
         portfolio_id=request.portfolio_id,
         portfolio_type=request.portfolio_type,
         period_start=datetime.combine(request.start_date, datetime.min.time()),
@@ -785,13 +785,13 @@ async def get_explanation_history(
     사용자의 성과 해석 히스토리 목록을 조회합니다.
     """
     histories = db.query(ExplanationHistory).filter(
-        ExplanationHistory.user_id == current_user.user_id
+        ExplanationHistory.user_id == current_user.id
     ).order_by(
         ExplanationHistory.created_at.desc()
     ).offset(skip).limit(limit).all()
 
     total = db.query(ExplanationHistory).filter(
-        ExplanationHistory.user_id == current_user.user_id
+        ExplanationHistory.user_id == current_user.id
     ).count()
 
     return {
@@ -818,7 +818,7 @@ async def get_explanation_history_detail(
     """
     history = db.query(ExplanationHistory).filter(
         ExplanationHistory.history_id == history_id,
-        ExplanationHistory.user_id == current_user.user_id
+        ExplanationHistory.user_id == current_user.id
     ).first()
 
     if not history:
@@ -845,7 +845,7 @@ async def delete_explanation_history(
     """
     history = db.query(ExplanationHistory).filter(
         ExplanationHistory.history_id == history_id,
-        ExplanationHistory.user_id == current_user.user_id
+        ExplanationHistory.user_id == current_user.id
     ).first()
 
     if not history:

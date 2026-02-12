@@ -1,6 +1,7 @@
 // frontend/src/pages/AdminPage.jsx
 
 import { useNavigate } from 'react-router-dom';
+import '../styles/Admin.css';
 
 export default function AdminPage() {
   const navigate = useNavigate();
@@ -103,52 +104,21 @@ export default function AdminPage() {
           </div>
 
           {/* Menu Grid */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: '24px',
-            marginTop: '40px'
-          }}>
+          <div className="admin-menu-grid">
             {menuItems.map((item, index) => (
               <div
                 key={index}
+                className="admin-menu-card"
+                style={{ '--card-color': item.color }}
                 onClick={() => navigate(item.path)}
-                style={{
-                  background: 'white',
-                  borderRadius: '16px',
-                  padding: '32px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s',
-                  border: '2px solid transparent'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-8px)';
-                  e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.15)';
-                  e.currentTarget.style.borderColor = item.color;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-                  e.currentTarget.style.borderColor = 'transparent';
-                }}
               >
-                <div style={{ fontSize: '3rem', marginBottom: '16px' }}>
+                <div className="admin-menu-card-icon">
                   {item.icon}
                 </div>
-                <h3 style={{
-                  fontSize: '1.5rem',
-                  fontWeight: '700',
-                  color: item.color,
-                  marginBottom: '12px'
-                }}>
+                <h3 className="admin-menu-card-title" style={{ color: item.color }}>
                   {item.title}
                 </h3>
-                <p style={{
-                  fontSize: '0.95rem',
-                  color: '#666',
-                  lineHeight: '1.6'
-                }}>
+                <p className="admin-menu-card-desc">
                   {item.description}
                 </p>
               </div>
@@ -156,22 +126,9 @@ export default function AdminPage() {
           </div>
 
           {/* Info Section */}
-          <div style={{
-            marginTop: '48px',
-            padding: '24px',
-            background: '#f8f9fa',
-            borderRadius: '12px',
-            borderLeft: '4px solid #667eea'
-          }}>
-            <h3 style={{ fontSize: '1.2rem', marginBottom: '12px', color: '#1a1a1a' }}>
-              💡 사용 안내
-            </h3>
-            <ul style={{
-              fontSize: '0.95rem',
-              color: '#666',
-              lineHeight: '1.8',
-              paddingLeft: '20px'
-            }}>
+          <div className="admin-info-section">
+            <h3>💡 사용 안내</h3>
+            <ul>
               <li>
                 <strong>데이터 관리:</strong> yfinance, Alpha Vantage, pykrx를 통해 주식/ETF 데이터를 수집하고 관리합니다.
               </li>
@@ -188,31 +145,22 @@ export default function AdminPage() {
           </div>
 
           {/* Quick Links */}
-          <div style={{
-            marginTop: '32px',
-            display: 'flex',
-            gap: '16px',
-            flexWrap: 'wrap',
-            justifyContent: 'center'
-          }}>
+          <div className="admin-quick-links">
             <button
               onClick={() => navigate('/survey')}
               className="btn btn-secondary"
-              style={{ padding: '12px 24px' }}
             >
               🏠 홈으로
             </button>
             <button
               onClick={() => navigate('/history')}
               className="btn btn-secondary"
-              style={{ padding: '12px 24px' }}
             >
               📋 진단 이력
             </button>
             <button
               onClick={() => window.open('http://127.0.0.1:8000/docs', '_blank')}
               className="btn btn-secondary"
-              style={{ padding: '12px 24px' }}
             >
               📚 API 문서
             </button>

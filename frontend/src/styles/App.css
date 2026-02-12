@@ -191,6 +191,22 @@ body {
   color: #4338ca;
 }
 
+.nav-dropdown-separator {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.4rem 0.65rem 0.15rem;
+  margin-top: 0.25rem;
+  pointer-events: none;
+  user-select: none;
+}
+
+.nav-dropdown-separator:first-child {
+  margin-top: 0;
+}
+
 .nav-dropdown-item.active {
   background: #e0e7ff;
   color: #4338ca;
@@ -269,28 +285,253 @@ body {
   background-color: rgba(255, 255, 255, 0.3);
 }
 
+/* ============================================================
+   Mobile Menu
+   ============================================================ */
+
+.mobile-menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+}
+
+.mobile-menu-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
 @media (max-width: 768px) {
   .header-container {
-    flex-direction: column;
-    gap: 10px;
+    justify-content: space-between;
   }
 
   .header-nav {
-    width: 100%;
-  }
-
-  .user-name-section {
     display: none;
   }
 
-  .user-tier-section {
-    justify-content: flex-end;
+  .header-user {
+    display: none;
   }
 
-  .tier-badge {
-    font-size: 0.7rem;
-    padding: 2px 6px;
+  .mobile-menu-toggle {
+    display: flex;
   }
+}
+
+.hamburger-icon {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 24px;
+  height: 18px;
+  position: relative;
+}
+
+.hamburger-icon span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: white;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.hamburger-icon.open span:nth-child(1) {
+  transform: translateY(8px) rotate(45deg);
+}
+
+.hamburger-icon.open span:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger-icon.open span:nth-child(3) {
+  transform: translateY(-8px) rotate(-45deg);
+}
+
+/* Backdrop */
+.mobile-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 140;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Drawer */
+.mobile-menu-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 300px;
+  max-width: 85vw;
+  background: white;
+  z-index: 150;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.mobile-menu-drawer.open {
+  transform: translateX(0);
+}
+
+.mobile-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.mobile-menu-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+.mobile-menu-close:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Mobile nav */
+.mobile-nav {
+  flex: 1;
+  padding: 8px 0;
+  overflow-y: auto;
+}
+
+.mobile-nav-group {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.mobile-nav-group-button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 14px 20px;
+  background: none;
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.mobile-nav-group-button:hover {
+  background: #f8f9fa;
+}
+
+.mobile-nav-group-button.open {
+  color: #667eea;
+  background: #f0f4ff;
+}
+
+.mobile-nav-caret {
+  font-size: 0.8rem;
+  transition: transform 0.2s ease;
+}
+
+.mobile-nav-caret.open {
+  transform: rotate(180deg);
+}
+
+.mobile-nav-items {
+  padding: 0 0 8px;
+  background: #fafbfc;
+}
+
+.mobile-nav-separator {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 8px 32px 4px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.mobile-nav-separator:first-child {
+  padding-top: 4px;
+}
+
+.mobile-nav-item {
+  display: block;
+  width: 100%;
+  padding: 10px 32px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 0.95rem;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.mobile-nav-item:hover {
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+.mobile-nav-item.active {
+  background: #e0e7ff;
+  color: #4338ca;
+  font-weight: 600;
+}
+
+/* Mobile user section */
+.mobile-menu-user {
+  padding: 16px 20px;
+  border-top: 1px solid #e5e7eb;
+  background: #f8f9fa;
+  flex-shrink: 0;
+}
+
+.mobile-user-info {
+  margin-bottom: 12px;
+}
+
+.mobile-user-name {
+  display: block;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 8px;
+}
+
+.mobile-user-tiers {
+  display: flex;
+  gap: 8px;
+}
+
+.mobile-logout {
+  width: 100%;
+  background-color: rgba(102, 126, 234, 0.1);
+  color: #667eea;
+  border: 1px solid #667eea;
 }
 
 /* ============================================================
@@ -702,6 +943,12 @@ body {
   margin: 0;
   color: #004085;
   font-size: 0.95rem;
+}
+
+.survey-info-sub {
+  font-size: 0.85rem !important;
+  color: #666 !important;
+  margin-top: 0.5rem !important;
 }
 
 .notice-consent {
@@ -1324,5 +1571,58 @@ body {
   .ai-content {
     font-size: 0.95rem;
   }
+}
+
+/* ============================================================
+   Admin Back Button (shared across all admin pages)
+   ============================================================ */
+
+.admin-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #555;
+  transition: all 0.2s;
+  margin-bottom: 12px;
+}
+
+.admin-back-btn:hover {
+  border-color: #667eea;
+  color: #667eea;
+  background: #f8f9ff;
+}
+
+/* Analysis workflow navigation link */
+.admin-workflow-nav {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
+}
+
+.admin-workflow-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+
+.admin-workflow-link:hover {
+  opacity: 0.9;
 }
 

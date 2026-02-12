@@ -641,7 +641,7 @@ function Phase7PortfolioEvaluationPage() {
 
   return (
     <div className="phase7-eval-page">
-      <h1 className="phase7-title">포트폴리오 평가</h1>
+      <h1 className="phase7-title">📊 포트폴리오 평가</h1>
       <p className="phase7-subtitle">
         사용자가 직접 구성한 포트폴리오의 과거 데이터 기반 성과·리스크를 확인합니다.
       </p>
@@ -943,6 +943,18 @@ function Phase7PortfolioEvaluationPage() {
               </>
             )}
 
+          </div>
+        )}
+
+        {evaluationResult && (
+          <div className="phase7-nav-link">
+            <button
+              type="button"
+              className="phase7-btn-link"
+              onClick={() => navigate('/portfolio-builder')}
+            >
+              포트폴리오 수정하기 →
+            </button>
           </div>
         )}
       </section>

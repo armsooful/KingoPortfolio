@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import Disclaimer from '../components/Disclaimer';
+import '../styles/PortfolioComparison.css';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -185,11 +186,14 @@ export default function PortfolioComparisonPage() {
   return (
     <div className="main-content">
       <div className="result-container">
-        <div className="result-card" style={{ maxWidth: '1400px' }}>
+        <div className="result-card pc-card">
           {/* Header */}
           <div className="result-header">
-            <div className="result-icon" style={{ fontSize: '3rem' }}>
-              📊
+            <button className="admin-back-btn" onClick={() => navigate('/admin')}>
+              ← 관리자 홈
+            </button>
+            <div className="result-icon">
+              ⚙️
             </div>
             <h1 className="result-type" style={{ color: '#667eea' }}>
               포트폴리오 성과 비교
@@ -203,68 +207,40 @@ export default function PortfolioComparisonPage() {
           <Disclaimer type="portfolio" />
 
           {/* 포트폴리오 선택 */}
-          <div style={{
-            marginTop: '32px',
-            padding: '24px',
-            background: '#f8f9fa',
-            borderRadius: '12px'
-          }}>
-            <h2 style={{ fontSize: '1.2rem', marginBottom: '16px', color: '#333' }}>
+          <div className="pc-section-panel">
+            <h2 className="pc-section-title">
               비교할 포트폴리오 선택 (최대 5개)
             </h2>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+            <div className="pc-portfolio-grid">
               {portfolios.map((portfolio) => (
                 <div
                   key={portfolio.id}
                   onClick={() => togglePortfolio(portfolio.id)}
-                  style={{
-                    padding: '16px',
-                    background: selectedPortfolios.includes(portfolio.id) ? '#667eea' : 'white',
-                    color: selectedPortfolios.includes(portfolio.id) ? 'white' : '#333',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    border: selectedPortfolios.includes(portfolio.id) ? '2px solid #667eea' : '2px solid #e0e0e0',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!selectedPortfolios.includes(portfolio.id)) {
-                      e.currentTarget.style.borderColor = '#667eea';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!selectedPortfolios.includes(portfolio.id)) {
-                      e.currentTarget.style.borderColor = '#e0e0e0';
-                    }
-                  }}
+                  className={`pc-portfolio-item${selectedPortfolios.includes(portfolio.id) ? ' selected' : ''}`}
                 >
-                  <div style={{ fontWeight: '600', fontSize: '1.1rem', marginBottom: '8px' }}>
+                  <div className="pc-portfolio-name">
                     {portfolio.name}
                   </div>
-                  <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>
+                  <div className="pc-portfolio-meta">
                     총 자산: {formatNumber(portfolio.total_value)}원
                   </div>
-                  <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>
+                  <div className="pc-portfolio-meta">
                     수익률: {formatDecimal(portfolio.total_return)}%
                   </div>
                 </div>
               ))}
             </div>
 
-            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+            <div className="pc-controls">
               <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333' }}>
+                <label className="pc-label">
                   조회 기간
                 </label>
                 <select
                   value={days}
                   onChange={(e) => setDays(Number(e.target.value))}
-                  style={{
-                    padding: '12px 16px',
-                    border: '2px solid #e0e0e0',
-                    borderRadius: '8px',
-                    fontSize: '1rem'
-                  }}
+                  className="pc-select"
                 >
                   <option value={7}>1주일</option>
                   <option value={30}>1개월</option>
@@ -276,9 +252,8 @@ export default function PortfolioComparisonPage() {
 
               <button
                 onClick={handleCompare}
-                className="btn btn-primary"
+                className="btn btn-primary pc-compare-btn"
                 disabled={loading || selectedPortfolios.length === 0}
-                style={{ padding: '12px 32px', marginTop: '28px' }}
               >
                 {loading ? '분석 중...' : '비교하기'}
               </button>
@@ -287,31 +262,17 @@ export default function PortfolioComparisonPage() {
 
           {/* 에러 메시지 */}
           {error && (
-            <div style={{
-              marginTop: '24px',
-              padding: '16px',
-              background: '#fee',
-              borderRadius: '8px',
-              color: '#c33',
-              border: '1px solid #fcc'
-            }}>
+            <div className="pc-error">
               ❌ {error}
             </div>
           )}
 
           {/* 비교 결과 */}
           {comparisonData && (
-            <div style={{ marginTop: '32px' }}>
+            <div className="pc-results">
               {/* 기간 수익률 추이 차트 */}
-              <div style={{
-                padding: '24px',
-                background: 'white',
-                borderRadius: '12px',
-                border: '1px solid #e0e0e0',
-                marginBottom: '24px',
-                height: '400px'
-              }}>
-                <h2 style={{ fontSize: '1.5rem', marginBottom: '20px', color: '#667eea' }}>
+              <div className="pc-chart-box">
+                <h2 className="pc-chart-title">
                   📈 수익률 추이 ({days}일)
                 </h2>
                 <Line
@@ -356,15 +317,8 @@ export default function PortfolioComparisonPage() {
               </div>
 
               {/* 총 수익률 비교 */}
-              <div style={{
-                padding: '24px',
-                background: 'white',
-                borderRadius: '12px',
-                border: '1px solid #e0e0e0',
-                marginBottom: '24px',
-                height: '400px'
-              }}>
-                <h2 style={{ fontSize: '1.5rem', marginBottom: '20px', color: '#667eea' }}>
+              <div className="pc-chart-box">
+                <h2 className="pc-chart-title">
                   📊 기간 수익률 비교
                 </h2>
                 <Bar
@@ -406,60 +360,45 @@ export default function PortfolioComparisonPage() {
               </div>
 
               {/* 상세 통계 */}
-              <div style={{
-                padding: '24px',
-                background: 'white',
-                borderRadius: '12px',
-                border: '1px solid #e0e0e0'
-              }}>
-                <h2 style={{ fontSize: '1.5rem', marginBottom: '20px', color: '#667eea' }}>
+              <div className="pc-stats-box">
+                <h2 className="pc-chart-title">
                   📋 상세 통계
                 </h2>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{
-                    width: '100%',
-                    borderCollapse: 'collapse',
-                    fontSize: '0.9rem'
-                  }}>
-                    <thead style={{ background: '#f8f9fa' }}>
+                <div className="pc-table-wrap">
+                  <table className="pc-table">
+                    <thead>
                       <tr>
-                        <th style={{ padding: '12px', borderBottom: '2px solid #ddd', textAlign: 'left' }}>포트폴리오</th>
-                        <th style={{ padding: '12px', borderBottom: '2px solid #ddd', textAlign: 'right' }}>현재 총 자산</th>
-                        <th style={{ padding: '12px', borderBottom: '2px solid #ddd', textAlign: 'right' }}>기간 수익률</th>
-                        <th style={{ padding: '12px', borderBottom: '2px solid #ddd', textAlign: 'right' }}>최고가</th>
-                        <th style={{ padding: '12px', borderBottom: '2px solid #ddd', textAlign: 'right' }}>최저가</th>
-                        <th style={{ padding: '12px', borderBottom: '2px solid #ddd', textAlign: 'right' }}>평균가</th>
-                        <th style={{ padding: '12px', borderBottom: '2px solid #ddd', textAlign: 'right' }}>데이터 포인트</th>
+                        <th>포트폴리오</th>
+                        <th className="right">현재 총 자산</th>
+                        <th className="right">기간 수익률</th>
+                        <th className="right">최고가</th>
+                        <th className="right">최저가</th>
+                        <th className="right">평균가</th>
+                        <th className="right">데이터 포인트</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {comparisonData.portfolios.map((item, idx) => (
-                        <tr key={item.portfolio.id} style={{ background: idx % 2 === 0 ? 'white' : '#f9f9f9' }}>
-                          <td style={{ padding: '12px', borderBottom: '1px solid #eee', fontWeight: '600' }}>
+                      {comparisonData.portfolios.map((item) => (
+                        <tr key={item.portfolio.id}>
+                          <td className="bold">
                             {item.portfolio.name}
                           </td>
-                          <td style={{ padding: '12px', borderBottom: '1px solid #eee', textAlign: 'right' }}>
+                          <td className="right">
                             {formatNumber(item.portfolio.total_value)}원
                           </td>
-                          <td style={{
-                            padding: '12px',
-                            borderBottom: '1px solid #eee',
-                            textAlign: 'right',
-                            fontWeight: '600',
-                            color: item.statistics.period_return >= 0 ? '#4caf50' : '#f44336'
-                          }}>
+                          <td className={`right ${item.statistics.period_return >= 0 ? 'return-positive' : 'return-negative'}`}>
                             {item.statistics.period_return >= 0 ? '+' : ''}{formatDecimal(item.statistics.period_return)}%
                           </td>
-                          <td style={{ padding: '12px', borderBottom: '1px solid #eee', textAlign: 'right' }}>
+                          <td className="right">
                             {formatNumber(item.statistics.max_value)}원
                           </td>
-                          <td style={{ padding: '12px', borderBottom: '1px solid #eee', textAlign: 'right' }}>
+                          <td className="right">
                             {formatNumber(item.statistics.min_value)}원
                           </td>
-                          <td style={{ padding: '12px', borderBottom: '1px solid #eee', textAlign: 'right' }}>
+                          <td className="right">
                             {formatNumber(item.statistics.avg_value)}원
                           </td>
-                          <td style={{ padding: '12px', borderBottom: '1px solid #eee', textAlign: 'right' }}>
+                          <td className="right">
                             {item.statistics.data_points}개
                           </td>
                         </tr>
@@ -472,11 +411,10 @@ export default function PortfolioComparisonPage() {
           )}
 
           {/* 버튼 */}
-          <div style={{ marginTop: '32px', display: 'flex', gap: '12px', justifyContent: 'center' }}>
+          <div className="pc-footer">
             <button
               onClick={() => navigate('/admin')}
               className="btn btn-secondary"
-              style={{ padding: '12px 24px' }}
             >
               🏠 관리자 메뉴로
             </button>

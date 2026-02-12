@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   getFinancialAnalysis,
   getFinancialScore,
@@ -7,6 +8,7 @@ import {
 import '../styles/FinancialAnalysis.css';
 
 const FinancialAnalysis = () => {
+  const navigate = useNavigate();
   const [symbol, setSymbol] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -77,7 +79,7 @@ const FinancialAnalysis = () => {
   return (
     <div className="financial-analysis">
       <div className="analysis-header">
-        <h2>📊 재무 분석</h2>
+        <h2>⚙️ 재무 분석</h2>
         <div className="search-box">
           <input
             type="text"
@@ -379,6 +381,16 @@ const FinancialAnalysis = () => {
           </div>
         </div>
       )}
+
+      {/* 워크플로우 내비게이션 */}
+      <div className="admin-workflow-nav">
+        <button
+          className="admin-workflow-link"
+          onClick={() => navigate('/admin/valuation')}
+        >
+          밸류에이션 →
+        </button>
+      </div>
     </div>
   );
 };
