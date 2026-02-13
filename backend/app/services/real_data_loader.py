@@ -1347,6 +1347,8 @@ class RealDataLoader:
             existing.category = category
             if listing.sector:
                 existing.sector = listing.sector  # fdr sector 우선 (KRX 공식 분류)
+            if listing.market:
+                existing.market = listing.market  # fdr market 우선 (KOSPI/KOSDAQ 등)
             if crno and not existing.crno:
                 existing.crno = crno
             return
