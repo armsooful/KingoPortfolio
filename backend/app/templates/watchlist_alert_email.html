@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 20px auto;
+      background: #ffffff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0 0 5px 0;
+      font-size: 24px;
+    }
+    .header .date {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    .content {
+      padding: 30px;
+    }
+    .greeting {
+      font-size: 15px;
+      margin-bottom: 20px;
+      color: #555;
+    }
+    .section-title {
+      color: #667eea;
+      font-size: 18px;
+      font-weight: 700;
+      margin: 24px 0 12px 0;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e0e0f0;
+    }
+    .change-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .change-table th {
+      background: #f8f9fa;
+      padding: 10px 8px;
+      text-align: left;
+      font-weight: 600;
+      color: #555;
+      border-bottom: 2px solid #e0e0f0;
+    }
+    .change-table td {
+      padding: 10px 8px;
+      border-bottom: 1px solid #f0f0f0;
+      vertical-align: middle;
+    }
+    .stock-name {
+      font-weight: 600;
+      color: #333;
+    }
+    .stock-ticker {
+      color: #888;
+      font-size: 12px;
+    }
+    .score-cell {
+      text-align: center;
+      font-weight: 600;
+    }
+    .arrow {
+      color: #888;
+      margin: 0 4px;
+    }
+    .diff-up {
+      color: #16a34a;
+      font-weight: 700;
+    }
+    .diff-down {
+      color: #dc2626;
+      font-weight: 700;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .grade-up { background: #dcfce7; color: #16a34a; }
+    .grade-down { background: #fef2f2; color: #dc2626; }
+    .grade-same { background: #f3f4f6; color: #6b7280; }
+    .summary-text {
+      font-size: 12px;
+      color: #666;
+      max-width: 200px;
+    }
+    .footer {
+      background: #f8f9fa;
+      padding: 20px 30px;
+      text-align: center;
+      font-size: 12px;
+      color: #888;
+    }
+    .footer a {
+      color: #667eea;
+      text-decoration: none;
+    }
+    .disclaimer {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 12px 16px;
+      margin: 20px 0;
+      font-size: 13px;
+      color: #856404;
+    }
+    .cta-button {
+      display: inline-block;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 600;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>관심 종목 점수 변동 알림</h1>
+      <div class="date">{{ date }}</div>
+    </div>
+
+    <div class="content">
+      <p class="greeting">안녕하세요, {{ user_name }}님. 관심 종목의 Compass Score가 변동되었습니다.</p>
+
+      <div class="section-title">변동 종목</div>
+      <table class="change-table">
+        <thead>
+          <tr>
+            <th>종목</th>
+            <th>점수 변동</th>
+            <th>등급</th>
+            <th>요약</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in changes %}
+          <tr>
+            <td>
+              <div class="stock-name">{{ c.name }}</div>
+              <div class="stock-ticker">{{ c.ticker }}</div>
+            </td>
+            <td class="score-cell">
+              {{ c.prev_score if c.prev_score is not none else '-' }}
+              <span class="arrow">&rarr;</span>
+              {{ c.current_score }}
+              <br>
+              {% if c.score_diff > 0 %}
+                <span class="diff-up">+{{ c.score_diff }}</span>
+              {% elif c.score_diff < 0 %}
+                <span class="diff-down">{{ c.score_diff }}</span>
+              {% else %}
+                <span style="color:#888">0</span>
+              {% endif %}
+            </td>
+            <td class="score-cell">
+              {% if c.prev_grade != c.current_grade %}
+                {% if c.score_diff > 0 %}
+                  <span class="grade-badge grade-up">{{ c.prev_grade }} &rarr; {{ c.current_grade }}</span>
+                {% else %}
+                  <span class="grade-badge grade-down">{{ c.prev_grade }} &rarr; {{ c.current_grade }}</span>
+                {% endif %}
+              {% else %}
+                <span class="grade-badge grade-same">{{ c.current_grade }}</span>
+              {% endif %}
+            </td>
+            <td class="summary-text">{{ c.summary[:80] if c.summary else '-' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div style="text-align:center; margin-top: 24px;">
+        <a href="{{ frontend_url }}/watchlist" class="cta-button">관심 종목 보기</a>
+      </div>
+
+      <div class="disclaimer">
+        본 이메일은 교육 목적의 참고 자료이며, 투자 권유/추천이 아닙니다.
+        과거 성과가 미래 수익을 보장하지 않습니다.
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>&copy; 2026 Foresto Compass. All rights reserved.</p>
+      <p>
+        <a href="{{ frontend_url }}/watchlist">알림 설정 변경</a>
+        &middot;
+        <a href="{{ frontend_url }}/profile">프로필</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>

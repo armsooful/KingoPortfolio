@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import api, { getAiCommentary } from '../services/api';
 import Disclaimer from '../components/Disclaimer';
 import '../styles/StockDetail.css';
 import {
@@ -41,6 +41,8 @@ export default function StockDetailPage() {
   const [error, setError] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [aiCommentary, setAiCommentary] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
 
   // 티커 검색 (자동완성)
   const searchTickers = async (query) => {
@@ -70,6 +72,7 @@ export default function StockDetailPage() {
     setLoading(true);
     setError('');
     setStockData(null);
+    setAiCommentary(null);
 
     try {
       const response = await api.get(`/admin/stock-detail/${tickerCode}?days=${days}`);
@@ -111,6 +114,30 @@ export default function StockDetailPage() {
   const formatDecimal = (num) => {
     if (num === null || num === undefined) return '-';
     return num.toFixed(2);
+  };
+
+  // 등급별 색상
+  const getGradeColor = (grade) => {
+    if (!grade) return '#999';
+    const colors = { S: '#ff6b35', 'A+': '#4caf50', A: '#66bb6a', 'B+': '#42a5f5', B: '#90caf9', 'C+': '#ffa726', C: '#ff7043', D: '#ef5350', F: '#c62828' };
+    return colors[grade] || '#999';
+  };
+
+  // AI 심층 해설 요청
+  const fetchAiCommentary = async () => {
+    if (!stockData?.basic_info?.ticker) return;
+    setAiLoading(true);
+    setAiCommentary(null);
+    try {
+      const response = await getAiCommentary(stockData.basic_info.ticker);
+      if (response.data?.success) {
+        setAiCommentary(response.data.commentary);
+      }
+    } catch (err) {
+      setAiCommentary('AI 해설 생성에 실패했습니다.');
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   return (
@@ -245,6 +272,87 @@ export default function StockDetailPage() {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Compass Score */}
+              <div className="sd-section">
+                <h2 className="sd-section-title">
+                  🧭 Compass Score
+                </h2>
+                {stockData.compass?.score != null ? (
+                  <>
+                    <div className="sd-compass">
+                      <div className="sd-compass-badge" style={{ background: `linear-gradient(135deg, ${getGradeColor(stockData.compass.grade)}, ${getGradeColor(stockData.compass.grade)}88)` }}>
+                        <div className="sd-compass-badge-score">{stockData.compass.score}</div>
+                        <div className="sd-compass-badge-grade">{stockData.compass.grade}</div>
+                      </div>
+                      <div className="sd-compass-bars">
+                        {[
+                          { label: '재무 (30%)', key: 'financial', color: '#4caf50' },
+                          { label: '밸류 (20%)', key: 'valuation', color: '#2196f3' },
+                          { label: '기술 (30%)', key: 'technical', color: '#ff9800' },
+                          { label: '리스크 (20%)', key: 'risk', color: '#9c27b0' },
+                        ].map(({ label, key, color }) => (
+                          <div key={key} className="sd-compass-bar-row">
+                            <span className="sd-compass-bar-label">{label}</span>
+                            <div className="sd-compass-bar-track">
+                              <div
+                                className="sd-compass-bar-fill"
+                                style={{ width: `${stockData.compass[key + '_score'] ?? 0}%`, backgroundColor: color }}
+                              />
+                            </div>
+                            <span className="sd-compass-bar-value">
+                              {stockData.compass[key + '_score'] != null ? `${stockData.compass[key + '_score']}점` : 'N/A'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {stockData.compass.summary && (
+                      <div className="sd-compass-summary">
+                        {stockData.compass.summary}
+                      </div>
+                    )}
+
+                    {stockData.compass.commentary && (
+                      <div className="sd-compass-commentary">
+                        {stockData.compass.commentary}
+                      </div>
+                    )}
+
+                    <div className="sd-compass-actions">
+                      <button
+                        className="sd-ai-btn"
+                        onClick={fetchAiCommentary}
+                        disabled={aiLoading}
+                      >
+                        {aiLoading ? '생성 중...' : '🤖 AI 심층 해설'}
+                      </button>
+                    </div>
+
+                    {aiCommentary && (
+                      <div className="sd-ai-result">
+                        <div className="sd-ai-result-header">AI 심층 해설</div>
+                        {aiCommentary}
+                      </div>
+                    )}
+
+                    {stockData.compass.updated_at && (
+                      <div className="sd-compass-meta">
+                        마지막 산출: {new Date(stockData.compass.updated_at).toLocaleString('ko-KR')}
+                      </div>
+                    )}
+
+                    <div className="sd-compass-disclaimer">
+                      교육 목적 참고 정보이며 투자 권유가 아닙니다
+                    </div>
+                  </>
+                ) : (
+                  <div className="sd-empty">
+                    Compass Score가 아직 산출되지 않았습니다. 관리자 페이지에서 일괄 계산을 실행하세요.
+                  </div>
+                )}
               </div>
 
               {/* 재무 지표 */}

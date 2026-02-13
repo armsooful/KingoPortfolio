@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from typing import List, Optional
 from datetime import datetime, timedelta
+import logging
 
 from app.database import get_db
 from app.models.securities import Stock
@@ -12,6 +13,8 @@ from app.models.real_data import StockPriceDaily
 from app.auth import get_current_user, require_admin
 from app.models.user import User
 from app.exceptions import StockNotFoundError
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin/stock-detail", tags=["Stock Detail"])
 
@@ -28,6 +31,7 @@ def get_stock_detail(
     - 기본 정보 (stocks 테이블)
     - 시계열 데이터 (stock_price_daily 테이블, 최근 N일)
     - 재무 지표 (stocks 테이블)
+    - Compass Score (사전 계산된 점수 + commentary)
     """
 
     # 1. 기본 정보 조회
@@ -86,6 +90,17 @@ def get_stock_detail(
             "ytd_return": stock.ytd_return,
             "one_year_return": stock.one_year_return
         },
+        "compass": {
+            "score": stock.compass_score,
+            "grade": stock.compass_grade,
+            "summary": stock.compass_summary,
+            "commentary": stock.compass_commentary,
+            "financial_score": stock.compass_financial_score,
+            "valuation_score": stock.compass_valuation_score,
+            "technical_score": stock.compass_technical_score,
+            "risk_score": stock.compass_risk_score,
+            "updated_at": stock.compass_updated_at.isoformat() if stock.compass_updated_at else None,
+        },
         "timeseries": {
             "period_days": days,
             "data_count": len(timeseries),
@@ -104,6 +119,90 @@ def get_stock_detail(
         "statistics": stats
         }
     }
+
+
+@router.post("/{ticker}/ai-commentary")
+def generate_ai_commentary(
+    ticker: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    """
+    AI 심층 해설 생성 (on-demand, Claude API)
+    - Compass Score 전체 결과를 컨텍스트로 Claude에 전달
+    - API 키 없으면 rule-based commentary fallback
+    - DB 저장 없음
+    """
+    from app.services.scoring_engine import ScoringEngine
+    from app.config import settings
+
+    # 1. Compass Score 계산 (실시간)
+    result = ScoringEngine.calculate_compass_score(db, ticker)
+    if "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+
+    # 2. Claude API 호출 시도
+    if not settings.anthropic_api_key:
+        return {
+            "success": True,
+            "source": "rule_based",
+            "commentary": result.get("commentary", "AI 해설을 생성할 수 없습니다. (API 키 미설정)"),
+        }
+
+    try:
+        import anthropic
+
+        client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+
+        # 카테고리 점수 요약
+        cat_summary = []
+        for k, v in result.get("categories", {}).items():
+            if v and v.get("score") is not None:
+                cat_summary.append(f"- {k}: {v['score']}점 ({v.get('grade', 'N/A')})")
+
+        prompt = f"""당신은 전문 금융 분석가입니다. 아래 종목의 Compass Score 분석 결과를 바탕으로,
+투자 학습 목적의 상세 한국어 해설을 5~7문장으로 작성해주세요.
+
+## 종목 정보
+- 종목: {result.get('company_name', ticker)} ({ticker})
+- Compass Score: {result['compass_score']}점 ({result['grade']}등급)
+- 요약: {result.get('summary', '')}
+
+## 카테고리별 점수
+{chr(10).join(cat_summary)}
+
+## Rule-based 해설 (참고)
+{result.get('commentary', '')}
+
+## 작성 지침
+1. 구체적 수치(ROE, PER, ADX 등)를 언급하되 rule-based 해설과 다른 관점/심층 분석 추가
+2. 해당 종목의 강점과 리스크를 균형 있게 서술
+3. 마지막에 반드시 "교육 목적 참고 정보이며 투자 권유가 아닙니다" 포함
+4. 친절하고 전문적인 톤
+5. 마크다운 없이 순수 텍스트로 작성"""
+
+        message = client.messages.create(
+            model="claude-sonnet-4-5-20250929",
+            max_tokens=800,
+            temperature=0.7,
+            messages=[{"role": "user", "content": prompt}],
+        )
+
+        ai_text = message.content[0].text.strip()
+
+        return {
+            "success": True,
+            "source": "ai",
+            "commentary": ai_text,
+        }
+
+    except Exception as e:
+        logger.warning(f"AI commentary failed for {ticker}: {e}")
+        return {
+            "success": True,
+            "source": "rule_based_fallback",
+            "commentary": result.get("commentary", "AI 해설 생성에 실패했습니다."),
+        }
 
 
 @router.get("/search/ticker-list")

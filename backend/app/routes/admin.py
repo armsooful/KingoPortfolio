@@ -2931,3 +2931,105 @@ async def load_stocks_incremental(
     except Exception as e:
         logger.error(f"Failed to start incremental load: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================
+# Compass Score
+# ============================================================
+
+@router.get("/scoring/compass/{ticker}")
+async def get_compass_score(
+    ticker: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Foresto Compass Score — 종합 투자 학습 점수 (0-100)"""
+    from app.services.scoring_engine import ScoringEngine
+
+    result = ScoringEngine.calculate_compass_score(db, ticker)
+    if "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result
+
+
+@router.post("/scoring/batch-compute")
+async def batch_compute_compass_scores(
+    background_tasks: BackgroundTasks,
+    market: Optional[str] = Query(None, description="시장 필터 (KOSPI, KOSDAQ)"),
+    limit: int = Query(100, ge=1, le=3000, description="최대 종목 수"),
+    current_user: User = Depends(require_admin_permission("ADMIN_RUN")),
+):
+    """Compass Score 일괄 계산 — 활성 종목의 compass 점수를 사전 계산하여 stocks 테이블에 저장"""
+    from app.services.scoring_engine import ScoringEngine
+    from app.models.securities import Stock
+    from app.utils.kst_now import kst_now
+
+    task_id = f"compass_{uuid.uuid4().hex[:8]}"
+    operator_id = str(current_user.id)
+
+    def _batch_compute():
+        db = SessionLocal()
+        try:
+            query = db.query(Stock).filter(Stock.is_active == True)
+            if market:
+                query = query.filter(Stock.market == market)
+            stocks = query.limit(limit).all()
+            total = len(stocks)
+
+            progress_tracker.start_task(task_id, total, "Compass Score 일괄 계산")
+            logger.info(f"[batch-compute] started: {total} stocks (operator={operator_id})")
+
+            success_count = 0
+            fail_count = 0
+
+            for i, stock in enumerate(stocks):
+                try:
+                    result = ScoringEngine.calculate_compass_score(db, stock.ticker)
+                    if "error" not in result:
+                        stock.compass_score = result["compass_score"]
+                        stock.compass_grade = result["grade"]
+                        stock.compass_summary = result.get("summary", "")[:200]
+                        stock.compass_commentary = result.get("commentary", "")[:2000]
+                        cats = result.get("categories", {})
+                        stock.compass_financial_score = cats.get("financial", {}).get("score") if cats.get("financial") else None
+                        stock.compass_valuation_score = cats.get("valuation", {}).get("score") if cats.get("valuation") else None
+                        stock.compass_technical_score = cats.get("technical", {}).get("score") if cats.get("technical") else None
+                        stock.compass_risk_score = cats.get("risk", {}).get("score") if cats.get("risk") else None
+                        stock.compass_updated_at = kst_now()
+                        db.commit()
+                        success_count += 1
+                        progress_tracker.update_progress(
+                            task_id, i + 1,
+                            current_item=f"{stock.ticker} {stock.name}: {result['compass_score']}점 ({result['grade']})",
+                            success=True,
+                        )
+                    else:
+                        fail_count += 1
+                        progress_tracker.update_progress(
+                            task_id, i + 1,
+                            current_item=f"{stock.ticker} {stock.name}: {result['error']}",
+                            success=False,
+                        )
+                except Exception as e:
+                    db.rollback()
+                    fail_count += 1
+                    progress_tracker.update_progress(
+                        task_id, i + 1,
+                        current_item=f"{stock.ticker}: {str(e)[:80]}",
+                        success=False,
+                    )
+
+            progress_tracker.complete_task(task_id, status="completed")
+            logger.info(f"[batch-compute] done: success={success_count}, fail={fail_count}")
+        except Exception as e:
+            logger.error(f"[batch-compute] fatal: {e}")
+            progress_tracker.complete_task(task_id, status="failed")
+        finally:
+            db.close()
+
+    background_tasks.add_task(_batch_compute)
+
+    return {
+        "task_id": task_id,
+        "message": f"Compass Score 일괄 계산 시작 (market={market or '전체'}, limit={limit})",
+    }

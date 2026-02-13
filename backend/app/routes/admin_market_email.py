@@ -137,11 +137,12 @@ async def get_email_stats(
 @router.post("/send-test")
 async def send_test_email(
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """관리자 자신에게 테스트 이메일 발송"""
     _require_admin(current_user)
 
-    data = get_market_email_content()
+    data = get_market_email_content(db=db)
     html = render_market_email_html(data)
     text = render_market_email_text(data)
 

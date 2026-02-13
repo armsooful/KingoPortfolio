@@ -6,6 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Foresto Compass (KingoPortfolio) — Investment portfolio simulation and educational platform for Korean markets. This is an educational tool, NOT investment advice. Regulatory compliance (forbidden terms, disclaimers) is enforced throughout.
 
+### Regulatory Compliance (Critical)
+- All user-facing analysis must include disclaimer: "교육 목적 참고 정보이며 투자 권유가 아닙니다"
+- Forbidden terms: "투자 추천", "매수 추천", "수익 보장" — use "학습 도구", "시뮬레이션", "교육 목적" instead
+- Three permission levels: user (default), premium, admin
+
 ## Commands
 
 ### Backend (Python/FastAPI)
@@ -67,6 +72,18 @@ frontend/src/
 └── styles/          # CSS and Tailwind
 ```
 
+### Core Feature Areas (9)
+
+1. **Investment profile diagnosis** — SurveyPage → DiagnosisResultPage (survey → profile → portfolio recommendation)
+2. **Financial statement analysis** — DART → ROE, ROA, margins, CAGR, FCF (services/financial_analyzer.py)
+3. **Valuation** — PER/PBR multiples + DCF + DDM (services/valuation.py)
+4. **Technical analysis** — SMA, RSI, BB, MACD + 6 risk metrics (services/quant_analyzer.py)
+5. **Portfolio construction & optimization** — MVO, Risk Parity (services/portfolio_engine.py)
+6. **Backtesting** — Historical performance with rebalancing (services/backtesting.py)
+7. **Scenario simulation** — Macro variable impact on portfolios (services/scenario_simulation.py)
+8. **PDF investment report** — Auto-generated analyst-style reports (services/pdf_report_generator.py)
+9. **Market dashboard & daily email** — APScheduler sends at 07:30 KST via Resend SMTP (services/market_email_service.py)
+
 ### Request Flow
 
 Routes → Services → Models (SQLAlchemy) → PostgreSQL. Pydantic schemas validate request/response. JWT tokens for auth, rate limiting via slowapi (disabled in tests).
@@ -84,6 +101,11 @@ Routes → Services → Models (SQLAlchemy) → PostgreSQL. Pydantic schemas val
 | Admin API | `routes/admin.py` | Data loading endpoints |
 | Frontend | `pages/DataManagementPage.jsx` | Admin panel UI |
 | Frontend | `components/ProgressModal.jsx` | Real-time progress display |
+| Analysis | `services/quant_analyzer.py` | Technical indicators + risk metrics |
+| Analysis | `services/financial_analyzer.py` | Fundamental analysis (ROE, margins, CAGR) |
+| Analysis | `services/valuation.py` | DCF, DDM, PER/PBR valuation |
+| Portfolio | `services/portfolio_engine.py` | MVO, Risk Parity optimization |
+| Email | `services/market_email_service.py` | Daily market summary (APScheduler 07:30 KST) |
 | Tests | `tests/conftest.py` | Fixtures: db, client, test_user, test_admin |
 
 ## Data Pipeline
@@ -151,6 +173,11 @@ def background_fn():
 - Use `useRef` for polling intervals to prevent multiple concurrent polls
 - 3-retry 404 handling before giving up
 
+### Model Registration
+- All new SQLAlchemy models must be imported in `main.py` with `# noqa` for `Base.metadata` registration
+- PostgreSQL: `create_all` is skipped; schema changes require manual SQL migration
+- SQLite: `create_all` runs automatically (local dev only)
+
 ## Environment Variables
 
 Backend `.env`:
@@ -174,6 +201,16 @@ VITE_API_URL=http://localhost:8000
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 
+## Current Development Direction: Project Compass Score
+
+Competitive analysis report at `docs/foresto-competitive-strategy-report.md` drives the upgrade roadmap:
+
+1. **Scoring engine** (priority 1) — Integrated score: financial(30%) + valuation(20%) + technical(30%) + risk(20%) → services/scoring_engine.py
+2. **Tier 1 technical indicators** (priority 2) — Add Stochastic, ATR, ADX, OBV, MA alignment, 52-week position to quant_analyzer.py
+3. **Email score card** (priority 3) — Visual score card in daily market email
+
+See the report for full gap analysis vs competitors (StockMatrix, AlphaSquare, IntelliQuant, Quantus, Securities Plus).
+
 ## Development Phases
 
 Phased development (Phase 0–9). Currently on **Phase 3-C** (Real data loading). Phase docs in `docs/phase*/`. Backend docs index at `backend/docs/README.md`.
@@ -184,3 +221,5 @@ Phased development (Phase 0–9). Currently on **Phase 3-C** (Real data loading)
 - **Frontend**: React 18, Vite 5, Tailwind CSS 4, React Router 6, Chart.js
 - **Testing**: pytest with pytest-asyncio, pytest-cov (markers: unit, integration, e2e, smoke, auth, admin, financial, quant, valuation, slow)
 - **Financial Data**: yfinance, pykrx, DART API, FSC API, Alpha Vantage
+- **Scheduling**: APScheduler (daily email at 07:30 KST)
+- **Email**: Resend SMTP

@@ -16,6 +16,7 @@ import numpy as np
 from decimal import Decimal
 
 from app.models.alpha_vantage import AlphaVantageTimeSeries
+from app.models.real_data import StockPriceDaily
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,36 @@ class QuantAnalyzer:
             return []
 
         return [(ts.date, float(ts.close)) for ts in time_series]
+
+    @staticmethod
+    def get_ohlcv_data(db: Session, ticker: str, days: int = 252) -> List[Dict]:
+        """
+        한국 주식 OHLCV 데이터 조회 (StockPriceDaily)
+        - ticker: 종목코드 (예: '005930')
+        - days: 조회 기간 (기본 252일 = 1년)
+        - 반환: [{date, open, high, low, close, volume}, ...] (시간순 정렬)
+        """
+        cutoff_date = (datetime.now() - timedelta(days=days)).date()
+
+        records = db.query(StockPriceDaily).filter(
+            StockPriceDaily.ticker == ticker,
+            StockPriceDaily.trade_date >= cutoff_date
+        ).order_by(StockPriceDaily.trade_date).all()
+
+        if not records:
+            return []
+
+        return [
+            {
+                "date": r.trade_date,
+                "open": float(r.open_price),
+                "high": float(r.high_price),
+                "low": float(r.low_price),
+                "close": float(r.close_price),
+                "volume": int(r.volume),
+            }
+            for r in records
+        ]
 
     @staticmethod
     def calculate_returns(prices: List[Tuple[datetime, float]]) -> List[Tuple[datetime, float]]:
@@ -278,6 +309,340 @@ class QuantAnalyzer:
             "signal": round(current_signal, 2),
             "histogram": round(current_histogram, 2),
             "status": status
+        }
+
+    # ============================================================
+    # Tier 1 기술 지표 (OHLCV 기반)
+    # ============================================================
+
+    @staticmethod
+    def calculate_stochastic(ohlcv: List[Dict], k_period: int = 14, d_period: int = 3) -> Dict:
+        """
+        Stochastic Oscillator 계산
+        - %K = (현재가 - N일 최저가) / (N일 최고가 - N일 최저가) × 100
+        - %D = %K의 D일 SMA
+        - 80 이상: 과매수, 20 이하: 과매도
+        """
+        if len(ohlcv) < k_period + d_period:
+            return {"error": "데이터 부족"}
+
+        # %K 계산
+        k_values = []
+        for i in range(k_period - 1, len(ohlcv)):
+            window = ohlcv[i - k_period + 1:i + 1]
+            highest = max(d["high"] for d in window)
+            lowest = min(d["low"] for d in window)
+
+            if highest == lowest:
+                k_values.append(50.0)
+            else:
+                k = ((ohlcv[i]["close"] - lowest) / (highest - lowest)) * 100
+                k_values.append(k)
+
+        # %D 계산 (K의 SMA)
+        if len(k_values) < d_period:
+            return {"error": "데이터 부족"}
+
+        d_values = []
+        for i in range(d_period - 1, len(k_values)):
+            d = sum(k_values[i - d_period + 1:i + 1]) / d_period
+            d_values.append(d)
+
+        current_k = k_values[-1]
+        current_d = d_values[-1]
+
+        # 판정
+        if current_k > 80:
+            status = "과매수 구간"
+        elif current_k < 20:
+            status = "과매도 구간"
+        elif current_k > current_d:
+            status = "상승 전환 가능"
+        else:
+            status = "중립"
+
+        return {
+            "k": round(current_k, 2),
+            "d": round(current_d, 2),
+            "k_period": k_period,
+            "d_period": d_period,
+            "status": status,
+        }
+
+    @staticmethod
+    def calculate_atr(ohlcv: List[Dict], period: int = 14) -> Dict:
+        """
+        ATR (Average True Range) 계산
+        - TR = max(H-L, |H-prevC|, |L-prevC|)
+        - ATR = EMA(TR, period)
+        """
+        if len(ohlcv) < period + 1:
+            return {"error": "데이터 부족"}
+
+        # True Range 계산
+        tr_values = []
+        for i in range(1, len(ohlcv)):
+            h = ohlcv[i]["high"]
+            l = ohlcv[i]["low"]
+            prev_c = ohlcv[i - 1]["close"]
+            tr = max(h - l, abs(h - prev_c), abs(l - prev_c))
+            tr_values.append(tr)
+
+        # ATR = EMA of TR
+        multiplier = 2 / (period + 1)
+        atr = sum(tr_values[:period]) / period  # 초기값: SMA
+        for i in range(period, len(tr_values)):
+            atr = (tr_values[i] - atr) * multiplier + atr
+
+        current_price = ohlcv[-1]["close"]
+        atr_ratio = (atr / current_price) * 100 if current_price > 0 else 0
+
+        # 변동성 해석
+        if atr_ratio > 5:
+            interpretation = "매우 높은 변동성"
+        elif atr_ratio > 3:
+            interpretation = "높은 변동성"
+        elif atr_ratio > 1.5:
+            interpretation = "보통 변동성"
+        else:
+            interpretation = "낮은 변동성"
+
+        return {
+            "atr": round(atr, 2),
+            "atr_ratio": round(atr_ratio, 2),
+            "period": period,
+            "interpretation": interpretation,
+        }
+
+    @staticmethod
+    def calculate_adx(ohlcv: List[Dict], period: int = 14) -> Dict:
+        """
+        ADX (Average Directional Index) 계산
+        - +DM, -DM → +DI, -DI → DX → ADX
+        - ADX > 25: 강한 추세, < 20: 약한/횡보
+        """
+        if len(ohlcv) < period * 2 + 1:
+            return {"error": "데이터 부족"}
+
+        # +DM, -DM, TR 계산
+        plus_dm = []
+        minus_dm = []
+        tr_values = []
+
+        for i in range(1, len(ohlcv)):
+            h = ohlcv[i]["high"]
+            l = ohlcv[i]["low"]
+            prev_h = ohlcv[i - 1]["high"]
+            prev_l = ohlcv[i - 1]["low"]
+            prev_c = ohlcv[i - 1]["close"]
+
+            up_move = h - prev_h
+            down_move = prev_l - l
+
+            plus_dm.append(up_move if (up_move > down_move and up_move > 0) else 0)
+            minus_dm.append(down_move if (down_move > up_move and down_move > 0) else 0)
+            tr_values.append(max(h - l, abs(h - prev_c), abs(l - prev_c)))
+
+        # Smoothed values (Wilder's smoothing)
+        def wilder_smooth(values, period):
+            smoothed = [sum(values[:period])]
+            for i in range(period, len(values)):
+                smoothed.append(smoothed[-1] - (smoothed[-1] / period) + values[i])
+            return smoothed
+
+        smooth_plus_dm = wilder_smooth(plus_dm, period)
+        smooth_minus_dm = wilder_smooth(minus_dm, period)
+        smooth_tr = wilder_smooth(tr_values, period)
+
+        # +DI, -DI 계산
+        plus_di = []
+        minus_di = []
+        for i in range(len(smooth_tr)):
+            if smooth_tr[i] == 0:
+                plus_di.append(0)
+                minus_di.append(0)
+            else:
+                plus_di.append((smooth_plus_dm[i] / smooth_tr[i]) * 100)
+                minus_di.append((smooth_minus_dm[i] / smooth_tr[i]) * 100)
+
+        # DX 계산
+        dx_values = []
+        for i in range(len(plus_di)):
+            di_sum = plus_di[i] + minus_di[i]
+            if di_sum == 0:
+                dx_values.append(0)
+            else:
+                dx_values.append(abs(plus_di[i] - minus_di[i]) / di_sum * 100)
+
+        # ADX = Wilder smooth of DX
+        if len(dx_values) < period:
+            return {"error": "데이터 부족"}
+
+        adx = sum(dx_values[:period]) / period
+        for i in range(period, len(dx_values)):
+            adx = (adx * (period - 1) + dx_values[i]) / period
+
+        current_plus_di = plus_di[-1]
+        current_minus_di = minus_di[-1]
+
+        # 추세 판정
+        if adx > 40:
+            trend_strength = "매우 강한 추세"
+        elif adx > 25:
+            trend_strength = "강한 추세"
+        elif adx > 20:
+            trend_strength = "약한 추세"
+        else:
+            trend_strength = "추세 없음 (횡보)"
+
+        # 방향 판정
+        if current_plus_di > current_minus_di:
+            direction = "상승 추세"
+        else:
+            direction = "하락 추세"
+
+        return {
+            "adx": round(adx, 2),
+            "plus_di": round(current_plus_di, 2),
+            "minus_di": round(current_minus_di, 2),
+            "trend_strength": trend_strength,
+            "direction": direction,
+            "period": period,
+        }
+
+    @staticmethod
+    def calculate_obv(ohlcv: List[Dict]) -> Dict:
+        """
+        OBV (On-Balance Volume) 계산
+        - 종가 상승 시 +volume, 하락 시 -volume 누적
+        - OBV 추세로 매집/분산 판단
+        """
+        if len(ohlcv) < 10:
+            return {"error": "데이터 부족"}
+
+        obv_values = [0]
+        for i in range(1, len(ohlcv)):
+            if ohlcv[i]["close"] > ohlcv[i - 1]["close"]:
+                obv_values.append(obv_values[-1] + ohlcv[i]["volume"])
+            elif ohlcv[i]["close"] < ohlcv[i - 1]["close"]:
+                obv_values.append(obv_values[-1] - ohlcv[i]["volume"])
+            else:
+                obv_values.append(obv_values[-1])
+
+        # OBV 5일 이동평균으로 추세 판단
+        current_obv = obv_values[-1]
+        if len(obv_values) >= 5:
+            obv_ma5 = sum(obv_values[-5:]) / 5
+            obv_ma5_prev = sum(obv_values[-6:-1]) / 5 if len(obv_values) >= 6 else obv_ma5
+
+            if current_obv > obv_ma5 and obv_ma5 > obv_ma5_prev:
+                trend = "상승 (매집 추정)"
+            elif current_obv < obv_ma5 and obv_ma5 < obv_ma5_prev:
+                trend = "하락 (분산 추정)"
+            else:
+                trend = "중립"
+        else:
+            trend = "데이터 부족"
+
+        # 가격-OBV 다이버전스 판단 (20일)
+        divergence = None
+        if len(ohlcv) >= 20:
+            price_recent = ohlcv[-1]["close"]
+            price_20ago = ohlcv[-20]["close"]
+            obv_recent = obv_values[-1]
+            obv_20ago = obv_values[-20]
+
+            price_up = price_recent > price_20ago
+            obv_up = obv_recent > obv_20ago
+
+            if price_up and not obv_up:
+                divergence = "약세 다이버전스 (가격↑ OBV↓)"
+            elif not price_up and obv_up:
+                divergence = "강세 다이버전스 (가격↓ OBV↑)"
+
+        result = {
+            "obv": current_obv,
+            "trend": trend,
+        }
+        if divergence:
+            result["divergence"] = divergence
+
+        return result
+
+    @staticmethod
+    def calculate_ma_alignment(prices: List[Tuple[datetime, float]]) -> Dict:
+        """
+        이동평균 정배열/역배열 판정
+        - SMA20 > SMA50 > SMA200 → 정배열 (강한 상승 추세)
+        - SMA20 < SMA50 < SMA200 → 역배열 (강한 하락 추세)
+        - 그 외 → 혼조
+        """
+        if len(prices) < 200:
+            return {"error": "데이터 부족 (200일 이상 필요)"}
+
+        price_values = [p[1] for p in prices]
+
+        sma20 = sum(price_values[-20:]) / 20
+        sma50 = sum(price_values[-50:]) / 50
+        sma200 = sum(price_values[-200:]) / 200
+
+        if sma20 > sma50 > sma200:
+            alignment = "정배열"
+            status = "강한 상승 추세"
+        elif sma20 < sma50 < sma200:
+            alignment = "역배열"
+            status = "강한 하락 추세"
+        else:
+            alignment = "혼조"
+            status = "방향성 불분명"
+
+        return {
+            "alignment": alignment,
+            "sma20": round(sma20, 2),
+            "sma50": round(sma50, 2),
+            "sma200": round(sma200, 2),
+            "status": status,
+        }
+
+    @staticmethod
+    def calculate_52week_position(prices: List[Tuple[datetime, float]]) -> Dict:
+        """
+        52주 고저 위치 계산
+        - (현재가 - 252일 최저) / (252일 최고 - 252일 최저) × 100
+        - 80%+: 고점 근접, 20%-: 저점 근접
+        """
+        if len(prices) < 20:
+            return {"error": "데이터 부족"}
+
+        price_values = [p[1] for p in prices]
+
+        high_52w = max(price_values)
+        low_52w = min(price_values)
+        current = price_values[-1]
+
+        if high_52w == low_52w:
+            position = 50.0
+        else:
+            position = ((current - low_52w) / (high_52w - low_52w)) * 100
+
+        # 판정
+        if position >= 80:
+            status = "52주 고점 근접"
+        elif position <= 20:
+            status = "52주 저점 근접"
+        elif position >= 60:
+            status = "중상위"
+        elif position <= 40:
+            status = "중하위"
+        else:
+            status = "중간"
+
+        return {
+            "position": round(position, 2),
+            "high_52w": round(high_52w, 2),
+            "low_52w": round(low_52w, 2),
+            "current_price": round(current, 2),
+            "status": status,
         }
 
     # ============================================================
@@ -562,13 +927,25 @@ class QuantAnalyzer:
         """
         종합 퀀트 분석
         - 기술적 지표 + 리스크 지표 통합
+        - KRX 종목: StockPriceDaily OHLCV → 11개 기술 지표
+        - 미국 종목: AlphaVantageTimeSeries → 기존 5개 기술 지표
         """
-        # 주가 데이터 조회
-        stock_prices = QuantAnalyzer.get_price_data(db, symbol, days)
-        market_prices = QuantAnalyzer.get_price_data(db, market_symbol, days)
+        # KRX OHLCV 데이터 시도 (한국 주식)
+        ohlcv = QuantAnalyzer.get_ohlcv_data(db, symbol, days)
+
+        if ohlcv:
+            # KRX 모드: OHLCV 기반 분석
+            stock_prices = [(d["date"], d["close"]) for d in ohlcv]
+            data_source = "KRX (StockPriceDaily)"
+        else:
+            # 폴백: AlphaVantage (미국 주식)
+            stock_prices = QuantAnalyzer.get_price_data(db, symbol, days)
+            data_source = "AlphaVantage"
 
         if not stock_prices:
             return {"error": f"{symbol} 데이터 없음"}
+
+        market_prices = QuantAnalyzer.get_price_data(db, market_symbol, days)
 
         # 수익률 계산
         stock_returns = QuantAnalyzer.calculate_returns(stock_prices)
@@ -579,17 +956,29 @@ class QuantAnalyzer:
             "market_benchmark": market_symbol.upper(),
             "period_days": days,
             "data_points": len(stock_prices),
-            "start_date": stock_prices[0][0].strftime("%Y-%m-%d"),
-            "end_date": stock_prices[-1][0].strftime("%Y-%m-%d"),
+            "data_source": data_source,
+            "start_date": stock_prices[0][0].strftime("%Y-%m-%d") if hasattr(stock_prices[0][0], 'strftime') else str(stock_prices[0][0]),
+            "end_date": stock_prices[-1][0].strftime("%Y-%m-%d") if hasattr(stock_prices[-1][0], 'strftime') else str(stock_prices[-1][0]),
         }
 
-        # 기술적 지표
+        # 기술적 지표 (기존 5개)
         result["technical_indicators"] = {
             "moving_averages": QuantAnalyzer.calculate_moving_averages(stock_prices),
             "rsi": QuantAnalyzer.calculate_rsi(stock_prices),
             "bollinger_bands": QuantAnalyzer.calculate_bollinger_bands(stock_prices),
             "macd": QuantAnalyzer.calculate_macd(stock_prices)
         }
+
+        # Tier 1 신규 지표 (OHLCV 필요 지표)
+        if ohlcv:
+            result["technical_indicators"]["stochastic"] = QuantAnalyzer.calculate_stochastic(ohlcv)
+            result["technical_indicators"]["atr"] = QuantAnalyzer.calculate_atr(ohlcv)
+            result["technical_indicators"]["adx"] = QuantAnalyzer.calculate_adx(ohlcv)
+            result["technical_indicators"]["obv"] = QuantAnalyzer.calculate_obv(ohlcv)
+
+        # close 데이터만으로 가능한 지표 (KRX/미국 공통)
+        result["technical_indicators"]["ma_alignment"] = QuantAnalyzer.calculate_ma_alignment(stock_prices)
+        result["technical_indicators"]["week52_position"] = QuantAnalyzer.calculate_52week_position(stock_prices)
 
         # 리스크 지표
         result["risk_metrics"] = {

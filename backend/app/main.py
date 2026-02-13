@@ -17,7 +17,7 @@ load_dotenv()
 
 from app.config import settings
 from app.database import engine, Base, get_db
-from app.routes import auth, diagnosis, admin, admin_batch, admin_lineage, admin_data_quality, admin_data_load, market, backtesting, admin_portfolio, batch_jobs, stock_detail, portfolio_comparison, pdf_report, scenarios, analysis, performance_internal, performance_public, admin_controls, bookmarks, user_settings, event_log, phase7_portfolios, phase7_evaluation, phase7_comparison, securities, consents, admin_consents, krx_timeseries, market_subscription, admin_market_email
+from app.routes import auth, diagnosis, admin, admin_batch, admin_lineage, admin_data_quality, admin_data_load, market, backtesting, admin_portfolio, batch_jobs, stock_detail, portfolio_comparison, pdf_report, scenarios, analysis, performance_internal, performance_public, admin_controls, bookmarks, user_settings, event_log, phase7_portfolios, phase7_evaluation, phase7_comparison, securities, consents, admin_consents, krx_timeseries, market_subscription, admin_market_email, screener, watchlist
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.error_handlers import setup_exception_handlers
@@ -37,6 +37,7 @@ from app.models import real_data as real_data_models  # noqa
 from app.models import portfolio as portfolio_models  # noqa
 from app.models import bookmark as bookmark_models  # noqa
 from app.models import user_preferences as user_preferences_models  # noqa
+from app.models import watchlist as watchlist_models  # noqa
 from app.models import event_log as event_log_models  # noqa
 from app.models import market_email_log as market_email_log_models  # noqa
 from app.models import simulation as simulation_models  # noqa
@@ -90,6 +91,7 @@ async def lifespan(app: FastAPI):
         from apscheduler.schedulers.asyncio import AsyncIOScheduler
         from apscheduler.triggers.cron import CronTrigger
         from app.services.market_email_service import scheduled_daily_email
+        from app.services.watchlist_alert_service import scheduled_watchlist_alerts
 
         scheduler = AsyncIOScheduler()
         scheduler.add_job(
@@ -98,8 +100,14 @@ async def lifespan(app: FastAPI):
             id="daily_market_email",
             replace_existing=True,
         )
+        scheduler.add_job(
+            scheduled_watchlist_alerts,
+            CronTrigger(hour=8, minute=0, timezone="Asia/Seoul"),
+            id="watchlist_score_alerts",
+            replace_existing=True,
+        )
         scheduler.start()
-        print("✅ APScheduler started (daily_market_email @ 07:30 KST)")
+        print("✅ APScheduler started (daily_market_email @ 07:30 KST, watchlist_score_alerts @ 08:00 KST)")
     except Exception as e:
         print(f"⚠️ APScheduler setup failed: {e}")
 
@@ -301,6 +309,8 @@ app.include_router(admin_consents.router)
 app.include_router(krx_timeseries.router)
 app.include_router(market_subscription.router)
 app.include_router(admin_market_email.router)
+app.include_router(screener.router)
+app.include_router(watchlist.router)
 from app.routes import portfolio_public
 app.include_router(portfolio_public.router)
 

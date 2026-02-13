@@ -28,6 +28,8 @@ import MarketDashboardPage from './pages/MarketDashboardPage';
 import PortfolioRecommendationPage from './pages/PortfolioRecommendationPage';
 import BacktestPage from './pages/BacktestPage';
 import ScenarioSimulationPage from './pages/ScenarioSimulationPage';
+import StockScreenerPage from './pages/StockScreenerPage';
+import WatchlistPage from './pages/WatchlistPage';
 import PortfolioExplanationPage from './pages/PortfolioExplanationPage';
 import ReportHistoryPage from './pages/ReportHistoryPage';
 import Phase7PortfolioEvaluationPage from './pages/Phase7PortfolioEvaluationPage';
@@ -220,6 +222,22 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <ScenarioSimulationPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/screener"
+            element={
+              <ProtectedRoute>
+                <StockScreenerPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/watchlist"
+            element={
+              <ProtectedRoute>
+                <WatchlistPage />
               </ProtectedRoute>
             }
           />

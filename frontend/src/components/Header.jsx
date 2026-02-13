@@ -35,6 +35,8 @@ function Header() {
         label: '학습',
         items: [
           { label: '시장현황', path: '/dashboard' },
+          { label: '종목 스크리너', path: '/screener' },
+          { label: '관심 종목', path: '/watchlist' },
           { label: '시나리오', path: '/scenarios' },
           { label: '용어학습', path: '/terminology' },
         ],

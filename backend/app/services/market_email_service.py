@@ -19,6 +19,7 @@ from app.models.market_email_log import MarketEmailLog
 from app.models.user import User
 from app.models.user_preferences import UserNotificationSetting
 from app.routes.market import fetch_naver_finance_news, get_top_stocks_by_change
+from app.services.scoring_engine import ScoringEngine
 from app.utils.email import send_email, FRONTEND_URL
 
 logger = logging.getLogger(__name__)
@@ -66,7 +67,41 @@ def _fetch_index_data() -> List[Dict[str, Any]]:
     return indices
 
 
-def get_market_email_content() -> Dict[str, Any]:
+def _fetch_compass_scores(
+    db: Session,
+    gainers: List[Dict],
+    losers: List[Dict],
+) -> List[Dict[str, Any]]:
+    """gainers + losers에서 ticker 추출 → Compass Score 계산 (최대 6종목)"""
+    scored = []
+    seen = set()
+
+    for stock in gainers + losers:
+        ticker = stock.get("symbol", "")
+        if not ticker or ticker in seen:
+            continue
+        seen.add(ticker)
+
+        try:
+            result = ScoringEngine.calculate_compass_score(db, ticker)
+            if "error" in result:
+                continue
+            scored.append({
+                "ticker": ticker,
+                "name": result.get("company_name") or stock.get("name", ticker),
+                "compass_score": result["compass_score"],
+                "grade": result["grade"],
+                "summary": result["summary"],
+                "price": stock.get("price", 0),
+                "change": stock.get("change", 0),
+            })
+        except Exception as e:
+            logger.warning("Compass score failed for %s: %s", ticker, e)
+
+    return scored
+
+
+def get_market_email_content(db: Optional[Session] = None) -> Dict[str, Any]:
     """
     이메일 콘텐츠용 시장 데이터 수집.
     기존 market.py 함수를 재사용한다.
@@ -75,12 +110,21 @@ def get_market_email_content() -> Dict[str, Any]:
     gainers, losers = get_top_stocks_by_change(3)
     news = fetch_naver_finance_news(5)
 
+    # Compass Score 수집 (db가 있을 때만)
+    scored_stocks = []
+    if db:
+        try:
+            scored_stocks = _fetch_compass_scores(db, gainers, losers)
+        except Exception as e:
+            logger.warning("Compass score collection failed: %s", e)
+
     return {
         "date": date.today().strftime("%Y년 %m월 %d일"),
         "indices": indices,
         "gainers": gainers,
         "losers": losers,
         "news": news,
+        "scored_stocks": scored_stocks,
         "frontend_url": FRONTEND_URL,
     }
 
@@ -116,6 +160,13 @@ def render_market_email_text(data: Dict[str, Any]) -> str:
     lines.append("=== 뉴스 ===")
     for n in data["news"]:
         lines.append(f"  - {n['title']}")
+
+    scored = data.get("scored_stocks", [])
+    if scored:
+        lines.append("")
+        lines.append("=== Compass Score 하이라이트 ===")
+        for s in scored:
+            lines.append(f"  {s['name']} ({s['ticker']}): {s['compass_score']}점 [{s['grade']}] — {s['summary']}")
 
     lines.append("")
     lines.append("---")
@@ -179,8 +230,8 @@ async def send_daily_market_emails(
             db.commit()
             return {"success_count": 0, "fail_count": 0, "total": 0}
 
-        # 시장 데이터 1회 fetch
-        data = get_market_email_content()
+        # 시장 데이터 1회 fetch (db 전달 → Compass Score 포함)
+        data = get_market_email_content(db=db)
         html = render_market_email_html(data)
         text = render_market_email_text(data)
         subject = f"[Foresto Compass] {data['date']} 시장 요약"

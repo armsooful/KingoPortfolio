@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
-import api, { getMarketSubscriptionStatus, subscribeMarketEmail } from '../services/api';
+import api, { getMarketSubscriptionStatus, subscribeMarketEmail, getWatchlist } from '../services/api';
 import '../styles/MarketDashboard.css';
 
 function MarketDashboardPage() {
@@ -12,11 +12,22 @@ function MarketDashboardPage() {
   const [error, setError] = useState(null);
   const [emailSub, setEmailSub] = useState(null);
   const [subLoading, setSubLoading] = useState(false);
+  const [watchlistItems, setWatchlistItems] = useState([]);
 
   useEffect(() => {
     fetchMarketData();
     fetchEmailSub();
+    fetchWatchlist();
   }, []);
+
+  const fetchWatchlist = async () => {
+    try {
+      const res = await getWatchlist();
+      setWatchlistItems(res.data.items || []);
+    } catch {
+      // ignore — not logged in or no watchlist
+    }
+  };
 
   const fetchEmailSub = async () => {
     try {
@@ -188,6 +199,58 @@ function MarketDashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* 관심 종목 */}
+      <section className="watchlist-section">
+        <div className="watchlist-header-row">
+          <h2>⭐ 관심 종목</h2>
+          {watchlistItems.length > 0 && (
+            <button className="wl-view-all" onClick={() => navigate('/watchlist')}>
+              전체 {watchlistItems.length}개 보기 →
+            </button>
+          )}
+        </div>
+        {watchlistItems.length > 0 ? (
+          <div className="watchlist-dashboard-list">
+            {watchlistItems.slice(0, 5).map((item) => (
+              <div
+                key={item.ticker}
+                className="watchlist-dashboard-item"
+                onClick={() => navigate(`/admin/stock-detail?ticker=${item.ticker}`)}
+              >
+                <div className="stock-info">
+                  <div className="stock-name">{item.name}</div>
+                  <div className="stock-symbol">{item.ticker}</div>
+                </div>
+                <div className="wl-score-area">
+                  {item.compass_score != null ? (
+                    <>
+                      <span className={`wl-score-badge grade-${(item.compass_grade || 'C').charAt(0).toLowerCase()}`}>
+                        {item.compass_score.toFixed(0)}
+                      </span>
+                      <span className="wl-grade">{item.compass_grade || '-'}</span>
+                      {item.score_change != null && item.score_change !== 0 && (
+                        <span className={`wl-change ${item.score_change > 0 ? 'up' : 'down'}`}>
+                          {item.score_change > 0 ? '+' : ''}{item.score_change.toFixed(1)}
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <span className="wl-no-score">미산출</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="watchlist-empty-dash">
+            <p>관심 종목이 없습니다</p>
+            <button className="btn-cta" onClick={() => navigate('/screener')}>
+              스크리너에서 추가
+            </button>
+          </div>
+        )}
+      </section>
 
       {/* 시장 뉴스 */}
       <section className="news-section">

@@ -969,3 +969,61 @@ export const subscribeMarketEmail = () => {
 export const unsubscribeMarketEmail = () => {
   return api.post('/api/v1/market-subscription/unsubscribe');
 };
+
+// ============================================================
+// Screener API
+// ============================================================
+
+export const screenerStocks = (params = {}) => {
+  const queryParams = new URLSearchParams();
+  if (params.search) queryParams.append('search', params.search);
+  if (params.sector) queryParams.append('sector', params.sector);
+  if (params.market) queryParams.append('market', params.market);
+  if (params.minScore != null) queryParams.append('min_score', params.minScore);
+  if (params.maxScore != null) queryParams.append('max_score', params.maxScore);
+  if (params.grade) queryParams.append('grade', params.grade);
+  if (params.sortBy) queryParams.append('sort_by', params.sortBy);
+  if (params.sortOrder) queryParams.append('sort_order', params.sortOrder);
+  if (params.limit) queryParams.append('limit', params.limit);
+  if (params.offset != null) queryParams.append('offset', params.offset);
+  return api.get(`/api/v1/screener/stocks?${queryParams.toString()}`);
+};
+
+// ============================================================
+// Watchlist API
+// ============================================================
+
+export const getWatchlist = () => {
+  return api.get('/api/v1/watchlist');
+};
+
+export const addToWatchlist = (ticker) => {
+  return api.post('/api/v1/watchlist', { ticker });
+};
+
+export const removeFromWatchlist = (ticker) => {
+  return api.delete(`/api/v1/watchlist/${ticker}`);
+};
+
+export const getWatchlistStatus = (ticker) => {
+  return api.get(`/api/v1/watchlist/status/${ticker}`);
+};
+
+export const getWatchlistAlertStatus = () => {
+  return api.get('/api/v1/market-subscription/watchlist-alerts/status');
+};
+
+export const toggleWatchlistAlerts = () => {
+  return api.post('/api/v1/market-subscription/watchlist-alerts/toggle');
+};
+
+export const getAiCommentary = (ticker) => {
+  return api.post(`/admin/stock-detail/${ticker}/ai-commentary`);
+};
+
+export const batchComputeCompassScores = (params = {}) => {
+  const queryParams = new URLSearchParams();
+  if (params.market) queryParams.append('market', params.market);
+  if (params.limit) queryParams.append('limit', params.limit);
+  return api.post(`/admin/scoring/batch-compute?${queryParams.toString()}`);
+};

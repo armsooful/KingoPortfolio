@@ -45,6 +45,7 @@ class UserNotificationSetting(Base):
     daily_market_email = Column(Boolean, nullable=False, default=False)
     daily_market_email_subscribed_at = Column(DateTime, nullable=True)
     daily_market_email_unsubscribed_at = Column(DateTime, nullable=True)
+    watchlist_score_alerts = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime, nullable=False, default=kst_now)
     updated_at = Column(DateTime, nullable=False, default=kst_now, onupdate=kst_now)
 

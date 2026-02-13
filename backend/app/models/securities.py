@@ -35,7 +35,18 @@ class Stock(Base):
     description = Column(String(500))
     logo_url = Column(String(300), nullable=True)
     is_active = Column(Boolean, default=True)
-    
+
+    # Compass Score (사전 계산)
+    compass_score = Column(Float, nullable=True, index=True)
+    compass_grade = Column(String(5), nullable=True)
+    compass_summary = Column(String(200), nullable=True)
+    compass_commentary = Column(Text, nullable=True)      # rule-based 상세 해설
+    compass_financial_score = Column(Float, nullable=True)
+    compass_valuation_score = Column(Float, nullable=True)
+    compass_technical_score = Column(Float, nullable=True)
+    compass_risk_score = Column(Float, nullable=True)
+    compass_updated_at = Column(DateTime, nullable=True)
+
     last_updated = Column(DateTime, default=kst_now, onupdate=kst_now)
     created_at = Column(DateTime, default=kst_now)
 
