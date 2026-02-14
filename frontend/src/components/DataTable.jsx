@@ -1,6 +1,7 @@
 // frontend/src/components/DataTable.jsx
 
 import { useState, useEffect } from 'react';
+import '../styles/DataTable.css';
 
 export default function DataTable({ type, fetchData }) {
   const [data, setData] = useState(null);
@@ -84,13 +85,10 @@ export default function DataTable({ type, fetchData }) {
     const hundredMillion = 100000000; // 1억
 
     if (num >= trillion) {
-      // 1조 이상: 조 단위로 표시
       return `${(num / trillion).toFixed(2)}조`;
     } else if (num >= hundredMillion) {
-      // 1억 이상: 억 단위로 표시
       return `${(num / hundredMillion).toFixed(2)}억`;
     } else {
-      // 1억 미만: 그대로 표시
       return formatNumber(num);
     }
   };
@@ -112,56 +110,49 @@ export default function DataTable({ type, fetchData }) {
   };
 
   const renderRow = (item) => {
-    const rowStyle = {
-      borderBottom: '1px solid #e0e0e0',
-    };
-    const cellStyle = {
-      padding: '12px 15px',
-    };
-
     switch (type) {
       case 'stocks':
         return (
-          <tr key={item.ticker} style={rowStyle}>
-            <td style={cellStyle}>{item.ticker}</td>
-            <td style={cellStyle}>{item.name}</td>
-            <td style={{ ...cellStyle, textAlign: 'right' }}>{formatCurrency(item.current_price)}</td>
-            <td style={{ ...cellStyle, textAlign: 'right' }}>{formatMarketCap(item.market_cap)}</td>
-            <td style={cellStyle}>{item.sector || '-'}</td>
-            <td style={{ ...cellStyle, fontSize: '0.85rem', color: '#666' }}>{formatDate(item.updated_at)}</td>
+          <tr key={item.ticker}>
+            <td>{item.ticker}</td>
+            <td>{item.name}</td>
+            <td className="right">{formatCurrency(item.current_price)}</td>
+            <td className="right">{formatMarketCap(item.market_cap)}</td>
+            <td>{item.sector || '-'}</td>
+            <td className="date">{formatDate(item.updated_at)}</td>
           </tr>
         );
       case 'etfs':
         return (
-          <tr key={item.ticker} style={rowStyle}>
-            <td style={cellStyle}>{item.ticker}</td>
-            <td style={cellStyle}>{item.name}</td>
-            <td style={{ ...cellStyle, textAlign: 'right' }}>{formatCurrency(item.current_price)}</td>
-            <td style={{ ...cellStyle, textAlign: 'right' }}>{formatNumber(item.net_asset_value)}</td>
-            <td style={{ ...cellStyle, textAlign: 'right' }}>{formatPercent(item.expense_ratio)}</td>
-            <td style={{ ...cellStyle, fontSize: '0.85rem', color: '#666' }}>{formatDate(item.updated_at)}</td>
+          <tr key={item.ticker}>
+            <td>{item.ticker}</td>
+            <td>{item.name}</td>
+            <td className="right">{formatCurrency(item.current_price)}</td>
+            <td className="right">{formatNumber(item.net_asset_value)}</td>
+            <td className="right">{formatPercent(item.expense_ratio)}</td>
+            <td className="date">{formatDate(item.updated_at)}</td>
           </tr>
         );
       case 'bonds':
         return (
-          <tr key={item.id} style={rowStyle}>
-            <td style={cellStyle}>{item.name}</td>
-            <td style={cellStyle}>{item.issuer}</td>
-            <td style={{ ...cellStyle, textAlign: 'right' }}>{formatPercent(item.interest_rate)}</td>
-            <td style={{ ...cellStyle, textAlign: 'right' }}>{item.maturity_years}년</td>
-            <td style={cellStyle}>{item.credit_rating || '-'}</td>
-            <td style={{ ...cellStyle, fontSize: '0.85rem', color: '#666' }}>{formatDate(item.updated_at)}</td>
+          <tr key={item.id}>
+            <td>{item.name}</td>
+            <td>{item.issuer}</td>
+            <td className="right">{formatPercent(item.interest_rate)}</td>
+            <td className="right">{item.maturity_years}년</td>
+            <td>{item.credit_rating || '-'}</td>
+            <td className="date">{formatDate(item.updated_at)}</td>
           </tr>
         );
       case 'deposits':
         return (
-          <tr key={item.id} style={rowStyle}>
-            <td style={cellStyle}>{item.name}</td>
-            <td style={cellStyle}>{item.bank}</td>
-            <td style={{ ...cellStyle, textAlign: 'right' }}>{formatPercent(item.interest_rate)}</td>
-            <td style={{ ...cellStyle, textAlign: 'right' }}>{item.term_months}개월</td>
-            <td style={cellStyle}>{item.product_type}</td>
-            <td style={{ ...cellStyle, fontSize: '0.85rem', color: '#666' }}>{formatDate(item.updated_at)}</td>
+          <tr key={item.id}>
+            <td>{item.name}</td>
+            <td>{item.bank}</td>
+            <td className="right">{formatPercent(item.interest_rate)}</td>
+            <td className="right">{item.term_months}개월</td>
+            <td>{item.product_type}</td>
+            <td className="date">{formatDate(item.updated_at)}</td>
           </tr>
         );
       default:
@@ -183,7 +174,7 @@ export default function DataTable({ type, fetchData }) {
   if (error) {
     return (
       <div className="ai-card risk-warning">
-        <h3>❌ 오류</h3>
+        <h3>오류</h3>
         <p className="ai-content">{error}</p>
       </div>
     );
@@ -200,15 +191,13 @@ export default function DataTable({ type, fetchData }) {
   }
 
   return (
-    <div style={{ marginTop: '20px' }}>
-      <div style={{ overflowX: 'auto', border: '1px solid #e0e0e0', borderRadius: '8px' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', background: 'white' }}>
+    <div className="dt-wrapper">
+      <div className="dt-table-container">
+        <table className="dt-table">
           <thead>
-            <tr style={{ background: typeInfo.color, color: 'white' }}>
+            <tr style={{ background: typeInfo.color }}>
               {typeInfo.columns.map((col, idx) => (
-                <th key={idx} style={{ padding: '15px', textAlign: 'left', fontWeight: 'bold', fontSize: '0.9rem' }}>
-                  {col}
-                </th>
+                <th key={idx}>{col}</th>
               ))}
             </tr>
           </thead>
@@ -218,29 +207,18 @@ export default function DataTable({ type, fetchData }) {
         </table>
       </div>
 
-      <div style={{
-        marginTop: '15px',
-        padding: '15px',
-        background: '#f5f5f5',
-        borderRadius: '8px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '10px'
-      }}>
+      <div className="dt-footer">
         <div>
-          <span style={{ fontSize: '0.9rem', color: '#666' }}>총 </span>
-          <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: typeInfo.color }}>{data.total}</span>
-          <span style={{ fontSize: '0.9rem', color: '#666' }}> 개</span>
-          <span style={{ margin: '0 10px', color: '#ccc' }}>|</span>
-          <span style={{ fontSize: '0.9rem', color: '#666' }}>현재 {data.items.length}개 표시</span>
+          <span className="dt-footer-text">총 </span>
+          <span className="dt-footer-count" style={{ color: typeInfo.color }}>{data.total}</span>
+          <span className="dt-footer-text"> 개</span>
+          <span className="dt-footer-separator">|</span>
+          <span className="dt-footer-text">현재 {data.items.length}개 표시</span>
         </div>
         {data.total > data.items.length && (
           <button
             onClick={fetchDataItems}
             className="btn btn-secondary"
-            style={{ padding: '8px 16px' }}
           >
             새로고침
           </button>

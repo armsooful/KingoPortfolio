@@ -1,3 +1,5 @@
+/* PortfolioExplanation.css — theme-aware */
+
 .explanation-container {
   max-width: 900px;
   margin: 0 auto;
@@ -12,12 +14,12 @@
 .explanation-title {
   font-size: 2rem;
   font-weight: bold;
-  color: #333;
+  color: var(--text, #1f2937);
   margin-bottom: 0.5rem;
 }
 
 .explanation-subtitle {
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   font-size: 1.1rem;
   margin-bottom: 1rem;
 }
@@ -26,12 +28,18 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+  background: rgba(33, 150, 243, 0.08);
   padding: 0.75rem 1.5rem;
   border-radius: 8px;
-  border: 1px solid #bbdefb;
+  border: 1px solid rgba(33, 150, 243, 0.25);
   font-size: 0.9rem;
-  color: #1565c0;
+  color: #2196f3;
+}
+
+[data-theme="dark"] .explanation-notice {
+  background: rgba(33, 150, 243, 0.12);
+  border-color: rgba(33, 150, 243, 0.2);
+  color: #90caf9;
 }
 
 .explanation-notice-icon {
@@ -39,10 +47,11 @@
 }
 
 .explanation-input-section {
-  background: #fff;
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 12px;
   padding: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .explanation-form-header {
@@ -55,18 +64,18 @@
 .explanation-section-title {
   font-size: 1.3rem;
   font-weight: bold;
-  color: #333;
+  color: var(--text, #1f2937);
   margin: 0;
 }
 
 .explanation-example-button {
   padding: 0.5rem 1rem;
-  background: #f5f5f5;
-  border: 1px solid #ddd;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.9rem;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
 }
 
 .explanation-form {
@@ -90,7 +99,7 @@
 .explanation-label {
   font-size: 0.9rem;
   font-weight: 500;
-  color: #333;
+  color: var(--text, #1f2937);
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -98,30 +107,43 @@
 
 .explanation-hint {
   font-size: 0.75rem;
-  color: #888;
+  color: var(--text-muted, #9ca3af);
   font-weight: normal;
 }
 
 .explanation-input {
   padding: 0.75rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 6px;
   font-size: 1rem;
   transition: border-color 0.2s;
+  background: var(--card, #ffffff);
+  color: var(--text, #1f2937);
+}
+
+.explanation-input:focus {
+  outline: none;
+  border-color: var(--primary, #667eea);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .explanation-error-message {
   padding: 1rem;
-  background: #ffebee;
-  color: #c62828;
+  background: rgba(220, 38, 38, 0.08);
+  color: var(--stock-down, #dc2626);
   border-radius: 6px;
   font-size: 0.9rem;
 }
 
+[data-theme="dark"] .explanation-error-message {
+  background: rgba(153, 27, 27, 0.15);
+  color: #fca5a5;
+}
+
 .explanation-submit-button {
   padding: 1rem 2rem;
-  background: #2196f3;
-  color: #fff;
+  background: var(--primary, #667eea);
+  color: white;
   border: none;
   border-radius: 8px;
   font-size: 1rem;
@@ -161,10 +183,11 @@
 }
 
 .explanation-section {
-  background: #fff;
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .explanation-metrics-grid {
@@ -175,11 +198,11 @@
 }
 
 .explanation-metric-card {
-  background: #fff;
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border-light, #f3f4f6);
   border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  border-top: none;
+  box-shadow: var(--shadow-sm);
 }
 
 .explanation-metric-label-row {
@@ -188,12 +211,12 @@
   align-items: center;
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-light, #f3f4f6);
 }
 
 .explanation-metric-label {
   font-size: 0.85rem;
-  color: #888;
+  color: var(--text-muted, #9ca3af);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -204,12 +227,13 @@
   font-weight: 600;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
-  background: #f5f5f5;
+  background: var(--card-inner, #fafbfc);
+  color: var(--text, #1f2937);
 }
 
 .explanation-metric-description-main {
   font-size: 1.05rem;
-  color: #333;
+  color: var(--text, #1f2937);
   line-height: 1.7;
   margin: 0 0 1rem 0;
   font-weight: 400;
@@ -219,7 +243,8 @@
   display: flex;
   gap: 0.5rem;
   padding: 1rem;
-  background: #f8f9fa;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border-light, #f3f4f6);
   border-radius: 8px;
   align-items: flex-start;
 }
@@ -231,16 +256,22 @@
 
 .explanation-metric-context-text {
   font-size: 0.85rem;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   line-height: 1.5;
   margin: 0;
 }
 
 .explanation-risk-card {
-  background: #fff3e0;
+  background: rgba(255, 152, 0, 0.08);
+  border: 1px solid rgba(255, 152, 0, 0.2);
   border-radius: 8px;
   padding: 1.25rem;
   margin-top: 1rem;
+}
+
+[data-theme="dark"] .explanation-risk-card {
+  background: rgba(255, 152, 0, 0.12);
+  border-color: rgba(255, 152, 0, 0.2);
 }
 
 .explanation-risk-text {
@@ -250,6 +281,10 @@
   margin: 0;
 }
 
+[data-theme="dark"] .explanation-risk-text {
+  color: #ffb74d;
+}
+
 .explanation-risk-periods-section {
   margin-top: 1.5rem;
 }
@@ -257,12 +292,13 @@
 .explanation-sub-title {
   font-size: 1rem;
   font-weight: 600;
-  color: #333;
+  color: var(--text, #1f2937);
   margin-bottom: 1rem;
 }
 
 .explanation-risk-period-item {
-  background: #f8f9fa;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border-light, #f3f4f6);
   border-radius: 8px;
   padding: 1rem;
   margin-bottom: 0.75rem;
@@ -285,20 +321,26 @@
 
 .explanation-period-date {
   font-size: 0.85rem;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
 }
 
 .explanation-risk-period-desc {
   font-size: 0.9rem;
-  color: #555;
+  color: var(--text-secondary, #6b7280);
   margin: 0;
 }
 
 .explanation-comparison-card {
-  background: #e8f5e9;
+  background: rgba(22, 163, 74, 0.08);
+  border: 1px solid rgba(22, 163, 74, 0.2);
   border-radius: 8px;
   padding: 1.25rem;
   margin-top: 1rem;
+}
+
+[data-theme="dark"] .explanation-comparison-card {
+  background: rgba(22, 163, 74, 0.12);
+  border-color: rgba(22, 163, 74, 0.2);
 }
 
 .explanation-comparison-header {
@@ -310,39 +352,43 @@
 
 .explanation-benchmark-name {
   font-weight: 600;
-  color: #2e7d32;
+  color: var(--stock-up, #16a34a);
   font-size: 1rem;
 }
 
 .explanation-benchmark-return {
   font-weight: bold;
-  color: #2e7d32;
+  color: var(--stock-up, #16a34a);
   font-size: 1.1rem;
 }
 
 .explanation-comparison-text {
   font-size: 0.95rem;
-  color: #1b5e20;
+  color: var(--stock-up, #16a34a);
   line-height: 1.5;
   margin: 0 0 0.5rem 0;
 }
 
+[data-theme="dark"] .explanation-comparison-text {
+  color: #86efac;
+}
+
 .explanation-comparison-note {
   font-size: 0.8rem;
-  color: #558b2f;
+  color: var(--text-secondary, #6b7280);
   margin: 0;
 }
 
 .explanation-disclaimer-section {
-  background: #fafafa;
+  background: var(--card-inner, #fafbfc);
   border-radius: 8px;
   padding: 1.25rem;
-  border: 1px solid #eee;
+  border: 1px solid var(--border-light, #f3f4f6);
 }
 
 .explanation-disclaimer-text {
   font-size: 0.85rem;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   line-height: 1.6;
   margin: 0;
 }
@@ -356,9 +402,9 @@
 
 .explanation-reset-button {
   padding: 0.75rem 2rem;
-  background: #f5f5f5;
-  color: #333;
-  border: 1px solid #ddd;
+  background: var(--card-inner, #fafbfc);
+  color: var(--text, #1f2937);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 8px;
   font-size: 1rem;
   cursor: pointer;
@@ -367,7 +413,7 @@
 
 .explanation-download-button {
   padding: 0.75rem 1.5rem;
-  background: #667eea;
+  background: var(--primary, #667eea);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -398,7 +444,7 @@
 
 .explanation-save-button {
   padding: 0.75rem 2rem;
-  background: #4caf50;
+  background: var(--stock-up, #16a34a);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -414,7 +460,8 @@
 .explanation-pdf-section {
   margin-top: 1.5rem;
   padding: 1.25rem;
-  background: #f8f9fa;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border-light, #f3f4f6);
   border-radius: 12px;
   text-align: center;
 }
@@ -422,7 +469,7 @@
 .explanation-pdf-section-title {
   font-size: 1rem;
   font-weight: 600;
-  color: #333;
+  color: var(--text, #1f2937);
   margin: 0 0 1rem 0;
 }
 
@@ -436,33 +483,43 @@
 .explanation-pdf-hint {
   margin: 0.75rem 0 0 0;
   font-size: 0.8rem;
-  color: #888;
+  color: var(--text-muted, #9ca3af);
 }
 
 .explanation-success-message {
   margin-top: 1rem;
   padding: 0.75rem;
-  background: #e8f5e9;
-  color: #2e7d32;
+  background: rgba(22, 163, 74, 0.08);
+  color: var(--stock-up, #16a34a);
   border-radius: 6px;
   font-size: 0.9rem;
   text-align: center;
+}
+
+[data-theme="dark"] .explanation-success-message {
+  background: rgba(22, 163, 74, 0.15);
+  color: #86efac;
 }
 
 .explanation-download-error {
   margin-top: 1rem;
   padding: 0.75rem;
-  background: #ffebee;
-  color: #c62828;
+  background: rgba(220, 38, 38, 0.08);
+  color: var(--stock-down, #dc2626);
   border-radius: 6px;
   font-size: 0.9rem;
   text-align: center;
 }
 
+[data-theme="dark"] .explanation-download-error {
+  background: rgba(153, 27, 27, 0.15);
+  color: #fca5a5;
+}
+
 .explanation-inline-link {
   background: none;
   border: none;
-  color: #1565c0;
+  color: var(--primary, #667eea);
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 600;

@@ -152,7 +152,7 @@ export default function StockDetailPage() {
             <div className="result-icon">
               ⚙️
             </div>
-            <h1 className="result-type" style={{ color: '#667eea' }}>
+            <h1 className="result-type">
               종목 상세 조회
             </h1>
             <p className="result-subtitle">

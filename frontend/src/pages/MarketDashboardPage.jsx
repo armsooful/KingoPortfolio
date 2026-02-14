@@ -5,6 +5,108 @@ import api, { getMarketSubscriptionStatus, subscribeMarketEmail, getWatchlist, g
 import ProfileCompletionModal from '../components/ProfileCompletionModal';
 import '../styles/MarketDashboard.css';
 
+/* ── helpers ── */
+
+const gradeColor = (grade) => {
+  if (!grade) return '#6b7280';
+  const g = grade.charAt(0).toUpperCase();
+  if (g === 'S' || g === 'A') return '#16a34a';
+  if (g === 'B') return '#2563eb';
+  if (g === 'C') return '#d97706';
+  return '#dc2626';
+};
+
+const axisColors = { financial: '#4caf50', valuation: '#2196f3', technical: '#ff9800', risk: '#9c27b0' };
+
+/* SVG sparkline from 8 data points */
+function Sparkline({ points, color }) {
+  if (!points || points.length < 2) return null;
+  const h = 40;
+  const w = 120;
+  const min = Math.min(...points);
+  const max = Math.max(...points);
+  const range = max - min || 1;
+  const coords = points.map((v, i) => {
+    const x = (i / (points.length - 1)) * w;
+    const y = h - ((v - min) / range) * (h - 4) - 2;
+    return `${x},${y}`;
+  });
+  const polyline = coords.join(' ');
+  const polygon = `${polyline} ${w},${h} 0,${h}`;
+  const id = `sg-${color.replace('#', '')}`;
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="kpi-sparkline-svg">
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.15" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polygon fill={`url(#${id})`} points={polygon} />
+      <polyline fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" points={polyline} />
+    </svg>
+  );
+}
+
+/* ── Skeleton loading view ── */
+function DashboardSkeleton() {
+  return (
+    <div className="dashboard-redesign">
+      <div className="dash-header">
+        <div>
+          <h1><span className="dash-brand">Foresto Compass</span> 시장 현황</h1>
+          <div className="dash-date">데이터 불러오는 중...</div>
+        </div>
+      </div>
+
+      <div className="kpi-grid">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="kpi-card skel-kpi">
+            <div className="skeleton skel-text" style={{ width: '40%' }} />
+            <div className="skeleton skel-title" style={{ width: '70%' }} />
+            <div className="skeleton skel-text" style={{ width: '50%' }} />
+            <div className="skeleton skel-chart" />
+          </div>
+        ))}
+      </div>
+
+      <div className="skel-ai-block">
+        <div className="skeleton skel-text" style={{ width: '30%', marginBottom: 12 }} />
+        <div className="skeleton skel-text" style={{ width: '90%' }} />
+        <div className="skeleton skel-text" style={{ width: '75%' }} />
+        <div className="skeleton skel-text" style={{ width: '60%' }} />
+      </div>
+
+      <div className="two-col">
+        {[1, 2].map((i) => (
+          <div key={i} className="section-card">
+            <div className="skeleton skel-title" style={{ marginBottom: 16 }} />
+            {[1, 2, 3, 4, 5].map((j) => (
+              <div key={j} className="skeleton" style={{ height: 40, marginBottom: 8 }} />
+            ))}
+          </div>
+        ))}
+      </div>
+
+      <div className="section-card" style={{ marginBottom: 24 }}>
+        <div className="skeleton skel-title" style={{ marginBottom: 16 }} />
+        <div className="watchlist-grid">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="wl-card" style={{ padding: 20 }}>
+              <div className="skeleton" style={{ height: 16, width: '50%', marginBottom: 8 }} />
+              <div className="skeleton" style={{ height: 12, width: '35%', marginBottom: 16 }} />
+              {[1, 2, 3, 4].map((j) => (
+                <div key={j} className="skeleton" style={{ height: 4, marginBottom: 4 }} />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Main component ── */
 function MarketDashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -33,13 +135,9 @@ function MarketDashboardPage() {
       if (!is_complete) {
         setProfileIncomplete(true);
         const dismissed = sessionStorage.getItem('profile_modal_dismissed');
-        if (!dismissed) {
-          setShowProfileModal(true);
-        }
+        if (!dismissed) setShowProfileModal(true);
       }
-    } catch {
-      // ignore — not logged in or API error
-    }
+    } catch { /* ignore */ }
   };
 
   const handleProfileModalClose = () => {
@@ -57,18 +155,14 @@ function MarketDashboardPage() {
     try {
       const res = await getWatchlist();
       setWatchlistItems(res.data.items || []);
-    } catch {
-      // ignore — not logged in or no watchlist
-    }
+    } catch { /* ignore */ }
   };
 
   const fetchEmailSub = async () => {
     try {
       const res = await getMarketSubscriptionStatus();
       setEmailSub(res.data);
-    } catch {
-      // ignore
-    }
+    } catch { /* ignore */ }
   };
 
   const handleSubscribe = async () => {
@@ -76,9 +170,7 @@ function MarketDashboardPage() {
     try {
       await subscribeMarketEmail();
       await fetchEmailSub();
-    } catch {
-      // ignore
-    } finally {
+    } catch { /* ignore */ } finally {
       setSubLoading(false);
     }
   };
@@ -86,9 +178,7 @@ function MarketDashboardPage() {
   const fetchMarketData = async () => {
     try {
       setLoading(true);
-      // API 호출 (axios 사용)
       const response = await api.get('/api/market/overview');
-
       if (response.data) {
         setMarketData(response.data);
       } else {
@@ -102,272 +192,327 @@ function MarketDashboardPage() {
     }
   };
 
-  const formatNumber = (num) => {
-    return new Intl.NumberFormat('ko-KR').format(num);
-  };
+  const formatNumber = (num) => new Intl.NumberFormat('ko-KR').format(num);
 
   const formatChange = (change, percent) => {
     const sign = change >= 0 ? '+' : '';
     return `${sign}${change.toFixed(2)} (${sign}${percent.toFixed(2)}%)`;
   };
 
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}년 ${String(now.getMonth() + 1).padStart(2, '0')}월 ${String(now.getDate()).padStart(2, '0')}일 (${['일', '월', '화', '수', '목', '금', '토'][now.getDay()]})`;
+
+  /* ── Loading state ── */
   if (loading) {
     return (
-      <div className="market-dashboard">
-        <div className="loading-container">
-          <div className="spinner"></div>
-          <p>시장 데이터를 불러오는 중...</p>
-        </div>
+      <div className="market-dashboard-v2">
+        <DashboardSkeleton />
       </div>
     );
   }
 
+  /* ── Error state ── */
   if (error) {
     return (
-      <div className="market-dashboard">
-        <div className="error-container">
-          <p>{error}</p>
-          <button onClick={fetchMarketData} className="btn-retry">다시 시도</button>
+      <div className="market-dashboard-v2">
+        <div className="dashboard-redesign">
+          <div className="error-card">
+            <p>{error}</p>
+            <button onClick={fetchMarketData} className="refresh-btn">다시 시도</button>
+          </div>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="market-dashboard">
-      <div className="dashboard-header">
-        <div className="header-content">
-          <h1>📈 시장 현황</h1>
-          <p className="subtitle">주식 시장 데이터를 학습용으로 확인하세요</p>
-        </div>
-        <button onClick={() => navigate('/survey')} className="btn-survey">
-          학습 성향 진단하기
-        </button>
-      </div>
+  /* ── Determine sentiment signal ── */
+  const sentimentColor = marketData?.summary?.sentiment?.color || 'yellow';
 
-      {/* 프로필 완성 유도 배너 */}
-      {profileIncomplete && (
-        <div className="profile-completion-banner">
-          <div className="pcb-content">
-            <div className="pcb-text">
-              <strong>프로필 완성하고 맞춤 학습을 시작하세요</strong>
-              <span>30초면 나에게 딱 맞는 포트폴리오 시뮬레이션을 이용할 수 있어요</span>
-            </div>
-            <div className="pcb-progress">
-              <div className="pcb-progress-bar">
-                <div className="pcb-progress-fill" style={{ width: `${profilePercent}%` }} />
-              </div>
-              <span className="pcb-progress-text">{profilePercent}%</span>
-            </div>
-            <button className="pcb-btn" onClick={() => setShowProfileModal(true)}>
+  return (
+    <div className="market-dashboard-v2">
+      <div className="dashboard-redesign">
+
+        {/* Profile completion banner */}
+        {profileIncomplete && (
+          <div className="compare-banner">
+            <span className="compare-label">프로필</span>
+            <span className="compare-text">
+              프로필 완성하고 맞춤 학습을 시작하세요 — 현재 {profilePercent}% 완료
+            </span>
+            <button className="refresh-btn" onClick={() => setShowProfileModal(true)}>
               프로필 완성하기
             </button>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* AI 시장 요약 */}
-      {marketData?.summary && (
-        <section className="market-summary">
-          <div className="summary-card">
-            <div className="summary-layout">
-              <div className="traffic-light">
-                <div className={`light ${marketData.summary.sentiment?.color === 'green' ? 'active' : ''}`} data-status="긍정적">
-                  🟢
+        {/* ── Header ── */}
+        <div className="dash-header">
+          <div>
+            <h1><span className="dash-brand">Foresto Compass</span> 시장 현황</h1>
+            <div className="dash-date">{dateStr} 기준</div>
+          </div>
+          <button className="refresh-btn" onClick={fetchMarketData}>새로고침</button>
+        </div>
+
+        {/* ── KPI Cards ── */}
+        <div className="kpi-grid">
+          {marketData?.indices?.map((idx, i) => {
+            const isUp = idx.change >= 0;
+            const color = isUp ? 'var(--stock-up)' : 'var(--stock-down)';
+            return (
+              <div key={i} className="kpi-card">
+                <div className="kpi-label">{idx.name}</div>
+                <div className="kpi-value">{formatNumber(idx.value)}</div>
+                <div className={`kpi-change ${isUp ? 'up' : 'down'}`}>
+                  {formatChange(idx.change, idx.changePercent)}
                 </div>
-                <div className={`light ${marketData.summary.sentiment?.color === 'yellow' ? 'active' : ''}`} data-status="중립">
-                  🟡
-                </div>
-                <div className={`light ${marketData.summary.sentiment?.color === 'red' ? 'active' : ''}`} data-status="위험">
-                  🔴
+                <div className="kpi-sparkline">
+                  <Sparkline
+                    points={idx.sparkline || [idx.value - Math.abs(idx.change) * 3, idx.value - Math.abs(idx.change) * 2, idx.value - Math.abs(idx.change), idx.value - Math.abs(idx.change) * 1.5, idx.value - Math.abs(idx.change) * 0.5, idx.value + idx.change * 0.3, idx.value + idx.change * 0.7, idx.value]}
+                    color={isUp ? '#e53935' : '#1e88e5'}
+                  />
                 </div>
               </div>
-              <div className="summary-content">
-                <div className="summary-title-row">
-                  <h3>오늘의 시장 데이터 요약 (참고용)</h3>
-                  <span className={`sentiment-badge ${marketData.summary.sentiment?.color || 'yellow'}`}>
-                    {marketData.summary.sentiment?.emoji || '🟡'} {marketData.summary.sentiment?.status || '중립'}
-                  </span>
-                </div>
-                <p className="summary-text">{marketData.summary.text || marketData.summary}</p>
-                <p style={{ fontSize: '0.75rem', color: '#888', marginTop: '8px' }}>
-                  ⚠️ 본 정보는 교육 목적의 참고 자료이며, 투자 권유·추천이 아닙니다.
-                </p>
+            );
+          })}
+        </div>
+
+        {/* ── AI Summary ── */}
+        {marketData?.summary && (
+          <div className="ai-summary">
+            <div className="ai-signal">
+              <div className={`dot green ${sentimentColor === 'green' ? 'active' : ''}`} />
+              <div className={`dot yellow ${sentimentColor === 'yellow' ? 'active' : ''}`} />
+              <div className={`dot red ${sentimentColor === 'red' ? 'active' : ''}`} />
+            </div>
+            <div className="ai-content-block">
+              <div className="ai-title">
+                오늘의 시장 데이터 요약 (참고용)
+                <span className="ai-badge-tag">AI 분석</span>
+              </div>
+              <p className="ai-text">{marketData.summary.text || marketData.summary}</p>
+              <div className="ai-disclaimer">
+                본 정보는 교육 목적의 참고 자료이며, 투자 권유/추천이 아닙니다.
               </div>
             </div>
           </div>
-        </section>
-      )}
+        )}
 
-      {/* 주요 지수 */}
-      <section className="indices-section">
-        <h2>주요 지수</h2>
-        <div className="indices-grid">
-          {marketData?.indices.map((index, idx) => (
-            <div key={idx} className="index-card">
-              <div className="index-name">{index.name}</div>
-              <div className="index-value">{formatNumber(index.value)}</div>
-              <div className={`index-change ${index.change >= 0 ? 'positive' : 'negative'}`}>
-                {formatChange(index.change, index.changePercent)}
-              </div>
+        {/* ── Gainers / Losers ── */}
+        <div className="two-col">
+          <div className="section-card">
+            <div className="section-title">
+              <span className="icon" style={{ color: 'var(--stock-up)' }}>&#9650;</span>
+              상승 종목 Top 5
             </div>
-          ))}
-        </div>
-      </section>
+            {marketData?.topGainers?.map((stock, i) => {
+              const pct = Math.abs(stock.change);
+              const maxPct = Math.abs(marketData.topGainers[0]?.change || 1);
+              const barW = Math.max(10, (pct / maxPct) * 100);
+              return (
+                <div key={i} className="mover-item">
+                  <div className="mover-rank up">{i + 1}</div>
+                  <div className="mover-info">
+                    <div className="mover-name">{stock.name}</div>
+                    <div className="mover-code">{stock.symbol}</div>
+                  </div>
+                  <div className="mover-bar-wrap">
+                    <div className="mover-bar-bg">
+                      <div className="mover-bar up" style={{ width: `${barW}%` }} />
+                    </div>
+                  </div>
+                  <div className="mover-values">
+                    <div className="mover-price">{formatNumber(stock.price)}원</div>
+                    <div className="mover-change up">+{stock.change}%</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
 
-      {/* 상승/하락 종목 */}
-      <div className="stocks-section">
-        <div className="stocks-column">
-          <h2>🔥 상승 종목</h2>
-          <div className="stock-list">
-            {marketData?.topGainers.map((stock, idx) => (
-              <div key={idx} className="stock-item">
-                <div className="stock-info">
-                  <div className="stock-name">{stock.name}</div>
-                  <div className="stock-symbol">{stock.symbol}</div>
+          <div className="section-card">
+            <div className="section-title">
+              <span className="icon" style={{ color: 'var(--stock-down)' }}>&#9660;</span>
+              하락 종목 Top 5
+            </div>
+            {marketData?.topLosers?.map((stock, i) => {
+              const pct = Math.abs(stock.change);
+              const maxPct = Math.abs(marketData.topLosers[0]?.change || 1);
+              const barW = Math.max(10, (pct / maxPct) * 100);
+              return (
+                <div key={i} className="mover-item">
+                  <div className="mover-rank down">{i + 1}</div>
+                  <div className="mover-info">
+                    <div className="mover-name">{stock.name}</div>
+                    <div className="mover-code">{stock.symbol}</div>
+                  </div>
+                  <div className="mover-bar-wrap">
+                    <div className="mover-bar-bg">
+                      <div className="mover-bar down" style={{ width: `${barW}%` }} />
+                    </div>
+                  </div>
+                  <div className="mover-values">
+                    <div className="mover-price">{formatNumber(stock.price)}원</div>
+                    <div className="mover-change down">{stock.change}%</div>
+                  </div>
                 </div>
-                <div className="stock-right">
-                  <div className="stock-price">{formatNumber(stock.price)}원</div>
-                  <div className="stock-change positive">+{stock.change}%</div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
-        <div className="stocks-column">
-          <h2>❄️ 하락 종목</h2>
-          <div className="stock-list">
-            {marketData?.topLosers.map((stock, idx) => (
-              <div key={idx} className="stock-item">
-                <div className="stock-info">
-                  <div className="stock-name">{stock.name}</div>
-                  <div className="stock-symbol">{stock.symbol}</div>
-                </div>
-                <div className="stock-right">
-                  <div className="stock-price">{formatNumber(stock.price)}원</div>
-                  <div className="stock-change negative">{stock.change}%</div>
-                </div>
-              </div>
-            ))}
+        {/* ── Watchlist ── */}
+        <div className="section-card" style={{ marginBottom: 24 }}>
+          <div className="wl-section-header">
+            <div className="section-title" style={{ margin: 0 }}>
+              <span className="icon">&#9733;</span>
+              관심 종목
+            </div>
+            {watchlistItems.length > 0 && (
+              <button className="wl-view-all" onClick={() => navigate('/watchlist')}>
+                전체 {watchlistItems.length}개 보기 &rarr;
+              </button>
+            )}
           </div>
-        </div>
-      </div>
-
-      {/* 관심 종목 */}
-      <section className="watchlist-section">
-        <div className="watchlist-header-row">
-          <h2>⭐ 관심 종목</h2>
-          {watchlistItems.length > 0 && (
-            <button className="wl-view-all" onClick={() => navigate('/watchlist')}>
-              전체 {watchlistItems.length}개 보기 →
-            </button>
-          )}
-        </div>
-        {watchlistItems.length > 0 ? (
-          <div className="watchlist-dashboard-list">
-            {watchlistItems.slice(0, 5).map((item) => (
-              <div
-                key={item.ticker}
-                className="watchlist-dashboard-item"
-                onClick={() => navigate(`/admin/stock-detail?ticker=${item.ticker}`)}
-              >
-                <div className="stock-info">
-                  <div className="stock-name">{item.name}</div>
-                  <div className="stock-symbol">{item.ticker}</div>
-                </div>
-                <div className="wl-score-area">
-                  {item.compass_score != null ? (
-                    <>
-                      <span className={`wl-score-badge grade-${(item.compass_grade || 'C').charAt(0).toLowerCase()}`}>
-                        {item.compass_score.toFixed(0)}
-                      </span>
-                      <span className="wl-grade">{item.compass_grade || '-'}</span>
+          {watchlistItems.length > 0 ? (
+            <div className="watchlist-grid">
+              {watchlistItems.slice(0, 4).map((item) => {
+                const score = item.compass_score;
+                const grade = item.compass_grade || '-';
+                const gc = gradeColor(grade);
+                return (
+                  <div
+                    key={item.ticker}
+                    className="wl-card"
+                    onClick={() => navigate(`/admin/stock-detail?ticker=${item.ticker}`)}
+                  >
+                    <div className="wl-card-header">
+                      <div>
+                        <div className="wl-card-name">{item.name}</div>
+                        <div className="wl-card-code">{item.ticker}</div>
+                      </div>
+                      {score != null && (
+                        <div className="wl-score-circle" style={{ background: `linear-gradient(135deg, ${gc}, ${gc}dd)` }}>
+                          {score.toFixed(0)}
+                        </div>
+                      )}
+                    </div>
+                    {score != null && (
+                      <div className="wl-axes">
+                        {[
+                          { label: '재무', key: 'compass_financial_score', color: axisColors.financial },
+                          { label: '밸류', key: 'compass_valuation_score', color: axisColors.valuation },
+                          { label: '기술', key: 'compass_technical_score', color: axisColors.technical },
+                          { label: '리스크', key: 'compass_risk_score', color: axisColors.risk },
+                        ].map(({ label, key, color }) => {
+                          const val = item[key] ?? 0;
+                          return (
+                            <div key={label} className="wl-axis">
+                              <span className="wl-axis-label">{label}</span>
+                              <div className="wl-axis-bar">
+                                <div className="wl-axis-fill" style={{ width: `${val}%`, background: color }} />
+                              </div>
+                              <span className="wl-axis-val">{val.toFixed(0)}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <div className="wl-footer">
+                      <span>{grade} 등급</span>
                       {item.score_change != null && item.score_change !== 0 && (
-                        <span className={`wl-change ${item.score_change > 0 ? 'up' : 'down'}`}>
+                        <span style={{ color: item.score_change > 0 ? 'var(--stock-up)' : 'var(--stock-down)' }}>
                           {item.score_change > 0 ? '+' : ''}{item.score_change.toFixed(1)}
                         </span>
                       )}
-                    </>
-                  ) : (
-                    <span className="wl-no-score">미산출</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="watchlist-empty-dash">
-            <p>관심 종목이 없습니다</p>
-            <button className="btn-cta" onClick={() => navigate('/screener')}>
-              스크리너에서 추가
-            </button>
-          </div>
-        )}
-      </section>
-
-      {/* 시장 뉴스 */}
-      <section className="news-section">
-        <h2>📰 시장 뉴스</h2>
-        <div className="news-list">
-          {marketData?.news.map((item, idx) => (
-            <div key={idx} className="news-item">
-              <div className="news-content">
-                <h3 className="news-title">{item.title}</h3>
-                <div className="news-meta">
-                  <span className="news-source">
-                    <span className="naver-logo">N</span>
-                    {item.source}
-                  </span>
-                  <span className="news-time">{item.publishedAt}</span>
-                </div>
-              </div>
-              <a href={item.url} className="news-link" target="_blank" rel="noopener noreferrer">
-                자세히 보기 →
-              </a>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 추가 기능 안내 */}
-      <section className="cta-section">
-        <div className="cta-card">
-          <h3>🎯 학습 성향 진단</h3>
-          <p>설문조사를 통해 투자 전략 학습 방향을 파악해보세요 (교육용)</p>
-          <button onClick={() => navigate('/survey')} className="btn-cta">
-            학습 성향 진단 시작
-          </button>
-        </div>
-        <div className="cta-card">
-          <h3>📊 시뮬레이션 학습</h3>
-          <p>다양한 포트폴리오 구성 예시를 시뮬레이션으로 학습하세요</p>
-          <button onClick={() => navigate('/profile')} className="btn-cta">
-            프로필 설정하기
-          </button>
-        </div>
-        <div className="cta-card">
-          <h3>📧 시장 요약 이메일</h3>
-          <p>매일 아침 전일 시장 현황을 이메일로 받아보세요 (교육용)</p>
-          {emailSub?.subscribed ? (
-            <span className="cta-subscribed-badge">구독 중</span>
-          ) : emailSub?.is_email_verified === false ? (
-            <button className="btn-cta" disabled>
-              이메일 인증 필요
-            </button>
           ) : (
-            <button
-              className="btn-cta"
-              onClick={handleSubscribe}
-              disabled={subLoading}
-            >
-              {subLoading ? '처리 중...' : '이메일 구독하기'}
-            </button>
+            <div className="wl-empty">
+              <p>관심 종목이 없습니다</p>
+              <button className="cta-btn" onClick={() => navigate('/screener')}>스크리너에서 추가</button>
+            </div>
           )}
         </div>
-      </section>
 
-      {/* 프로필 완성 모달 */}
+        {/* ── News ── */}
+        <div className="section-card" style={{ marginBottom: 24 }}>
+          <div className="section-title">
+            <span className="icon">&#128240;</span>
+            시장 뉴스
+          </div>
+          <div className="news-grid">
+            {marketData?.news?.map((item, idx) => (
+              <a key={idx} href={item.url} className="news-item-link" target="_blank" rel="noopener noreferrer">
+                <div className="news-item-v2">
+                  <div className="news-time-col"><span className="news-time">{item.publishedAt}</span></div>
+                  <div className="news-dot-col">
+                    <div className="news-dot" />
+                    {idx < (marketData.news.length - 1) && <div className="news-line" />}
+                  </div>
+                  <div className="news-body">
+                    <div className="news-headline">{item.title}</div>
+                    <div className="news-meta-v2">
+                      <span className="news-naver">N</span>
+                      {item.source}
+                    </div>
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+
+        {/* ── CTA (3-column horizontal) ── */}
+        <div className="cta-grid">
+          <div className="cta-card cta-horizontal">
+            <div className="cta-icon">&#127919;</div>
+            <div className="cta-body">
+              <div className="cta-title">학습 성향 진단</div>
+              <div className="cta-desc">설문조사를 통해 투자 전략 학습 방향을 파악해보세요</div>
+            </div>
+            <button className="cta-btn" onClick={() => navigate('/survey')}>시작</button>
+          </div>
+          <div className="cta-card cta-horizontal">
+            <div className="cta-icon">&#128202;</div>
+            <div className="cta-body">
+              <div className="cta-title">종목 스크리너</div>
+              <div className="cta-desc">Compass Score 기반 종목 탐색 및 비교</div>
+            </div>
+            <button className="cta-btn" onClick={() => navigate('/screener')}>열기</button>
+          </div>
+          <div className="cta-card cta-horizontal">
+            <div className="cta-icon">&#128231;</div>
+            <div className="cta-body">
+              <div className="cta-title">시장 요약 이메일</div>
+              <div className="cta-desc">매일 아침 시장 현황을 이메일로 받아보세요</div>
+            </div>
+            {emailSub?.subscribed ? (
+              <button className="cta-btn subscribed">구독 중</button>
+            ) : emailSub?.is_email_verified === false ? (
+              <button className="cta-btn" disabled>인증 필요</button>
+            ) : (
+              <button className="cta-btn" onClick={handleSubscribe} disabled={subLoading}>
+                {subLoading ? '처리 중...' : '구독하기'}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* ── Footer ── */}
+        <footer className="dash-footer">
+          <div className="footer-inner">
+            <p>&copy; 2026 Foresto Compass. All rights reserved.</p>
+            <p>본 서비스는 교육 목적의 참고 자료이며, 투자 권유/추천이 아닙니다.</p>
+          </div>
+        </footer>
+
+      </div>
+
+      {/* Profile completion modal */}
       {showProfileModal && (
         <ProfileCompletionModal
           onClose={handleProfileModalClose}

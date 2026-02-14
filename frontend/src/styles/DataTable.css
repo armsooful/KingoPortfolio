@@ -1,0 +1,76 @@
+/* DataTable.css — theme-aware */
+
+.dt-wrapper {
+  margin-top: 20px;
+}
+
+.dt-table-container {
+  overflow-x: auto;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+}
+
+.dt-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card, #ffffff);
+}
+
+.dt-table thead th {
+  padding: 15px;
+  text-align: left;
+  font-weight: bold;
+  font-size: 0.9rem;
+  color: #ffffff;
+}
+
+.dt-table tbody tr {
+  border-bottom: 1px solid var(--border-light, #f3f4f6);
+}
+
+.dt-table tbody tr:hover {
+  background: var(--card-hover, #f9fafb);
+}
+
+.dt-table td {
+  padding: 12px 15px;
+  color: var(--text, #1f2937);
+}
+
+.dt-table td.right {
+  text-align: right;
+}
+
+.dt-table td.date {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #6b7280);
+}
+
+/* ── Footer ── */
+.dt-footer {
+  margin-top: 15px;
+  padding: 15px;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dt-footer-text {
+  font-size: 0.9rem;
+  color: var(--text-secondary, #6b7280);
+}
+
+.dt-footer-count {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.dt-footer-separator {
+  margin: 0 10px;
+  color: var(--border, #e5e7eb);
+}

@@ -1,3 +1,5 @@
+/* InvestmentReport.css — theme-aware */
+
 .investment-report {
   padding: 20px;
   max-width: 1200px;
@@ -12,35 +14,43 @@
   font-size: 28px;
   font-weight: 600;
   margin-bottom: 8px;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
 }
 
 .report-subtitle {
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   margin-bottom: 20px;
 }
 
 .disclaimer {
   padding: 16px;
-  background: #fff8e1;
+  background: rgba(255, 193, 7, 0.08);
   border-left: 4px solid #FFC107;
   border-radius: 4px;
   margin-bottom: 24px;
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
+}
+
+[data-theme="dark"] .disclaimer {
+  background: rgba(255, 193, 7, 0.12);
 }
 
 .disclaimer.bottom {
   margin-top: 32px;
-  background: #ffebee;
-  border-left-color: #f44336;
+  background: rgba(220, 38, 38, 0.08);
+  border-left-color: var(--stock-down, #dc2626);
+}
+
+[data-theme="dark"] .disclaimer.bottom {
+  background: rgba(220, 38, 38, 0.12);
 }
 
 .disclaimer.bottom p {
   font-weight: 600;
   margin-bottom: 12px;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
 }
 
 .disclaimer.bottom ul {
@@ -50,10 +60,10 @@
 }
 
 .report-content {
-  animation: fadeIn 0.5s;
+  animation: ir-fadeIn 0.5s;
 }
 
-@keyframes fadeIn {
+@keyframes ir-fadeIn {
   from {
     opacity: 0;
     transform: translateY(20px);
@@ -66,16 +76,17 @@
 
 .report-info {
   padding: 24px;
-  background: white;
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   margin-bottom: 24px;
 }
 
 .report-info h3 {
   font-size: 32px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
   margin-bottom: 12px;
 }
 
@@ -83,7 +94,7 @@
   display: flex;
   gap: 24px;
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   flex-wrap: wrap;
 }
 
@@ -95,15 +106,16 @@
   font-size: 22px;
   font-weight: 600;
   margin-bottom: 16px;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
 }
 
-/* 재무 건전성 카드 */
+/* ── Health Card ── */
 .health-card {
-  background: white;
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .health-header {
@@ -112,7 +124,7 @@
   gap: 24px;
   margin-bottom: 24px;
   padding-bottom: 24px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--border, #e5e7eb);
 }
 
 .health-score {
@@ -122,7 +134,7 @@
 .score-label {
   display: block;
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   margin-bottom: 8px;
 }
 
@@ -130,7 +142,7 @@
   display: block;
   font-size: 48px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
   margin-bottom: 4px;
 }
 
@@ -138,7 +150,7 @@
   display: block;
   font-size: 24px;
   font-weight: 700;
-  color: #4a90e2;
+  color: var(--primary, #667eea);
 }
 
 .health-category {
@@ -150,26 +162,27 @@
 .category-label {
   font-size: 20px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
   margin-bottom: 8px;
 }
 
 .category-tier {
   font-size: 16px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
 }
 
 .investment-style {
   margin-bottom: 24px;
   padding: 16px;
-  background: #f8f9fa;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border-light, #f3f4f6);
   border-radius: 8px;
 }
 
 .style-badge {
   display: inline-block;
   padding: 8px 16px;
-  background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+  background: var(--primary, #667eea);
   color: white;
   border-radius: 20px;
   font-weight: 600;
@@ -180,7 +193,7 @@
 .investment-style p {
   margin: 8px 0 0 0;
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
 }
 
 .score-breakdown {
@@ -191,7 +204,8 @@
 
 .breakdown-item {
   padding: 16px;
-  background: #f8f9fa;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border-light, #f3f4f6);
   border-radius: 8px;
   text-align: center;
 }
@@ -199,22 +213,23 @@
 .breakdown-item span {
   display: block;
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   margin-bottom: 8px;
 }
 
 .breakdown-item strong {
   display: block;
   font-size: 24px;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
 }
 
-/* 밸류에이션 카드 */
+/* ── Valuation Card ── */
 .valuation-card {
-  background: white;
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .valuation-header {
@@ -224,19 +239,20 @@
 .valuation-category {
   font-size: 24px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
   margin-bottom: 8px;
 }
 
 .valuation-description {
   font-size: 16px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
 }
 
 .dcf-summary {
   margin-bottom: 24px;
   padding: 20px;
-  background: #f8f9fa;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border-light, #f3f4f6);
   border-radius: 8px;
 }
 
@@ -244,7 +260,7 @@
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 16px;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
 }
 
 .dcf-values {
@@ -260,21 +276,21 @@
 .dcf-item span {
   display: block;
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   margin-bottom: 8px;
 }
 
 .dcf-item strong {
   display: block;
   font-size: 24px;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
 }
 
 .multiples-summary h5 {
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 16px;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
 }
 
 .multiples-grid {
@@ -285,7 +301,8 @@
 
 .multiple-item {
   padding: 16px;
-  background: #f8f9fa;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border-light, #f3f4f6);
   border-radius: 8px;
   text-align: center;
 }
@@ -293,29 +310,30 @@
 .multiple-item span {
   display: block;
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   margin-bottom: 8px;
 }
 
 .multiple-item strong {
   display: block;
   font-size: 28px;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
   margin-bottom: 4px;
 }
 
 .multiple-item small {
   display: block;
   font-size: 12px;
-  color: #999;
+  color: var(--text-muted, #9ca3af);
 }
 
-/* 리스크 카드 */
-.risk-card {
-  background: white;
+/* ── Risk Card ── */
+.investment-report .risk-card {
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .risk-header {
@@ -328,21 +346,22 @@
 .risk-category {
   font-size: 24px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
 }
 
 .risk-level {
   font-size: 16px;
   font-weight: 600;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   padding: 8px 16px;
-  background: #f8f9fa;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border-light, #f3f4f6);
   border-radius: 20px;
 }
 
 .risk-description {
   font-size: 16px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   margin-bottom: 24px;
 }
 
@@ -354,7 +373,8 @@
 
 .risk-metric {
   padding: 16px;
-  background: #f8f9fa;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border-light, #f3f4f6);
   border-radius: 8px;
   text-align: center;
 }
@@ -362,28 +382,29 @@
 .risk-metric span {
   display: block;
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   margin-bottom: 8px;
 }
 
 .risk-metric strong {
   display: block;
   font-size: 24px;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
 }
 
-/* 시장 성과 카드 */
+/* ── Performance Card ── */
 .performance-card {
-  background: white;
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .performance-category {
   font-size: 24px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
   margin-bottom: 24px;
 }
 
@@ -395,14 +416,15 @@
 
 .performance-item {
   padding: 20px;
-  background: #f8f9fa;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border-light, #f3f4f6);
   border-radius: 8px;
 }
 
 .performance-item span {
   display: block;
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   margin-bottom: 8px;
 }
 
@@ -416,11 +438,11 @@
 .performance-item small {
   display: block;
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   line-height: 1.6;
 }
 
-/* 기술적 신호 */
+/* ── Signal Items ── */
 .signals-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -429,46 +451,49 @@
 
 .signal-item {
   padding: 20px;
-  background: white;
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   text-align: center;
 }
 
 .signal-indicator {
   font-size: 14px;
   font-weight: 600;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   margin-bottom: 8px;
 }
 
 .signal-status {
   font-size: 18px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
   margin-bottom: 4px;
 }
 
 .signal-value {
   font-size: 12px;
-  color: #999;
+  color: var(--text-muted, #9ca3af);
 }
 
-/* 종합 평가 */
+/* ── Assessment Card ── */
 .assessment-card {
-  background: white;
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .assessment-summary {
   font-size: 18px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
   margin-bottom: 24px;
   padding: 16px;
-  background: #f8f9fa;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border-light, #f3f4f6);
   border-radius: 8px;
 }
 
@@ -484,7 +509,7 @@
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 12px;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
 }
 
 .assessment-group ul {
@@ -495,15 +520,16 @@
 
 .assessment-group li {
   font-size: 15px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
 }
 
-/* 뉴스 감성 분석 카드 */
+/* ── News Sentiment Card ── */
 .news-sentiment-card {
-  background: white;
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .sentiment-header {
@@ -512,33 +538,35 @@
   align-items: center;
   margin-bottom: 16px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--border, #e5e7eb);
 }
 
 .sentiment-category {
   font-size: 24px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
 }
 
 .sentiment-score {
   font-size: 18px;
   font-weight: 600;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   padding: 8px 16px;
-  background: #f8f9fa;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border-light, #f3f4f6);
   border-radius: 20px;
 }
 
 .sentiment-description {
   font-size: 16px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   margin-bottom: 20px;
 }
 
 .sentiment-summary {
   padding: 16px;
-  background: #f8f9fa;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border-light, #f3f4f6);
   border-radius: 8px;
   margin-bottom: 20px;
 }
@@ -546,7 +574,7 @@
 .sentiment-summary p {
   margin: 0;
   font-size: 15px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   line-height: 1.6;
 }
 
@@ -558,7 +586,7 @@
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 12px;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
 }
 
 .sentiment-factors ul {
@@ -569,20 +597,20 @@
 
 .sentiment-factors li {
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
 }
 
 .recent-news {
   margin-top: 24px;
   padding-top: 20px;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--border, #e5e7eb);
 }
 
 .recent-news h5 {
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 12px;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
 }
 
 .recent-news ul {
@@ -593,12 +621,12 @@
 
 .recent-news li {
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   margin-bottom: 8px;
 }
 
 .recent-news a {
-  color: #4a90e2;
+  color: var(--primary, #667eea);
   text-decoration: none;
 }
 
@@ -607,28 +635,33 @@
 }
 
 .recent-news small {
-  color: #999;
+  color: var(--text-muted, #9ca3af);
   font-size: 12px;
 }
 
-.ai-disclaimer {
+.investment-report .ai-disclaimer {
   margin-top: 20px;
   padding: 12px;
-  background: #fff8e1;
+  background: rgba(255, 193, 7, 0.08);
   border-radius: 8px;
   text-align: center;
 }
 
-.ai-disclaimer small {
-  color: #666;
+[data-theme="dark"] .investment-report .ai-disclaimer {
+  background: rgba(255, 193, 7, 0.12);
+}
+
+.investment-report .ai-disclaimer small {
+  color: var(--text-secondary, #6b7280);
   font-size: 13px;
 }
 
-/* 감성 분포 게이지 */
+/* ── Sentiment Distribution Gauge ── */
 .sentiment-distribution {
   margin: 24px 0;
   padding: 20px;
-  background: #f8f9fa;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border-light, #f3f4f6);
   border-radius: 8px;
 }
 
@@ -636,7 +669,7 @@
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 16px;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
 }
 
 .gauge-container {
@@ -649,12 +682,11 @@
   height: 40px;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   margin-bottom: 12px;
 }
 
 .gauge-positive {
-  background: linear-gradient(135deg, #4caf50, #66bb6a);
+  background: var(--stock-up, #16a34a);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -665,7 +697,7 @@
 }
 
 .gauge-neutral {
-  background: linear-gradient(135deg, #ff9800, #ffa726);
+  background: #ff9800;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -676,7 +708,7 @@
 }
 
 .gauge-negative {
-  background: linear-gradient(135deg, #f44336, #ef5350);
+  background: var(--stock-down, #dc2626);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -698,7 +730,7 @@
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
 }
 
 .legend-dot {
@@ -709,7 +741,7 @@
 }
 
 .legend-dot.positive {
-  background: #4caf50;
+  background: var(--stock-up, #16a34a);
 }
 
 .legend-dot.neutral {
@@ -717,23 +749,31 @@
 }
 
 .legend-dot.negative {
-  background: #f44336;
+  background: var(--stock-down, #dc2626);
 }
 
-/* 투자 인사이트 */
+/* ── Investment Insights ── */
 .investment-insights {
   margin: 20px 0;
   padding: 16px;
-  background: #e3f2fd;
+  background: rgba(33, 150, 243, 0.08);
   border-left: 4px solid #2196f3;
   border-radius: 8px;
+}
+
+[data-theme="dark"] .investment-insights {
+  background: rgba(33, 150, 243, 0.12);
 }
 
 .investment-insights h5 {
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 12px;
-  color: #1565c0;
+  color: #2196f3;
+}
+
+[data-theme="dark"] .investment-insights h5 {
+  color: #90caf9;
 }
 
 .investment-insights ul {
@@ -744,11 +784,11 @@
 
 .investment-insights li {
   font-size: 14px;
-  color: #1976d2;
+  color: var(--text-secondary, #6b7280);
   font-weight: 500;
 }
 
-/* 시장 포지션 & 액션 가이드 */
+/* ── Market Position & Action Guide ── */
 .market-action-guide {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -759,16 +799,16 @@
 .market-position,
 .action-guide {
   padding: 16px;
-  background: white;
+  background: var(--card, #ffffff);
   border-radius: 8px;
-  border: 2px solid #e0e0e0;
+  border: 2px solid var(--border, #e5e7eb);
 }
 
 .market-position .label,
 .action-guide .label {
   display: block;
   font-size: 12px;
-  color: #999;
+  color: var(--text-muted, #9ca3af);
   margin-bottom: 8px;
   text-transform: uppercase;
   font-weight: 600;
@@ -778,7 +818,7 @@
 .action-guide .value {
   display: block;
   font-size: 16px;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
   font-weight: 700;
 }
 
@@ -790,7 +830,7 @@
   border-left: 4px solid #2196f3;
 }
 
-/* 반응형 */
+/* ── Responsive ── */
 @media (max-width: 768px) {
   .investment-report {
     padding: 16px;

@@ -1,15 +1,14 @@
-/* ============================================================
-   BatchJobsPage Styles
-   ============================================================ */
+/* BatchJobs.css — theme-aware */
 
-/* Card max-width override */
+/* ── Card max-width ── */
 .bj-card {
   max-width: 1400px;
 }
 
-/* New batch job section */
+/* ── New batch job section ── */
 .bj-new-job-section {
-  background: #f5f5f5;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 12px;
   padding: 24px;
   margin-top: 32px;
@@ -17,9 +16,10 @@
 
 .bj-new-job-section h2 {
   margin-bottom: 20px;
+  color: var(--text, #1f2937);
 }
 
-/* Two-column config grid */
+/* ── Config grid ── */
 .bj-config-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -32,46 +32,60 @@
   margin-bottom: 8px;
   font-size: 14px;
   font-weight: 600;
+  color: var(--text, #1f2937);
 }
 
 .bj-input,
 .bj-select {
   width: 100%;
   padding: 12px;
-  border: 2px solid #e0e0e0;
+  border: 2px solid var(--border, #e5e7eb);
   border-radius: 8px;
   font-size: 16px;
+  background: var(--card, #ffffff);
+  color: var(--text, #1f2937);
+  outline: none;
+  transition: border-color 0.2s;
 }
 
-/* Info box */
+.bj-input:focus,
+.bj-select:focus {
+  border-color: var(--primary, #667eea);
+}
+
+/* ── Info box ── */
 .bj-info-box {
-  background: #e3f2fd;
+  background: rgba(33, 150, 243, 0.08);
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 20px;
   border-left: 4px solid #2196F3;
 }
 
+[data-theme="dark"] .bj-info-box {
+  background: rgba(33, 150, 243, 0.12);
+}
+
 .bj-info-box h3 {
   margin: 0 0 12px 0;
   font-size: 16px;
-  color: #333;
+  color: var(--text, #1f2937);
 }
 
 .bj-info-box ol {
   margin: 0;
   padding-left: 20px;
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
 }
 
 .bj-info-box .bj-estimate {
   margin-top: 12px;
   font-size: 13px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
 }
 
-/* Start button */
+/* ── Start button ── */
 .bj-start-btn {
   width: 100%;
   padding: 16px;
@@ -82,17 +96,23 @@
   font-size: 18px;
   font-weight: 600;
   cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.bj-start-btn:hover {
+  opacity: 0.9;
 }
 
 .bj-start-btn:disabled {
-  background: #ccc;
+  background: var(--border, #e5e7eb);
+  color: var(--text-muted, #9ca3af);
   cursor: not-allowed;
 }
 
-/* Current job detail panel */
+/* ── Detail panel ── */
 .bj-detail-panel {
-  background: white;
-  border: 2px solid #e0e0e0;
+  background: var(--card, #ffffff);
+  border: 2px solid var(--border, #e5e7eb);
   border-radius: 12px;
   padding: 24px;
   margin-top: 24px;
@@ -107,17 +127,25 @@
 
 .bj-detail-header h2 {
   margin: 0;
+  color: var(--text, #1f2937);
 }
 
 .bj-close-btn {
   padding: 8px 16px;
-  background: #f5f5f5;
-  border: none;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 6px;
   cursor: pointer;
+  color: var(--text-secondary, #6b7280);
+  transition: border-color 0.2s;
 }
 
-/* Job info 2-col grid */
+.bj-close-btn:hover {
+  border-color: var(--primary, #667eea);
+  color: var(--primary, #667eea);
+}
+
+/* ── Info grid ── */
 .bj-info-grid {
   margin-bottom: 20px;
 }
@@ -130,20 +158,22 @@
 
 .bj-info-label {
   font-size: 13px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
 }
 
 .bj-info-value {
   font-size: 16px;
   font-weight: 600;
   font-family: monospace;
+  color: var(--text, #1f2937);
 }
 
 .bj-info-value-sm {
   font-size: 14px;
+  color: var(--text, #1f2937);
 }
 
-/* Status badge */
+/* ── Status badge ── */
 .bj-status-badge {
   display: inline-block;
   padding: 4px 12px;
@@ -159,9 +189,10 @@
   font-weight: 600;
 }
 
-/* Progress section */
+/* ── Progress section ── */
 .bj-progress-section {
-  background: #f5f5f5;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 20px;
@@ -175,17 +206,18 @@
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 4px;
+  color: var(--text, #1f2937);
 }
 
 .bj-progress-details {
   font-size: 13px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
 }
 
 .bj-progress-track {
   width: 100%;
   height: 24px;
-  background: #e0e0e0;
+  background: var(--border, #e5e7eb);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -202,17 +234,21 @@
   font-weight: 600;
 }
 
-/* Completed result */
+/* ── Completed result ── */
 .bj-result-success {
-  background: #E8F5E9;
+  background: rgba(22, 163, 74, 0.08);
   border-radius: 8px;
   padding: 16px;
-  border-left: 4px solid #4CAF50;
+  border-left: 4px solid var(--stock-up, #16a34a);
+}
+
+[data-theme="dark"] .bj-result-success {
+  background: rgba(22, 163, 74, 0.12);
 }
 
 .bj-result-success h3 {
   margin: 0 0 16px 0;
-  color: #2E7D32;
+  color: var(--stock-up, #16a34a);
 }
 
 .bj-result-grid {
@@ -222,48 +258,57 @@
 }
 
 .bj-result-card {
-  background: white;
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 8px;
   padding: 12px;
 }
 
 .bj-result-card-label {
   font-size: 13px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   margin-bottom: 4px;
 }
 
 .bj-result-card-success {
   font-size: 18px;
   font-weight: bold;
-  color: #4CAF50;
+  color: var(--stock-up, #16a34a);
 }
 
 .bj-result-card-failed {
   font-size: 12px;
-  color: #F44336;
+  color: var(--stock-down, #dc2626);
 }
 
-/* Failed result */
+/* ── Failed result ── */
 .bj-result-error {
-  background: #FFEBEE;
+  background: rgba(220, 38, 38, 0.08);
   border-radius: 8px;
   padding: 16px;
-  border-left: 4px solid #F44336;
+  border-left: 4px solid var(--stock-down, #dc2626);
+}
+
+[data-theme="dark"] .bj-result-error {
+  background: rgba(220, 38, 38, 0.12);
 }
 
 .bj-result-error h3 {
   margin: 0 0 12px 0;
-  color: #C62828;
+  color: var(--stock-down, #dc2626);
+}
+
+[data-theme="dark"] .bj-result-error h3 {
+  color: #fca5a5;
 }
 
 .bj-result-error-msg {
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   font-family: monospace;
 }
 
-/* Job history */
+/* ── Job history ── */
 .bj-history-section {
   margin-top: 32px;
 }
@@ -275,24 +320,33 @@
   margin-bottom: 16px;
 }
 
+.bj-history-header h2 {
+  color: var(--text, #1f2937);
+}
+
 .bj-refresh-btn {
   padding: 8px 16px;
-  background: #2196F3;
+  background: var(--primary, #667eea);
   color: white;
   border: none;
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
+  transition: opacity 0.2s;
+}
+
+.bj-refresh-btn:hover {
+  opacity: 0.9;
 }
 
 .bj-empty {
   text-align: center;
   padding: 40px;
-  color: #999;
+  color: var(--text-muted, #9ca3af);
   font-size: 14px;
 }
 
-/* Table */
+/* ── Table ── */
 .bj-table-wrap {
   overflow-x: auto;
 }
@@ -303,13 +357,15 @@
 }
 
 .bj-table thead tr {
-  background: #f5f5f5;
+  background: var(--card-inner, #fafbfc);
 }
 
 .bj-table th {
   padding: 12px;
   text-align: left;
-  border-bottom: 2px solid #e0e0e0;
+  border-bottom: 2px solid var(--border, #e5e7eb);
+  color: var(--text-secondary, #6b7280);
+  font-weight: 600;
 }
 
 .bj-table th.center {
@@ -318,7 +374,8 @@
 
 .bj-table td {
   padding: 12px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--border-light, #f3f4f6);
+  color: var(--text, #1f2937);
 }
 
 .bj-table td.center {
@@ -334,7 +391,11 @@
   font-size: 13px;
 }
 
-/* Action buttons in table */
+.bj-table tbody tr:hover {
+  background: var(--card-hover, #f9fafb);
+}
+
+/* ── Action buttons ── */
 .bj-action-btn {
   padding: 6px 12px;
   color: white;
@@ -342,6 +403,11 @@
   border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
+  transition: opacity 0.2s;
+}
+
+.bj-action-btn:hover {
+  opacity: 0.85;
 }
 
 .bj-action-btn.detail {
@@ -350,10 +416,26 @@
 }
 
 .bj-action-btn.delete {
-  background: #F44336;
+  background: var(--stock-down, #dc2626);
 }
 
 .bj-action-btn.delete:disabled {
-  background: #ccc;
+  background: var(--border, #e5e7eb);
+  color: var(--text-muted, #9ca3af);
   cursor: not-allowed;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .bj-config-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bj-result-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bj-info-grid-inner {
+    grid-template-columns: 1fr;
+  }
 }

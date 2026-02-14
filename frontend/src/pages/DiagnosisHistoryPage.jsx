@@ -86,8 +86,8 @@ function DiagnosisHistoryPage() {
 
   if (isLoading) {
     return (
-      <div className="loading-container">
-        <div className="spinner"></div>
+      <div className="dh-loading">
+        <div className="dh-spinner"></div>
         <p>진단 이력을 로딩 중입니다...</p>
       </div>
     );
@@ -95,7 +95,7 @@ function DiagnosisHistoryPage() {
 
   return (
     <div className="history-container">
-      {error && <div className="error-message">{error}</div>}
+      {error && <div className="dh-error">{error}</div>}
 
       <div className="history-layout">
         {/* 왼쪽: 진단 이력 목록 */}
@@ -109,7 +109,7 @@ function DiagnosisHistoryPage() {
             <div className="empty-state">
               <p>진단 이력이 없습니다.</p>
               <button
-                className="btn btn-primary"
+                className="dh-btn-outline"
                 onClick={() => navigate('/survey')}
               >
                 첫 진단 시작하기
@@ -278,7 +278,7 @@ function DiagnosisHistoryPage() {
               {/* 액션 버튼 */}
               <div className="detail-buttons">
                 <button
-                  className="btn btn-primary"
+                  className="dh-btn-primary"
                   onClick={() => navigate('/survey')}
                 >
                   새로운 진단 시작

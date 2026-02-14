@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Foresto Compass - Dashboard Redesign Mockup</title>
+<style>
+  /* ===== Reset & Base ===== */
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+  :root {
+    --primary: #667eea;
+    --primary-dark: #5568d3;
+    --primary-light: #8b9cf7;
+    --accent: #764ba2;
+    --bg: #f0f2f7;
+    --card: #ffffff;
+    --card-hover: #f8f9ff;
+    --card-inner: #fafbfc;
+    --text: #1f2937;
+    --text-secondary: #6b7280;
+    --text-muted: #9ca3af;
+    --border: #e5e7eb;
+    --border-light: #f3f4f6;
+    --stock-up: #e53935;
+    --stock-down: #1e88e5;
+    --grade-a: #16a34a;
+    --grade-b: #2563eb;
+    --grade-c: #ea580c;
+    --grade-d: #dc2626;
+    --radius: 12px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.1);
+    --skeleton-base: #f0f0f0;
+    --skeleton-shine: #e0e0e0;
+    --skel-ai-bg: #e5e7eb;
+    --banner-bg: #fffbeb;
+    --banner-border: #fde68a;
+    --banner-label-bg: #fef3c7;
+    --banner-label-text: #92400e;
+    --banner-text: #78350f;
+    --toggle-hover: #f3f4f6;
+    --bar-bg-up-start: #ffcdd2;
+    --bar-bg-down-start: #bbdefb;
+    --ai-bg: linear-gradient(135deg, #1e3a5f 0%, #2c5f8a 100%);
+  }
+
+  [data-theme="dark"] {
+    --bg: #0f1117;
+    --card: #1a1d2e;
+    --card-hover: #1e2235;
+    --card-inner: #161928;
+    --text: #e5e7eb;
+    --text-secondary: #9ca3af;
+    --text-muted: #6b7280;
+    --border: #2d3148;
+    --border-light: #252840;
+    --primary-light: #8b9cf7;
+    --stock-up: #ff6b6b;
+    --stock-down: #64b5f6;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
+    --skeleton-base: #252840;
+    --skeleton-shine: #2d3148;
+    --skel-ai-bg: #1e2235;
+    --banner-bg: #1c1a0f;
+    --banner-border: #5c4d1a;
+    --banner-label-bg: #3d3415;
+    --banner-label-text: #fbbf24;
+    --banner-text: #fcd34d;
+    --toggle-hover: #252840;
+    --bar-bg-up-start: rgba(255,107,107,0.2);
+    --bar-bg-down-start: rgba(100,181,246,0.2);
+    --ai-bg: linear-gradient(135deg, #162538 0%, #1c3650 100%);
+  }
+
+  html { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+  body { background: var(--bg); color: var(--text); line-height: 1.5; transition: background 0.3s, color 0.3s; }
+
+  /* ===== Layout ===== */
+  .dashboard { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
+
+  /* ===== Header ===== */
+  .dash-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 24px;
+  }
+  .dash-header h1 { font-size: 1.5rem; font-weight: 700; color: var(--text); }
+  .dash-header h1 span { color: var(--primary); }
+  .dash-header .date { font-size: 0.85rem; color: var(--text-secondary); }
+  .refresh-btn {
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px 14px; font-size: 0.85rem; color: var(--text-secondary);
+    cursor: pointer; transition: all 0.2s;
+  }
+  .refresh-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+  /* ===== KPI Grid ===== */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .kpi-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+  .kpi-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; margin-bottom: 8px; }
+  .kpi-value { font-size: 1.6rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .kpi-change { font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+  .kpi-change.up { color: var(--stock-up); }
+  .kpi-change.down { color: var(--stock-down); }
+  .kpi-sparkline { margin-top: 12px; height: 40px; }
+  .kpi-sparkline svg { width: 100%; height: 40px; }
+
+  /* ===== AI Summary ===== */
+  .ai-summary {
+    background: var(--ai-bg);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    color: white;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    box-shadow: var(--shadow-md);
+  }
+  .ai-signal {
+    flex-shrink: 0;
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px;
+    background: rgba(0,0,0,0.15);
+    border-radius: 20px;
+  }
+  .ai-signal .dot {
+    width: 20px; height: 20px; border-radius: 50%;
+    opacity: 0.25; transition: all 0.3s;
+  }
+  .ai-signal .dot.green { background: #4caf50; }
+  .ai-signal .dot.yellow { background: #ffc107; }
+  .ai-signal .dot.red { background: #f44336; }
+  .ai-signal .dot.active { opacity: 1; box-shadow: 0 0 8px currentColor; }
+  .ai-content { flex: 1; }
+  .ai-content .ai-title {
+    font-size: 0.95rem; font-weight: 600; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .ai-badge {
+    background: rgba(255,255,255,0.2); padding: 2px 10px; border-radius: 12px;
+    font-size: 0.75rem; font-weight: 600;
+  }
+  .ai-content p {
+    font-size: 0.9rem; line-height: 1.6; opacity: 0.95;
+  }
+  .ai-disclaimer {
+    font-size: 0.7rem; opacity: 0.6; margin-top: 8px;
+  }
+
+  /* ===== Two Column Layout ===== */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  /* ===== Stock Movers ===== */
+  .section-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+  }
+  .section-title {
+    font-size: 1rem; font-weight: 700; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title .icon { font-size: 1.1rem; }
+
+  .mover-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .mover-item:last-child { border-bottom: none; }
+  .mover-rank {
+    width: 24px; height: 24px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem; font-weight: 700; color: white;
+    flex-shrink: 0;
+  }
+  .mover-rank.up { background: var(--stock-up); }
+  .mover-rank.down { background: var(--stock-down); }
+  .mover-info { flex: 1; min-width: 0; }
+  .mover-name { font-size: 0.9rem; font-weight: 600; }
+  .mover-code { font-size: 0.75rem; color: var(--text-muted); }
+  .mover-bar-wrap { flex: 1; max-width: 120px; }
+  .mover-bar-bg { height: 6px; background: var(--border-light); border-radius: 3px; overflow: hidden; }
+  .mover-bar { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+  .mover-bar.up { background: linear-gradient(90deg, var(--bar-bg-up-start), var(--stock-up)); }
+  .mover-bar.down { background: linear-gradient(90deg, var(--bar-bg-down-start), var(--stock-down)); }
+  .mover-values { text-align: right; flex-shrink: 0; }
+  .mover-price { font-size: 0.85rem; font-weight: 600; }
+  .mover-change { font-size: 0.8rem; font-weight: 600; }
+  .mover-change.up { color: var(--stock-up); }
+  .mover-change.down { color: var(--stock-down); }
+
+  /* ===== Watchlist ===== */
+  .watchlist-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  .wl-card {
+    background: var(--card-inner);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .wl-card:hover {
+    border-color: var(--primary);
+    box-shadow: var(--shadow-sm);
+  }
+  .wl-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .wl-card-name { font-size: 0.9rem; font-weight: 600; }
+  .wl-card-code { font-size: 0.75rem; color: var(--text-muted); }
+  .wl-score-circle {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; font-weight: 700; color: white;
+    flex-shrink: 0;
+  }
+  .wl-axes { margin-top: 8px; }
+  .wl-axis { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .wl-axis-label { font-size: 0.65rem; color: var(--text-muted); width: 32px; flex-shrink: 0; }
+  .wl-axis-bar { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .wl-axis-fill { height: 100%; border-radius: 2px; }
+  .wl-axis-val { font-size: 0.65rem; color: var(--text-secondary); width: 20px; text-align: right; }
+  .wl-footer { display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.75rem; color: var(--text-secondary); }
+
+  .wl-section-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px;
+  }
+  .wl-view-all {
+    background: none; border: none; color: var(--primary); font-size: 0.85rem;
+    font-weight: 500; cursor: pointer;
+  }
+  .wl-view-all:hover { text-decoration: underline; }
+
+  /* ===== News ===== */
+  .news-timeline { display: flex; flex-direction: column; gap: 0; }
+  .news-item {
+    display: flex; gap: 12px; padding: 12px 0;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .news-item:last-child { border-bottom: none; }
+  .news-time-col { flex-shrink: 0; width: 50px; text-align: right; }
+  .news-time { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
+  .news-dot-col { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; }
+  .news-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--primary); margin-top: 6px;
+  }
+  .news-line { flex: 1; width: 1px; background: var(--border); margin-top: 4px; }
+  .news-body { flex: 1; }
+  .news-headline { font-size: 0.9rem; font-weight: 500; color: var(--text); line-height: 1.4; }
+  .news-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; display: flex; gap: 8px; }
+  .news-naver {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 14px; height: 14px; background: #00C73C; color: white;
+    font-weight: 700; font-size: 0.55rem; border-radius: 2px;
+  }
+
+  /* ===== News Grid (2-col on desktop) ===== */
+  .news-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 32px;
+  }
+
+  /* ===== CTA Section ===== */
+  .cta-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .cta-horizontal {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    text-align: left;
+    padding: 16px 18px;
+  }
+  .cta-horizontal .cta-icon { font-size: 1.4rem; margin-bottom: 0; flex-shrink: 0; }
+  .cta-horizontal .cta-body { flex: 1; min-width: 0; }
+  .cta-horizontal .cta-title { font-size: 0.9rem; margin-bottom: 2px; }
+  .cta-horizontal .cta-desc { font-size: 0.75rem; margin-bottom: 0; line-height: 1.4; }
+  .cta-horizontal .cta-btn { flex-shrink: 0; padding: 6px 16px; font-size: 0.8rem; }
+  .cta-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s;
+  }
+  .cta-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+  .cta-icon { font-size: 1.8rem; margin-bottom: 10px; }
+  .cta-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 6px; }
+  .cta-desc { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.5; }
+  .cta-btn {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: white; border: none; border-radius: 8px;
+    padding: 8px 20px; font-size: 0.85rem; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .cta-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .cta-btn.subscribed {
+    background: linear-gradient(135deg, #43e97b, #38f9d7);
+  }
+
+  /* ===== Footer ===== */
+  .dash-footer {
+    margin-top: 16px;
+    padding: 20px 0;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+  .footer-inner p {
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  /* ===== Skeleton ===== */
+  .skeleton {
+    background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-shine) 50%, var(--skeleton-base) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 6px;
+  }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  .skel-text { height: 14px; margin-bottom: 8px; }
+  .skel-title { height: 20px; width: 60%; margin-bottom: 8px; }
+  .skel-chart { height: 40px; margin-top: 12px; }
+
+  /* ===== Comparison Banner ===== */
+  .compare-banner {
+    background: var(--banner-bg);
+    border: 1px solid var(--banner-border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .compare-label {
+    font-size: 0.8rem; font-weight: 600; color: var(--banner-label-text);
+    background: var(--banner-label-bg); padding: 3px 10px; border-radius: 6px;
+    flex-shrink: 0;
+  }
+  .compare-text { font-size: 0.85rem; color: var(--banner-text); flex: 1; }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 1024px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .cta-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 768px) {
+    .dashboard { padding: 16px 12px; }
+    .two-col { grid-template-columns: 1fr; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .kpi-card { padding: 14px; }
+    .kpi-value { font-size: 1.3rem; }
+    .kpi-sparkline { height: 32px; }
+    .kpi-sparkline svg { height: 32px; }
+    .ai-summary { flex-direction: column; padding: 16px; }
+    .watchlist-grid { grid-template-columns: 1fr 1fr; }
+    .news-grid { grid-template-columns: 1fr; }
+    .cta-grid { grid-template-columns: 1fr; }
+    .compare-banner { flex-direction: column; align-items: flex-start; gap: 8px; }
+  }
+
+  @media (max-width: 480px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .kpi-card { padding: 12px; }
+    .kpi-label { font-size: 0.7rem; }
+    .kpi-value { font-size: 1.1rem; }
+    .kpi-change { font-size: 0.75rem; }
+    .watchlist-grid { grid-template-columns: 1fr; }
+    .dash-header h1 { font-size: 1.2rem; }
+  }
+
+  /* ===== Toggle ===== */
+  .view-toggle {
+    display: flex; gap: 0; margin-bottom: 24px;
+    background: var(--card); border-radius: 8px; border: 1px solid var(--border);
+    overflow: hidden; width: fit-content;
+  }
+  .view-toggle button {
+    padding: 8px 20px; border: none; background: none;
+    font-size: 0.85rem; font-weight: 500; color: var(--text-secondary);
+    cursor: pointer; transition: all 0.2s;
+  }
+  .view-toggle button.active {
+    background: var(--primary); color: white;
+  }
+  .view-toggle button:hover:not(.active) { background: var(--toggle-hover); }
+
+  .hidden { display: none !important; }
+
+  /* ===== Site Header ===== */
+  .site-header {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    position: sticky;
+    top: 0;
+    z-index: 900;
+    transition: background 0.3s, border-color 0.3s;
+  }
+  .header-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    height: 56px;
+    gap: 32px;
+  }
+  .header-logo {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--primary);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .header-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+  }
+  .header-nav-item {
+    padding: 8px 14px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .header-nav-item:hover {
+    background: var(--toggle-hover);
+    color: var(--text);
+  }
+  .header-nav-item.active {
+    background: rgba(102, 126, 234, 0.1);
+    color: var(--primary);
+    font-weight: 600;
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .header-user {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px 4px 4px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .header-user:hover { border-color: var(--primary); }
+  .header-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), #764ba2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+  }
+  .header-username {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .header-badge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+  }
+
+  @media (max-width: 768px) {
+    .header-nav { display: none; }
+    .header-badge { display: none; }
+  }
+
+  /* ===== Dark Mode Toggle ===== */
+  .theme-toggle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--toggle-hover);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .theme-toggle:hover {
+    border-color: var(--primary);
+    background: var(--card-hover);
+  }
+  .theme-toggle .icon-sun,
+  .theme-toggle .icon-moon { transition: opacity 0.3s, transform 0.3s; position: absolute; }
+  .theme-toggle .icon-moon { opacity: 0; transform: rotate(-90deg); }
+  [data-theme="dark"] .theme-toggle .icon-sun { opacity: 0; transform: rotate(90deg); }
+  [data-theme="dark"] .theme-toggle .icon-moon { opacity: 1; transform: rotate(0deg); }
+
+  /* ===== Skeleton Cards ===== */
+  .skel-kpi { padding: 20px; }
+</style>
+</head>
+<body>
+
+<!-- Site Header -->
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-logo">Foresto Compass</div>
+    <nav class="header-nav">
+      <div class="header-nav-item active">시장현황</div>
+      <div class="header-nav-item">스크리너</div>
+      <div class="header-nav-item">관심종목</div>
+      <div class="header-nav-item">투자성향진단</div>
+      <div class="header-nav-item">포트폴리오</div>
+      <div class="header-nav-item">시나리오</div>
+    </nav>
+    <div class="header-right">
+      <button class="theme-toggle" onclick="toggleTheme()" title="다크모드 전환">
+        <span class="icon-sun">&#9728;&#65039;</span>
+        <span class="icon-moon">&#127769;</span>
+      </button>
+      <span class="header-badge">VIP</span>
+      <div class="header-user">
+        <div class="header-avatar">홍</div>
+        <span class="header-username">홍길동</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="dashboard">
+
+  <!-- View Toggle -->
+  <div class="compare-banner">
+    <span class="compare-label">MOCKUP</span>
+    <span class="compare-text">이 페이지는 MarketDashboard 리디자인 시안입니다. 실제 데이터가 아닌 샘플 데이터를 사용합니다.</span>
+  </div>
+
+  <div class="view-toggle">
+    <button class="active" onclick="showView('redesign')">리디자인 (After)</button>
+    <button onclick="showView('skeleton')">스켈레톤 로딩</button>
+  </div>
+
+  <!-- ===== REDESIGN VIEW ===== -->
+  <div id="view-redesign">
+
+    <!-- Header -->
+    <div class="dash-header">
+      <div>
+        <h1><span>Foresto Compass</span> 시장 현황</h1>
+        <div class="date">2026년 02월 14일 (금) 15:30 기준</div>
+      </div>
+      <button class="refresh-btn" onclick="location.reload()">새로고침</button>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">KOSPI</div>
+        <div class="kpi-value">2,653.42</div>
+        <div class="kpi-change up">+12.35 (+0.47%)</div>
+        <div class="kpi-sparkline">
+          <svg viewBox="0 0 120 40" preserveAspectRatio="none">
+            <polyline fill="none" stroke="#e53935" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+              points="0,30 17,28 34,32 51,25 68,22 85,26 102,20 120,18" />
+            <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#e53935" stop-opacity="0.15"/>
+              <stop offset="100%" stop-color="#e53935" stop-opacity="0"/>
+            </linearGradient>
+            <polygon fill="url(#g1)"
+              points="0,30 17,28 34,32 51,25 68,22 85,26 102,20 120,18 120,40 0,40" />
+          </svg>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">KOSDAQ</div>
+        <div class="kpi-value">872.15</div>
+        <div class="kpi-change down">-3.82 (-0.44%)</div>
+        <div class="kpi-sparkline">
+          <svg viewBox="0 0 120 40" preserveAspectRatio="none">
+            <polyline fill="none" stroke="#1e88e5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+              points="0,15 17,18 34,14 51,20 68,24 85,22 102,28 120,30" />
+            <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#1e88e5" stop-opacity="0.15"/>
+              <stop offset="100%" stop-color="#1e88e5" stop-opacity="0"/>
+            </linearGradient>
+            <polygon fill="url(#g2)"
+              points="0,15 17,18 34,14 51,20 68,24 85,22 102,28 120,30 120,40 0,40" />
+          </svg>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">S&P 500</div>
+        <div class="kpi-value">5,234.18</div>
+        <div class="kpi-change up">+28.45 (+0.55%)</div>
+        <div class="kpi-sparkline">
+          <svg viewBox="0 0 120 40" preserveAspectRatio="none">
+            <polyline fill="none" stroke="#e53935" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+              points="0,35 17,30 34,28 51,25 68,20 85,18 102,15 120,12" />
+            <linearGradient id="g3" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#e53935" stop-opacity="0.15"/>
+              <stop offset="100%" stop-color="#e53935" stop-opacity="0"/>
+            </linearGradient>
+            <polygon fill="url(#g3)"
+              points="0,35 17,30 34,28 51,25 68,20 85,18 102,15 120,12 120,40 0,40" />
+          </svg>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">NASDAQ</div>
+        <div class="kpi-value">16,428.82</div>
+        <div class="kpi-change up">+156.20 (+0.96%)</div>
+        <div class="kpi-sparkline">
+          <svg viewBox="0 0 120 40" preserveAspectRatio="none">
+            <polyline fill="none" stroke="#e53935" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+              points="0,32 17,28 34,30 51,22 68,18 85,15 102,12 120,8" />
+            <linearGradient id="g4" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#e53935" stop-opacity="0.15"/>
+              <stop offset="100%" stop-color="#e53935" stop-opacity="0"/>
+            </linearGradient>
+            <polygon fill="url(#g4)"
+              points="0,32 17,28 34,30 51,22 68,18 85,15 102,12 120,8 120,40 0,40" />
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Summary -->
+    <div class="ai-summary">
+      <div class="ai-signal">
+        <div class="dot green active"></div>
+        <div class="dot yellow"></div>
+        <div class="dot red"></div>
+      </div>
+      <div class="ai-content">
+        <div class="ai-title">
+          오늘의 시장 데이터 요약 (참고용)
+          <span class="ai-badge">AI 분석</span>
+        </div>
+        <p>KOSPI가 외국인 순매수에 힘입어 2,650선을 회복했습니다. 반도체 섹터가 강세를 보이며 삼성전자, SK하이닉스가 동반 상승했습니다. KOSDAQ은 바이오 섹터 약세로 소폭 하락했으나, AI 관련주가 상승 흐름을 이어갔습니다.</p>
+        <div class="ai-disclaimer">본 정보는 교육 목적의 참고 자료이며, 투자 권유/추천이 아닙니다.</div>
+      </div>
+    </div>
+
+    <!-- Gainers / Losers -->
+    <div class="two-col">
+      <div class="section-card">
+        <div class="section-title">
+          <span class="icon" style="color:var(--stock-up);">&#9650;</span>
+          상승 종목 Top 5
+        </div>
+        <div class="mover-item">
+          <div class="mover-rank up">1</div>
+          <div class="mover-info"><div class="mover-name">삼성전자</div><div class="mover-code">005930</div></div>
+          <div class="mover-bar-wrap"><div class="mover-bar-bg"><div class="mover-bar up" style="width:85%"></div></div></div>
+          <div class="mover-values"><div class="mover-price">72,300원</div><div class="mover-change up">+4.18%</div></div>
+        </div>
+        <div class="mover-item">
+          <div class="mover-rank up">2</div>
+          <div class="mover-info"><div class="mover-name">SK하이닉스</div><div class="mover-code">000660</div></div>
+          <div class="mover-bar-wrap"><div class="mover-bar-bg"><div class="mover-bar up" style="width:72%"></div></div></div>
+          <div class="mover-values"><div class="mover-price">185,500원</div><div class="mover-change up">+3.52%</div></div>
+        </div>
+        <div class="mover-item">
+          <div class="mover-rank up">3</div>
+          <div class="mover-info"><div class="mover-name">LG에너지솔루션</div><div class="mover-code">373220</div></div>
+          <div class="mover-bar-wrap"><div class="mover-bar-bg"><div class="mover-bar up" style="width:60%"></div></div></div>
+          <div class="mover-values"><div class="mover-price">412,000원</div><div class="mover-change up">+2.87%</div></div>
+        </div>
+        <div class="mover-item">
+          <div class="mover-rank up">4</div>
+          <div class="mover-info"><div class="mover-name">현대차</div><div class="mover-code">005380</div></div>
+          <div class="mover-bar-wrap"><div class="mover-bar-bg"><div class="mover-bar up" style="width:48%"></div></div></div>
+          <div class="mover-values"><div class="mover-price">245,000원</div><div class="mover-change up">+2.30%</div></div>
+        </div>
+        <div class="mover-item">
+          <div class="mover-rank up">5</div>
+          <div class="mover-info"><div class="mover-name">NAVER</div><div class="mover-code">035420</div></div>
+          <div class="mover-bar-wrap"><div class="mover-bar-bg"><div class="mover-bar up" style="width:35%"></div></div></div>
+          <div class="mover-values"><div class="mover-price">198,000원</div><div class="mover-change up">+1.64%</div></div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-title">
+          <span class="icon" style="color:var(--stock-down);">&#9660;</span>
+          하락 종목 Top 5
+        </div>
+        <div class="mover-item">
+          <div class="mover-rank down">1</div>
+          <div class="mover-info"><div class="mover-name">셀트리온</div><div class="mover-code">068270</div></div>
+          <div class="mover-bar-wrap"><div class="mover-bar-bg"><div class="mover-bar down" style="width:80%"></div></div></div>
+          <div class="mover-values"><div class="mover-price">168,500원</div><div class="mover-change down">-3.86%</div></div>
+        </div>
+        <div class="mover-item">
+          <div class="mover-rank down">2</div>
+          <div class="mover-info"><div class="mover-name">카카오</div><div class="mover-code">035720</div></div>
+          <div class="mover-bar-wrap"><div class="mover-bar-bg"><div class="mover-bar down" style="width:65%"></div></div></div>
+          <div class="mover-values"><div class="mover-price">42,800원</div><div class="mover-change down">-3.15%</div></div>
+        </div>
+        <div class="mover-item">
+          <div class="mover-rank down">3</div>
+          <div class="mover-info"><div class="mover-name">포스코홀딩스</div><div class="mover-code">005490</div></div>
+          <div class="mover-bar-wrap"><div class="mover-bar-bg"><div class="mover-bar down" style="width:52%"></div></div></div>
+          <div class="mover-values"><div class="mover-price">285,000원</div><div class="mover-change down">-2.55%</div></div>
+        </div>
+        <div class="mover-item">
+          <div class="mover-rank down">4</div>
+          <div class="mover-info"><div class="mover-name">한화솔루션</div><div class="mover-code">009830</div></div>
+          <div class="mover-bar-wrap"><div class="mover-bar-bg"><div class="mover-bar down" style="width:40%"></div></div></div>
+          <div class="mover-values"><div class="mover-price">28,900원</div><div class="mover-change down">-1.87%</div></div>
+        </div>
+        <div class="mover-item">
+          <div class="mover-rank down">5</div>
+          <div class="mover-info"><div class="mover-name">기아</div><div class="mover-code">000270</div></div>
+          <div class="mover-bar-wrap"><div class="mover-bar-bg"><div class="mover-bar down" style="width:28%"></div></div></div>
+          <div class="mover-values"><div class="mover-price">92,400원</div><div class="mover-change down">-1.28%</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Watchlist -->
+    <div class="section-card" style="margin-bottom:24px;">
+      <div class="wl-section-header">
+        <div class="section-title" style="margin:0;">
+          <span class="icon">&#9733;</span>
+          관심 종목
+        </div>
+        <button class="wl-view-all">전체 8개 보기 &rarr;</button>
+      </div>
+      <div class="watchlist-grid">
+        <!-- Card 1 -->
+        <div class="wl-card">
+          <div class="wl-card-header">
+            <div>
+              <div class="wl-card-name">삼성전자</div>
+              <div class="wl-card-code">005930 &middot; KOSPI</div>
+            </div>
+            <div class="wl-score-circle" style="background:linear-gradient(135deg,#16a34a,#22c55e);">72</div>
+          </div>
+          <div class="wl-axes">
+            <div class="wl-axis"><span class="wl-axis-label">재무</span><div class="wl-axis-bar"><div class="wl-axis-fill" style="width:78%;background:#4caf50;"></div></div><span class="wl-axis-val">78</span></div>
+            <div class="wl-axis"><span class="wl-axis-label">밸류</span><div class="wl-axis-bar"><div class="wl-axis-fill" style="width:62%;background:#2196f3;"></div></div><span class="wl-axis-val">62</span></div>
+            <div class="wl-axis"><span class="wl-axis-label">기술</span><div class="wl-axis-bar"><div class="wl-axis-fill" style="width:75%;background:#ff9800;"></div></div><span class="wl-axis-val">75</span></div>
+            <div class="wl-axis"><span class="wl-axis-label">리스크</span><div class="wl-axis-bar"><div class="wl-axis-fill" style="width:68%;background:#9c27b0;"></div></div><span class="wl-axis-val">68</span></div>
+          </div>
+          <div class="wl-footer">
+            <span>A 등급</span>
+            <span style="color:var(--stock-up);">+2.3</span>
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="wl-card">
+          <div class="wl-card-header">
+            <div>
+              <div class="wl-card-name">카카오</div>
+              <div class="wl-card-code">035720 &middot; KOSPI</div>
+            </div>
+            <div class="wl-score-circle" style="background:linear-gradient(135deg,#d97706,#f59e0b);">54</div>
+          </div>
+          <div class="wl-axes">
+            <div class="wl-axis"><span class="wl-axis-label">재무</span><div class="wl-axis-bar"><div class="wl-axis-fill" style="width:48%;background:#4caf50;"></div></div><span class="wl-axis-val">48</span></div>
+            <div class="wl-axis"><span class="wl-axis-label">밸류</span><div class="wl-axis-bar"><div class="wl-axis-fill" style="width:55%;background:#2196f3;"></div></div><span class="wl-axis-val">55</span></div>
+            <div class="wl-axis"><span class="wl-axis-label">기술</span><div class="wl-axis-bar"><div class="wl-axis-fill" style="width:60%;background:#ff9800;"></div></div><span class="wl-axis-val">60</span></div>
+            <div class="wl-axis"><span class="wl-axis-label">리스크</span><div class="wl-axis-bar"><div class="wl-axis-fill" style="width:52%;background:#9c27b0;"></div></div><span class="wl-axis-val">52</span></div>
+          </div>
+          <div class="wl-footer">
+            <span>C+ 등급</span>
+            <span style="color:var(--stock-down);">-4.1</span>
+          </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="wl-card">
+          <div class="wl-card-header">
+            <div>
+              <div class="wl-card-name">SK하이닉스</div>
+              <div class="wl-card-code">000660 &middot; KOSPI</div>
+            </div>
+            <div class="wl-score-circle" style="background:linear-gradient(135deg,#2563eb,#3b82f6);">68</div>
+          </div>
+          <div class="wl-axes">
+            <div class="wl-axis"><span class="wl-axis-label">재무</span><div class="wl-axis-bar"><div class="wl-axis-fill" style="width:72%;background:#4caf50;"></div></div><span class="wl-axis-val">72</span></div>
+            <div class="wl-axis"><span class="wl-axis-label">밸류</span><div class="wl-axis-bar"><div class="wl-axis-fill" style="width:58%;background:#2196f3;"></div></div><span class="wl-axis-val">58</span></div>
+            <div class="wl-axis"><span class="wl-axis-label">기술</span><div class="wl-axis-bar"><div class="wl-axis-fill" style="width:70%;background:#ff9800;"></div></div><span class="wl-axis-val">70</span></div>
+            <div class="wl-axis"><span class="wl-axis-label">리스크</span><div class="wl-axis-bar"><div class="wl-axis-fill" style="width:65%;background:#9c27b0;"></div></div><span class="wl-axis-val">65</span></div>
+          </div>
+          <div class="wl-footer">
+            <span>B+ 등급</span>
+            <span style="color:var(--stock-up);">+1.5</span>
+          </div>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="wl-card">
+          <div class="wl-card-header">
+            <div>
+              <div class="wl-card-name">현대차</div>
+              <div class="wl-card-code">005380 &middot; KOSPI</div>
+            </div>
+            <div class="wl-score-circle" style="background:linear-gradient(135deg,#16a34a,#22c55e);">76</div>
+          </div>
+          <div class="wl-axes">
+            <div class="wl-axis"><span class="wl-axis-label">재무</span><div class="wl-axis-bar"><div class="wl-axis-fill" style="width:82%;background:#4caf50;"></div></div><span class="wl-axis-val">82</span></div>
+            <div class="wl-axis"><span class="wl-axis-label">밸류</span><div class="wl-axis-bar"><div class="wl-axis-fill" style="width:70%;background:#2196f3;"></div></div><span class="wl-axis-val">70</span></div>
+            <div class="wl-axis"><span class="wl-axis-label">기술</span><div class="wl-axis-bar"><div class="wl-axis-fill" style="width:73%;background:#ff9800;"></div></div><span class="wl-axis-val">73</span></div>
+            <div class="wl-axis"><span class="wl-axis-label">리스크</span><div class="wl-axis-bar"><div class="wl-axis-fill" style="width:75%;background:#9c27b0;"></div></div><span class="wl-axis-val">75</span></div>
+          </div>
+          <div class="wl-footer">
+            <span>A 등급</span>
+            <span style="color:var(--stock-up);">+0.8</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- News (full width) -->
+    <div class="section-card" style="margin-bottom:24px;">
+      <div class="section-title">
+        <span class="icon">&#128240;</span>
+        시장 뉴스
+      </div>
+      <div class="news-grid">
+        <div class="news-item">
+          <div class="news-time-col"><span class="news-time">14:30</span></div>
+          <div class="news-dot-col"><div class="news-dot"></div><div class="news-line"></div></div>
+          <div class="news-body">
+            <div class="news-headline">반도체 업황 회복 기대감에 삼성전자 52주 신고가 경신</div>
+            <div class="news-meta"><span class="news-naver">N</span> 한국경제 &middot; 2분 전</div>
+          </div>
+        </div>
+        <div class="news-item">
+          <div class="news-time-col"><span class="news-time">13:45</span></div>
+          <div class="news-dot-col"><div class="news-dot"></div><div class="news-line"></div></div>
+          <div class="news-body">
+            <div class="news-headline">외국인 3거래일 연속 순매수... 코스피 2,650 회복</div>
+            <div class="news-meta"><span class="news-naver">N</span> 매일경제 &middot; 47분 전</div>
+          </div>
+        </div>
+        <div class="news-item">
+          <div class="news-time-col"><span class="news-time">11:20</span></div>
+          <div class="news-dot-col"><div class="news-dot"></div><div class="news-line"></div></div>
+          <div class="news-body">
+            <div class="news-headline">美 CPI 예상 하회에 나스닥 1% 급등... 금리 인하 기대</div>
+            <div class="news-meta"><span class="news-naver">N</span> 조선비즈 &middot; 2시간 전</div>
+          </div>
+        </div>
+        <div class="news-item">
+          <div class="news-time-col"><span class="news-time">09:15</span></div>
+          <div class="news-dot-col"><div class="news-dot"></div></div>
+          <div class="news-body">
+            <div class="news-headline">바이오 섹터 차익실현 매물 출회... 셀트리온 4% 급락</div>
+            <div class="news-meta"><span class="news-naver">N</span> 서울경제 &middot; 4시간 전</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA (3-column horizontal) -->
+    <div class="cta-grid">
+      <div class="cta-card cta-horizontal">
+        <div class="cta-icon">&#127919;</div>
+        <div class="cta-body">
+          <div class="cta-title">학습 성향 진단</div>
+          <div class="cta-desc">설문조사를 통해 투자 전략 학습 방향을 파악해보세요</div>
+        </div>
+        <button class="cta-btn">시작</button>
+      </div>
+      <div class="cta-card cta-horizontal">
+        <div class="cta-icon">&#128202;</div>
+        <div class="cta-body">
+          <div class="cta-title">종목 스크리너</div>
+          <div class="cta-desc">Compass Score 기반 종목 탐색 및 비교</div>
+        </div>
+        <button class="cta-btn">열기</button>
+      </div>
+      <div class="cta-card cta-horizontal">
+        <div class="cta-icon">&#128231;</div>
+        <div class="cta-body">
+          <div class="cta-title">시장 요약 이메일</div>
+          <div class="cta-desc">매일 아침 시장 현황을 이메일로 받아보세요</div>
+        </div>
+        <button class="cta-btn subscribed">구독 중</button>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="dash-footer">
+      <div class="footer-inner">
+        <p>&copy; 2026 Foresto Compass. All rights reserved.</p>
+        <p>본 서비스는 교육 목적의 참고 자료이며, 투자 권유/추천이 아닙니다.</p>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- ===== SKELETON VIEW ===== -->
+  <div id="view-skeleton" class="hidden">
+
+    <div class="dash-header">
+      <div>
+        <h1><span>Foresto Compass</span> 시장 현황</h1>
+        <div class="date">데이터 불러오는 중...</div>
+      </div>
+    </div>
+
+    <!-- Skeleton KPI -->
+    <div class="kpi-grid">
+      <div class="kpi-card skel-kpi">
+        <div class="skeleton skel-text" style="width:40%"></div>
+        <div class="skeleton skel-title" style="width:70%"></div>
+        <div class="skeleton skel-text" style="width:50%"></div>
+        <div class="skeleton skel-chart"></div>
+      </div>
+      <div class="kpi-card skel-kpi">
+        <div class="skeleton skel-text" style="width:45%"></div>
+        <div class="skeleton skel-title" style="width:60%"></div>
+        <div class="skeleton skel-text" style="width:55%"></div>
+        <div class="skeleton skel-chart"></div>
+      </div>
+      <div class="kpi-card skel-kpi">
+        <div class="skeleton skel-text" style="width:35%"></div>
+        <div class="skeleton skel-title" style="width:65%"></div>
+        <div class="skeleton skel-text" style="width:45%"></div>
+        <div class="skeleton skel-chart"></div>
+      </div>
+      <div class="kpi-card skel-kpi">
+        <div class="skeleton skel-text" style="width:50%"></div>
+        <div class="skeleton skel-title" style="width:55%"></div>
+        <div class="skeleton skel-text" style="width:40%"></div>
+        <div class="skeleton skel-chart"></div>
+      </div>
+    </div>
+
+    <!-- Skeleton AI Summary -->
+    <div style="background:var(--skel-ai-bg); border-radius:var(--radius); padding:24px; margin-bottom:24px;">
+      <div class="skeleton skel-text" style="width:30%; margin-bottom:12px;"></div>
+      <div class="skeleton skel-text" style="width:90%;"></div>
+      <div class="skeleton skel-text" style="width:75%;"></div>
+      <div class="skeleton skel-text" style="width:60%;"></div>
+    </div>
+
+    <!-- Skeleton Movers -->
+    <div class="two-col">
+      <div class="section-card">
+        <div class="skeleton skel-title" style="margin-bottom:16px;"></div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div class="skeleton" style="height:40px;"></div>
+          <div class="skeleton" style="height:40px;"></div>
+          <div class="skeleton" style="height:40px;"></div>
+          <div class="skeleton" style="height:40px;"></div>
+          <div class="skeleton" style="height:40px;"></div>
+        </div>
+      </div>
+      <div class="section-card">
+        <div class="skeleton skel-title" style="margin-bottom:16px;"></div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div class="skeleton" style="height:40px;"></div>
+          <div class="skeleton" style="height:40px;"></div>
+          <div class="skeleton" style="height:40px;"></div>
+          <div class="skeleton" style="height:40px;"></div>
+          <div class="skeleton" style="height:40px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Skeleton Watchlist -->
+    <div class="section-card" style="margin-bottom:24px;">
+      <div class="skeleton skel-title" style="margin-bottom:16px;"></div>
+      <div class="watchlist-grid">
+        <div class="wl-card" style="padding:20px;">
+          <div class="skeleton" style="height:16px;width:50%;margin-bottom:8px;"></div>
+          <div class="skeleton" style="height:12px;width:35%;margin-bottom:16px;"></div>
+          <div class="skeleton" style="height:4px;margin-bottom:4px;"></div>
+          <div class="skeleton" style="height:4px;margin-bottom:4px;"></div>
+          <div class="skeleton" style="height:4px;margin-bottom:4px;"></div>
+          <div class="skeleton" style="height:4px;"></div>
+        </div>
+        <div class="wl-card" style="padding:20px;">
+          <div class="skeleton" style="height:16px;width:45%;margin-bottom:8px;"></div>
+          <div class="skeleton" style="height:12px;width:40%;margin-bottom:16px;"></div>
+          <div class="skeleton" style="height:4px;margin-bottom:4px;"></div>
+          <div class="skeleton" style="height:4px;margin-bottom:4px;"></div>
+          <div class="skeleton" style="height:4px;margin-bottom:4px;"></div>
+          <div class="skeleton" style="height:4px;"></div>
+        </div>
+        <div class="wl-card" style="padding:20px;">
+          <div class="skeleton" style="height:16px;width:55%;margin-bottom:8px;"></div>
+          <div class="skeleton" style="height:12px;width:30%;margin-bottom:16px;"></div>
+          <div class="skeleton" style="height:4px;margin-bottom:4px;"></div>
+          <div class="skeleton" style="height:4px;margin-bottom:4px;"></div>
+          <div class="skeleton" style="height:4px;margin-bottom:4px;"></div>
+          <div class="skeleton" style="height:4px;"></div>
+        </div>
+        <div class="wl-card" style="padding:20px;">
+          <div class="skeleton" style="height:16px;width:40%;margin-bottom:8px;"></div>
+          <div class="skeleton" style="height:12px;width:38%;margin-bottom:16px;"></div>
+          <div class="skeleton" style="height:4px;margin-bottom:4px;"></div>
+          <div class="skeleton" style="height:4px;margin-bottom:4px;"></div>
+          <div class="skeleton" style="height:4px;margin-bottom:4px;"></div>
+          <div class="skeleton" style="height:4px;"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+function showView(view) {
+  document.getElementById('view-redesign').classList.toggle('hidden', view !== 'redesign');
+  document.getElementById('view-skeleton').classList.toggle('hidden', view !== 'skeleton');
+  document.querySelectorAll('.view-toggle button').forEach(btn => {
+    btn.classList.toggle('active', btn.textContent.includes(view === 'redesign' ? 'After' : '스켈레톤'));
+  });
+}
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+}
+</script>
+
+</body>
+</html>

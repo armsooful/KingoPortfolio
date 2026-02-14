@@ -142,7 +142,7 @@ export default function DataManagementPage() {
             <div className="result-icon" style={{ fontSize: '3rem' }}>
               ⚙️
             </div>
-            <h1 className="result-type" style={{ color: '#667eea' }}>
+            <h1 className="result-type">
               데이터 관리
             </h1>
             <p className="result-subtitle">데이터 수집 파이프라인 및 현황 관리</p>

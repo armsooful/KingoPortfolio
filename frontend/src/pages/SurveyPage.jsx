@@ -4,6 +4,7 @@ import { getSurveyQuestions, recordConsent, submitDiagnosis, getProfileCompletio
 import SurveyQuestion from '../components/SurveyQuestion';
 import Disclaimer from '../components/Disclaimer';
 import ProfileCompletionModal from '../components/ProfileCompletionModal';
+import '../styles/Survey.css';
 
 function SurveyPage() {
   const [questions, setQuestions] = useState([]);
@@ -122,8 +123,8 @@ const handleSubmit = async () => {
 
   if (isLoading) {
     return (
-      <div className="loading-container">
-        <div className="spinner"></div>
+      <div className="sv-loading">
+        <div className="sv-spinner"></div>
         <p>설문을 준비 중입니다...</p>
       </div>
     );
@@ -132,7 +133,7 @@ const handleSubmit = async () => {
   if (questions.length === 0) {
     return (
       <div className="survey-container">
-        <div className="error-message">설문을 불러올 수 없습니다.</div>
+        <div className="sv-error">설문을 불러올 수 없습니다.</div>
       </div>
     );
   }
@@ -176,7 +177,7 @@ const handleSubmit = async () => {
         {!showSurvey ? (
           <>
             <Disclaimer type="diagnosis" />
-            {error && <div className="error-message">{error}</div>}
+            {error && <div className="sv-error">{error}</div>}
             <div className="notice-consent">
               <label className="notice-checkbox">
                 <input
@@ -187,7 +188,7 @@ const handleSubmit = async () => {
                 유의사항을 읽고 이해했으며, 이에 동의합니다.
               </label>
               <button
-                className="btn btn-primary"
+                className="sv-btn sv-btn-primary"
                 onClick={handleStartSurvey}
                 disabled={!agreedToNotice || isRecordingConsent}
               >
@@ -212,7 +213,7 @@ const handleSubmit = async () => {
         </div>
 
         {/* 에러 메시지 */}
-        {error && <div className="error-message">{error}</div>}
+        {error && <div className="sv-error">{error}</div>}
 
         {/* 설문 문항 */}
         <div className="question-section">
@@ -242,7 +243,7 @@ const handleSubmit = async () => {
         {/* 버튼 영역 */}
         <div className="button-section">
           <button
-            className="btn btn-secondary"
+            className="sv-btn sv-btn-secondary"
             onClick={handlePrev}
             disabled={currentIndex === 0 || isSubmitting}
           >
@@ -251,7 +252,7 @@ const handleSubmit = async () => {
 
           {currentIndex === questions.length - 1 ? (
             <button
-              className="btn btn-primary"
+              className="sv-btn sv-btn-primary"
               onClick={handleSubmit}
               disabled={!isAllAnswered() || isSubmitting}
             >
@@ -259,7 +260,7 @@ const handleSubmit = async () => {
             </button>
           ) : (
             <button
-              className="btn btn-primary"
+              className="sv-btn sv-btn-primary"
               onClick={handleNext}
               disabled={!isAnswered || isSubmitting}
             >

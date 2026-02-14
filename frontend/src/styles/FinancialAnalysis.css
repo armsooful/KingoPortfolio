@@ -1,3 +1,5 @@
+/* FinancialAnalysis.css — theme-aware */
+
 .financial-analysis {
   padding: 20px;
   max-width: 1400px;
@@ -12,7 +14,7 @@
   font-size: 28px;
   font-weight: 600;
   margin-bottom: 20px;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
 }
 
 .search-box {
@@ -25,18 +27,20 @@
   flex: 1;
   padding: 12px 16px;
   font-size: 16px;
-  border: 2px solid #e0e0e0;
+  border: 2px solid var(--border, #e5e7eb);
   border-radius: 8px;
+  background: var(--card, #ffffff);
+  color: var(--text, #1f2937);
   transition: border-color 0.3s;
 }
 
 .search-box input:focus {
   outline: none;
-  border-color: #4a90e2;
+  border-color: var(--primary, #667eea);
 }
 
 .search-box input:disabled {
-  background-color: #f5f5f5;
+  background-color: var(--card-inner, #fafbfc);
   cursor: not-allowed;
 }
 
@@ -45,7 +49,7 @@
   font-size: 16px;
   font-weight: 600;
   color: white;
-  background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+  background: var(--primary, #667eea);
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -54,29 +58,36 @@
 
 .search-box button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
 .search-box button:disabled {
-  background: #ccc;
+  background: var(--border, #e5e7eb);
+  color: var(--text-muted, #9ca3af);
   cursor: not-allowed;
   transform: none;
 }
 
 .error-message {
   padding: 16px;
-  background-color: #ffebee;
-  color: #c62828;
+  background-color: rgba(220, 38, 38, 0.08);
+  color: var(--stock-down, #dc2626);
   border-radius: 8px;
   margin-bottom: 20px;
-  border-left: 4px solid #c62828;
+  border-left: 4px solid var(--stock-down, #dc2626);
+}
+
+[data-theme="dark"] .error-message {
+  background-color: rgba(153, 27, 27, 0.15);
+  color: #fca5a5;
+  border-left-color: #991b1b;
 }
 
 .analysis-results {
-  animation: fadeIn 0.5s;
+  animation: fa-fadeIn 0.5s;
 }
 
-@keyframes fadeIn {
+@keyframes fa-fadeIn {
   from {
     opacity: 0;
     transform: translateY(20px);
@@ -90,19 +101,19 @@
 .company-info {
   margin-bottom: 30px;
   padding-bottom: 20px;
-  border-bottom: 2px solid #e0e0e0;
+  border-bottom: 2px solid var(--border, #e5e7eb);
 }
 
 .company-info h3 {
   font-size: 32px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
   margin-bottom: 8px;
 }
 
 .company-info .symbol {
   font-size: 18px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   font-weight: 500;
 }
 
@@ -114,27 +125,32 @@
 }
 
 .score-card {
-  background: white;
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 16px;
   padding: 30px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   text-align: center;
   transition: all 0.3s;
 }
 
 .score-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-md, 0 8px 24px rgba(0, 0, 0, 0.12));
 }
 
 .score-card.highlighted {
-  background: linear-gradient(135deg, #f8f9ff 0%, #fff5f8 100%);
-  border: 2px solid #4a90e2;
+  border: 2px solid var(--primary, #667eea);
+  background: var(--card, #ffffff);
+}
+
+[data-theme="dark"] .score-card.highlighted {
+  background: rgba(102, 126, 234, 0.05);
 }
 
 .score-card h4 {
   font-size: 18px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   margin-bottom: 20px;
   font-weight: 600;
 }
@@ -144,7 +160,7 @@
   height: 180px;
   margin: 0 auto 20px;
   border-radius: 50%;
-  border: 8px solid #e0e0e0;
+  border: 8px solid var(--border, #e5e7eb);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -155,7 +171,7 @@
 .score-value {
   font-size: 48px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
 }
 
 .score-grade {
@@ -166,20 +182,20 @@
 
 .score-rating {
   font-size: 16px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   margin-bottom: 16px;
 }
 
 .investment-style {
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--border, #e5e7eb);
 }
 
 .style-badge {
   display: inline-block;
   padding: 8px 16px;
-  background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+  background: var(--primary, #667eea);
   color: white;
   border-radius: 20px;
   font-weight: 600;
@@ -189,16 +205,17 @@
 
 .style-desc {
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   line-height: 1.5;
   margin-top: 8px;
 }
 
 .score-details {
-  background: white;
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 16px;
   padding: 30px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   margin-bottom: 30px;
 }
 
@@ -206,7 +223,7 @@
   font-size: 20px;
   font-weight: 600;
   margin-bottom: 20px;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
 }
 
 .score-bars {
@@ -227,19 +244,20 @@
 .score-details .bar-label {
   font-size: 14px;
   font-weight: 600;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
 }
 
 .score-details .bar-container {
   height: 24px;
-  background: #f0f0f0;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border-light, #f3f4f6);
   border-radius: 12px;
   overflow: hidden;
 }
 
 .score-details .bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #4a90e2 0%, #357abd 100%);
+  background: var(--primary, #667eea);
   border-radius: 12px;
   transition: width 0.5s ease;
 }
@@ -247,23 +265,24 @@
 .score-details .bar-value {
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
   text-align: right;
 }
 
 .metrics-section {
-  background: white;
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 16px;
   padding: 30px;
   margin-bottom: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .metrics-section h4 {
   font-size: 20px;
   font-weight: 600;
   margin-bottom: 20px;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
 }
 
 .metrics-grid {
@@ -277,29 +296,34 @@
   flex-direction: column;
   gap: 8px;
   padding: 16px;
-  background: #f8f9fa;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border-light, #f3f4f6);
   border-radius: 12px;
   transition: all 0.3s;
 }
 
 .metric-item:hover {
-  background: #e8f0fe;
+  background: var(--card-hover, #f9fafb);
   transform: translateY(-2px);
+}
+
+[data-theme="dark"] .metric-item:hover {
+  background: rgba(102, 126, 234, 0.08);
 }
 
 .metric-label {
   font-size: 13px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   font-weight: 500;
 }
 
 .metric-value {
   font-size: 24px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
 }
 
-/* 반응형 디자인 */
+/* ── Responsive ── */
 @media (max-width: 768px) {
   .financial-analysis {
     padding: 16px;

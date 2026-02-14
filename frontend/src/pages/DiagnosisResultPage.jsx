@@ -25,8 +25,8 @@ function DiagnosisResultPage() {
 
   if (isLoading) {
     return (
-      <div className="loading-container">
-        <div className="spinner"></div>
+      <div className="dr-loading">
+        <div className="dr-spinner"></div>
         <p>결과를 준비 중입니다...</p>
       </div>
     );
@@ -35,7 +35,7 @@ function DiagnosisResultPage() {
   if (!result) {
     return (
       <div className="result-container">
-        <div className="error-message">진단 결과를 찾을 수 없습니다.</div>
+        <div className="dr-error-message">진단 결과를 찾을 수 없습니다.</div>
       </div>
     );
   }
@@ -220,19 +220,19 @@ function DiagnosisResultPage() {
         {/* 버튼 영역 */}
         <div className="button-section">
           <button
-            className="btn btn-primary dr-btn-primary-wide"
+            className="dr-btn dr-btn-primary dr-btn-primary-wide"
             onClick={() => navigate('/scenarios')}
           >
             시나리오 모의실험 시작하기
           </button>
           <button
-            className="btn btn-secondary"
+            className="dr-btn dr-btn-secondary"
             onClick={() => navigate('/history')}
           >
             진단 이력
           </button>
           <button
-            className="btn btn-secondary"
+            className="dr-btn dr-btn-secondary"
             onClick={() => navigate('/survey')}
           >
             다시 진단

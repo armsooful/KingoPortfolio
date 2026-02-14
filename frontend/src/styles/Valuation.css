@@ -1,3 +1,5 @@
+/* Valuation.css — theme-aware */
+
 .valuation {
   padding: 20px;
   max-width: 1400px;
@@ -12,7 +14,7 @@
   font-size: 28px;
   font-weight: 600;
   margin-bottom: 20px;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
 }
 
 .tab-buttons {
@@ -26,31 +28,35 @@
   padding: 12px 24px;
   font-size: 15px;
   font-weight: 600;
-  color: #666;
-  background: #f5f5f5;
-  border: 2px solid #e0e0e0;
+  color: var(--text-secondary, #6b7280);
+  background: var(--card-inner, #fafbfc);
+  border: 2px solid var(--border, #e5e7eb);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s;
 }
 
 .tab-buttons button:hover {
-  background: #e8f0fe;
-  border-color: #4a90e2;
-  color: #4a90e2;
+  background: var(--card-hover, #f9fafb);
+  border-color: var(--primary, #667eea);
+  color: var(--primary, #667eea);
+}
+
+[data-theme="dark"] .tab-buttons button:hover {
+  background: rgba(102, 126, 234, 0.08);
 }
 
 .tab-buttons button.active {
-  background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+  background: var(--primary, #667eea);
   color: white;
-  border-color: #4a90e2;
+  border-color: var(--primary, #667eea);
 }
 
 .valuation-results {
-  animation: fadeIn 0.5s;
+  animation: val-fadeIn 0.5s;
 }
 
-@keyframes fadeIn {
+@keyframes val-fadeIn {
   from {
     opacity: 0;
     transform: translateY(20px);
@@ -61,22 +67,9 @@
   }
 }
 
-.company-info {
-  margin-bottom: 30px;
-  padding-bottom: 20px;
-  border-bottom: 2px solid #e0e0e0;
-}
-
-.company-info h3 {
-  font-size: 32px;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin-bottom: 8px;
-}
-
 .timestamp {
   font-size: 14px;
-  color: #999;
+  color: var(--text-muted, #9ca3af);
 }
 
 .summary-section {
@@ -87,14 +80,15 @@
   font-size: 20px;
   font-weight: 600;
   margin-bottom: 20px;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
 }
 
 .valuation-summary-card {
-  background: white;
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 16px;
   padding: 30px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .valuation-note-badge {
@@ -102,8 +96,9 @@
   padding: 16px 32px;
   font-size: 18px;
   font-weight: 600;
-  color: #333;
-  background: #f5f5f5;
+  color: var(--text, #1f2937);
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 12px;
   margin-bottom: 24px;
 }
@@ -119,13 +114,14 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  background: #f8f9fa;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border-light, #f3f4f6);
   border-radius: 8px;
 }
 
 .valuation-item .method {
   font-weight: 600;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
 }
 
 .valuation-item .result {
@@ -134,23 +130,24 @@
 }
 
 .section-card {
-  background: white;
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 16px;
   padding: 30px;
   margin-bottom: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .section-card h4 {
   font-size: 20px;
   font-weight: 600;
   margin-bottom: 16px;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
 }
 
 .sector-info {
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   margin-bottom: 20px;
 }
 
@@ -161,7 +158,8 @@
 }
 
 .multiple-card {
-  background: #f8f9fa;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border-light, #f3f4f6);
   border-radius: 12px;
   padding: 20px;
   transition: all 0.3s;
@@ -169,13 +167,13 @@
 
 .multiple-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .multiple-card h5 {
   font-size: 16px;
   font-weight: 600;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   margin-bottom: 12px;
 }
 
@@ -188,12 +186,12 @@
 }
 
 .value-row span {
-  color: #666;
+  color: var(--text-secondary, #6b7280);
 }
 
 .value-row strong {
   font-size: 24px;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
 }
 
 .status-badge {
@@ -213,7 +211,8 @@
 }
 
 .scenario-card {
-  background: #f8f9fa;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border-light, #f3f4f6);
   border-radius: 12px;
   padding: 24px;
   transition: all 0.3s;
@@ -221,19 +220,19 @@
 
 .scenario-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .scenario-card h5 {
   font-size: 18px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
   margin-bottom: 8px;
 }
 
 .description {
   font-size: 13px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   margin-bottom: 16px;
 }
 
@@ -246,12 +245,12 @@
 }
 
 .price-row span {
-  color: #666;
+  color: var(--text-secondary, #6b7280);
 }
 
 .price-row strong {
   font-size: 20px;
-  color: #1a1a1a;
+  color: var(--text, #1f2937);
 }
 
 .upside-badge {
@@ -268,19 +267,29 @@
 
 .note {
   font-size: 13px;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   margin-bottom: 16px;
   padding: 12px;
-  background: #fff8e1;
+  background: rgba(255, 193, 7, 0.08);
   border-left: 4px solid #ffc107;
   border-radius: 4px;
 }
 
+[data-theme="dark"] .note {
+  background: rgba(255, 193, 7, 0.12);
+  color: #fde68a;
+}
+
 .error-text {
-  color: #f44336;
+  color: var(--stock-down, #dc2626);
   font-size: 13px;
 }
 
+[data-theme="dark"] .error-text {
+  color: #fca5a5;
+}
+
+/* ── Responsive ── */
 @media (max-width: 768px) {
   .valuation {
     padding: 16px;

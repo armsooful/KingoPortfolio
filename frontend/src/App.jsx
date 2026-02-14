@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { getCurrentUser, logout as logoutApi } from './services/api';
+import { ThemeContext, useThemeInit } from './hooks/useTheme';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import LandingPage from './pages/LandingPage';
@@ -140,8 +141,10 @@ function ProtectedRoute({ children }) {
 
 function AppContent() {
   const { isAuthenticated } = useAuth();
+  const themeValue = useThemeInit();
 
   return (
+    <ThemeContext.Provider value={themeValue}>
     <div className="app">
       {isAuthenticated && <Header />}
       <main className="main-content">
@@ -384,6 +387,7 @@ function AppContent() {
       </main>
       <Footer />
     </div>
+    </ThemeContext.Provider>
   );
 }
 

@@ -112,7 +112,7 @@ function PortfolioRecommendationPage() {
           <p>진단 결과가 없습니다. 먼저 투자 성향 진단을 진행해주세요.</p>
         </div>
         <div className="portfolio-modal-footer">
-          <button className="btn-primary" onClick={() => navigate('/survey')}>
+          <button className="pr-btn-primary" onClick={() => navigate('/survey')}>
             진단 바로가기
           </button>
         </div>
@@ -123,8 +123,8 @@ function PortfolioRecommendationPage() {
   if (loading) {
     return (
       <div className="portfolio-page">
-        <div className="loading-container">
-          <div className="spinner"></div>
+        <div className="pr-loading">
+          <div className="pr-spinner"></div>
           <p>포트폴리오를 생성하고 있습니다...</p>
         </div>
         {diagnosisModal}
@@ -135,9 +135,9 @@ function PortfolioRecommendationPage() {
   if (error) {
     return (
       <div className="portfolio-page">
-        <div className="error-container">
-          <p className="error-message">{error}</p>
-          <button onClick={() => navigate('/survey')} className="btn-primary">
+        <div className="pr-error">
+          <p className="pr-error-message">{error}</p>
+          <button onClick={() => navigate('/survey')} className="pr-btn-primary">
             학습 성향 진단하기
           </button>
         </div>
@@ -369,10 +369,10 @@ function PortfolioRecommendationPage() {
           <h3>더 많은 자산 배분 전략을 학습하시겠습니까?</h3>
           <p>⚠️ 본 시뮬레이션은 교육 목적의 학습 도구이며, 투자 권유·자문 서비스를 제공하지 않습니다. 실제 투자 결정은 본인의 판단과 책임 하에 신중히 하시기 바랍니다.</p>
           <div className="cta-buttons">
-            <button onClick={() => navigate('/diagnosis/history')} className="btn-secondary">
+            <button onClick={() => navigate('/diagnosis/history')} className="pr-btn-secondary">
               이전 진단 보기
             </button>
-            <button onClick={() => navigate('/survey')} className="btn-primary">
+            <button onClick={() => navigate('/survey')} className="pr-btn-primary">
               새로운 분석하기
             </button>
           </div>

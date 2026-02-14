@@ -95,7 +95,7 @@ export default function AdminPage() {
             <div className="result-icon" style={{ fontSize: '3rem' }}>
               ⚙️
             </div>
-            <h1 className="result-type" style={{ color: '#667eea' }}>
+            <h1 className="result-type">
               관리자 도구
             </h1>
             <p className="result-subtitle">

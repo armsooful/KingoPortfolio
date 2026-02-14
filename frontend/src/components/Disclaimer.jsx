@@ -51,38 +51,28 @@ const Disclaimer = ({ type = 'general' }) => {
         '과거의 성과가 미래의 수익을 보장하지 않으며, 실제 투자 시에는 예상치 못한 변수가 발생할 수 있습니다.',
         '백테스트 결과만으로 투자 결정을 내리지 마시고, 충분한 검토와 전문가 상담이 필요합니다.'
       ]
+    },
+    simulation: {
+      title: '⚠️ 투자 유의사항',
+      content: [
+        '본 서비스에서 제공하는 모든 정보는 투자 참고용으로만 제공되며, 투자 권유나 매매 추천이 아닙니다.',
+        '모든 투자 결정은 이용자 본인의 판단과 책임 하에 이루어져야 하며, 투자로 인한 손실에 대해 당사는 법적 책임을 지지 않습니다.',
+        '과거 수익률이나 시뮬레이션 결과는 미래의 투자 성과를 보장하지 않습니다.',
+        '투자 전에는 반드시 전문가와 상담하시기 바랍니다.'
+      ]
     }
   };
 
   const selected = disclaimers[type] || disclaimers.general;
 
   return (
-    <div style={{
-      background: 'rgba(255, 243, 224, 0.95)',
-      borderLeft: '4px solid #ff9800',
-      padding: '1.5rem',
-      borderRadius: '16px',
-      marginBottom: '2rem',
-      boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)'
-    }}>
-      <h3 style={{
-        fontSize: '1.1rem',
-        fontWeight: '700',
-        color: '#e65100',
-        marginBottom: '1rem',
-        marginTop: 0
-      }}>
+    <div className="disclaimer-box">
+      <h3 className="disclaimer-title">
         {selected.title}
       </h3>
-      <ul style={{
-        fontSize: '0.9rem',
-        color: '#f57c00',
-        margin: 0,
-        paddingLeft: '1.2rem',
-        lineHeight: '1.6'
-      }}>
+      <ul className="disclaimer-list">
         {selected.content.map((item, index) => (
-          <li key={index} style={{ marginBottom: '0.5rem' }}>
+          <li key={index}>
             {item}
           </li>
         ))}

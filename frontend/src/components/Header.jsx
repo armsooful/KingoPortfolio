@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../App';
+import { useTheme } from '../hooks/useTheme';
 import { getProfileCompletionStatus } from '../services/api';
 
 function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [openGroup, setOpenGroup] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileIncomplete, setProfileIncomplete] = useState(false);
@@ -223,6 +225,17 @@ function Header() {
             );
           })}
         </nav>
+
+        {/* 다크모드 토글 */}
+        <button
+          className="theme-toggle"
+          onClick={toggleTheme}
+          title={theme === 'dark' ? '라이트모드로 전환' : '다크모드로 전환'}
+          aria-label="테마 전환"
+        >
+          <span className="icon-sun" style={{ opacity: theme === 'light' ? 1 : 0, transform: theme === 'light' ? 'rotate(0deg)' : 'rotate(90deg)', position: 'absolute', transition: 'opacity 0.3s, transform 0.3s' }}>&#9728;&#65039;</span>
+          <span className="icon-moon" style={{ opacity: theme === 'dark' ? 1 : 0, transform: theme === 'dark' ? 'rotate(0deg)' : 'rotate(-90deg)', position: 'absolute', transition: 'opacity 0.3s, transform 0.3s' }}>&#127769;</span>
+        </button>
 
         {/* 사용자 정보 및 로그아웃 */}
         <div className="header-user">

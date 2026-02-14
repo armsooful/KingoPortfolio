@@ -1,6 +1,4 @@
-/* ============================================================
-   PortfolioComparisonPage Styles
-   ============================================================ */
+/* PortfolioComparison.css — theme-aware */
 
 /* Card max-width override */
 .pc-card {
@@ -11,14 +9,15 @@
 .pc-section-panel {
   margin-top: 32px;
   padding: 24px;
-  background: #f8f9fa;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 12px;
 }
 
 .pc-section-title {
   font-size: 1.2rem;
   margin-bottom: 16px;
-  color: #333;
+  color: var(--text, #1f2937);
 }
 
 /* Portfolio selection grid */
@@ -31,22 +30,22 @@
 
 .pc-portfolio-item {
   padding: 16px;
-  background: white;
-  color: #333;
+  background: var(--card, #ffffff);
+  color: var(--text, #1f2937);
   border-radius: 8px;
   cursor: pointer;
-  border: 2px solid #e0e0e0;
+  border: 2px solid var(--border, #e5e7eb);
   transition: all 0.2s;
 }
 
 .pc-portfolio-item:hover {
-  border-color: #667eea;
+  border-color: var(--primary, #667eea);
 }
 
 .pc-portfolio-item.selected {
-  background: #667eea;
+  background: var(--primary, #667eea);
   color: white;
-  border-color: #667eea;
+  border-color: var(--primary, #667eea);
 }
 
 .pc-portfolio-name {
@@ -71,14 +70,21 @@
   display: block;
   margin-bottom: 8px;
   font-weight: 600;
-  color: #333;
+  color: var(--text, #1f2937);
 }
 
 .pc-select {
   padding: 12px 16px;
-  border: 2px solid #e0e0e0;
+  border: 2px solid var(--border, #e5e7eb);
   border-radius: 8px;
   font-size: 1rem;
+  background: var(--card, #ffffff);
+  color: var(--text, #1f2937);
+}
+
+.pc-select:focus {
+  outline: none;
+  border-color: var(--primary, #667eea);
 }
 
 .pc-compare-btn {
@@ -90,10 +96,16 @@
 .pc-error {
   margin-top: 24px;
   padding: 16px;
-  background: #fee;
+  background: rgba(220, 38, 38, 0.08);
   border-radius: 8px;
-  color: #c33;
-  border: 1px solid #fcc;
+  color: var(--stock-down, #dc2626);
+  border: 1px solid var(--stock-down, #dc2626);
+}
+
+[data-theme="dark"] .pc-error {
+  background: rgba(153, 27, 27, 0.15);
+  color: #fca5a5;
+  border-color: #991b1b;
 }
 
 /* Results area */
@@ -104,25 +116,25 @@
 /* Chart box */
 .pc-chart-box {
   padding: 24px;
-  background: white;
+  background: var(--card, #ffffff);
   border-radius: 12px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border, #e5e7eb);
   margin-bottom: 24px;
   height: 400px;
 }
 
-/* Stats section (no fixed height) */
+/* Stats section */
 .pc-stats-box {
   padding: 24px;
-  background: white;
+  background: var(--card, #ffffff);
   border-radius: 12px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border, #e5e7eb);
 }
 
 .pc-chart-title {
   font-size: 1.5rem;
   margin-bottom: 20px;
-  color: #667eea;
+  color: var(--primary, #667eea);
 }
 
 /* Table */
@@ -137,13 +149,15 @@
 }
 
 .pc-table thead {
-  background: #f8f9fa;
+  background: var(--card-inner, #fafbfc);
 }
 
 .pc-table th {
   padding: 12px;
-  border-bottom: 2px solid #ddd;
+  border-bottom: 2px solid var(--border, #e5e7eb);
   text-align: left;
+  color: var(--text, #1f2937);
+  font-weight: 600;
 }
 
 .pc-table th.right {
@@ -152,7 +166,8 @@
 
 .pc-table td {
   padding: 12px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-light, #f3f4f6);
+  color: var(--text, #1f2937);
 }
 
 .pc-table td.right {
@@ -165,16 +180,20 @@
 
 .pc-table td.return-positive {
   font-weight: 600;
-  color: #4caf50;
+  color: var(--stock-up, #16a34a);
 }
 
 .pc-table td.return-negative {
   font-weight: 600;
-  color: #f44336;
+  color: var(--stock-down, #dc2626);
 }
 
 .pc-table tbody tr:nth-child(even) {
-  background: #f9f9f9;
+  background: var(--card-inner, #fafbfc);
+}
+
+.pc-table tbody tr:hover {
+  background: var(--card-hover, #f9fafb);
 }
 
 /* Footer buttons */
@@ -187,4 +206,20 @@
 
 .pc-footer .btn {
   padding: 12px 24px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .pc-portfolio-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pc-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pc-compare-btn {
+    margin-top: 0;
+  }
 }

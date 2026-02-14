@@ -1,44 +1,56 @@
+/* TerminologyPage.css — theme-aware */
+
 .terminology-page {
   max-width: 900px;
   margin: 0 auto;
-  padding: 2.5rem 1.5rem 3rem;
+  padding: 2rem 1rem;
 }
 
 .terminology-card {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 2rem;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
-  color: #1f2937;
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: var(--radius, 12px);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  color: var(--text, #1f2937);
 }
 
+/* ── Search ── */
 .terminology-search {
   margin: 0 0 1.5rem;
   position: sticky;
-  top: 120px;
-  background: #ffffff;
+  top: 64px;
+  background: var(--card, #ffffff);
   padding: 0.75rem 0;
   z-index: 5;
 }
 
 .terminology-search input {
   width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 10px;
-  font-size: 0.95rem;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: var(--card-inner, #fafbfc);
+  color: var(--text, #1f2937);
+  transition: border-color 0.2s;
+}
+
+.terminology-search input::placeholder {
+  color: var(--text-muted, #9ca3af);
 }
 
 .terminology-search input:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  border-color: var(--primary, #667eea);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
 }
 
+/* ── Search Results (chips) ── */
 .terminology-results {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.4rem;
   margin-top: 0.75rem;
   max-height: 180px;
   overflow-y: auto;
@@ -46,64 +58,110 @@
 }
 
 .terminology-result {
-  border: 1px solid #cbd5f5;
-  background: #eef2ff;
-  color: #4338ca;
+  border: 1px solid var(--border, #e5e7eb);
+  background: var(--card-inner, #fafbfc);
+  color: var(--primary, #667eea);
   border-radius: 999px;
-  padding: 0.35rem 0.9rem;
-  font-size: 0.85rem;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 600;
   cursor: pointer;
+  transition: all 0.15s;
 }
 
 .terminology-result:hover {
-  background: #e0e7ff;
+  background: var(--card-hover, #f8f9ff);
+  border-color: var(--primary, #667eea);
 }
 
+/* ── Headings ── */
 .terminology-card h1 {
-  margin: 0 0 1.25rem;
-  font-size: 2rem;
-  color: #0f172a;
+  margin: 0 0 1rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text, #1f2937);
 }
 
 .terminology-card h2 {
-  margin: 2rem 0 0.75rem;
-  font-size: 1.4rem;
-  color: #111827;
+  margin: 1.75rem 0 0.75rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text, #1f2937);
+  padding-bottom: 0.4rem;
+  border-bottom: 2px solid var(--primary, #667eea);
 }
 
 .terminology-card h3 {
-  margin: 1.25rem 0 0.5rem;
-  font-size: 1.1rem;
-  color: #1f2937;
+  margin: 1.25rem 0 0.4rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text, #1f2937);
 }
 
+/* ── Content ── */
 .terminology-paragraph {
-  margin: 0.65rem 0;
-  line-height: 1.6;
-  color: #374151;
+  margin: 0.5rem 0;
+  line-height: 1.7;
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.875rem;
 }
 
 .terminology-card ul {
   padding-left: 1.2rem;
-  margin: 0.4rem 0 1rem;
-  color: #374151;
+  margin: 0.35rem 0 0.75rem;
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.875rem;
 }
 
 .terminology-card li {
-  margin: 0.35rem 0;
-  line-height: 1.6;
+  margin: 0.25rem 0;
+  line-height: 1.7;
+}
+
+.terminology-card li::marker {
+  color: var(--primary, #667eea);
+}
+
+.terminology-card strong {
+  color: var(--text, #1f2937);
 }
 
 .terminology-card hr {
   border: none;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border, #e5e7eb);
   margin: 1.5rem 0;
 }
 
+/* ── States ── */
 .terminology-status {
-  color: #6b7280;
+  color: var(--text-muted, #9ca3af);
+  font-size: 0.875rem;
 }
 
 .terminology-error {
-  color: #dc2626;
+  color: var(--stock-down, #dc2626);
+  font-size: 0.875rem;
+}
+
+[data-theme="dark"] .terminology-error {
+  color: #fca5a5;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .terminology-page {
+    padding: 1.5rem 0.75rem;
+  }
+
+  .terminology-card {
+    padding: 1.25rem;
+  }
+
+  .terminology-card h1 {
+    font-size: 1.25rem;
+  }
+
+  .terminology-card h2 {
+    font-size: 1.05rem;
+  }
 }

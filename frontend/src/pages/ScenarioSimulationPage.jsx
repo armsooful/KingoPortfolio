@@ -113,8 +113,8 @@ function ScenarioSimulationPage() {
   if (loading) {
     return (
       <div className="scenario-page">
-        <div className="loading-container">
-          <div className="spinner"></div>
+        <div className="scenario-loading">
+          <div className="scenario-spinner"></div>
           <p>시나리오를 불러오는 중...</p>
         </div>
       </div>
@@ -144,7 +144,7 @@ function ScenarioSimulationPage() {
               className={`scenario-card ${selectedScenario === scenario.id ? 'selected' : ''}`}
               onClick={() => setSelectedScenario(scenario.id)}
               style={{
-                borderColor: selectedScenario === scenario.id ? getScenarioColor(scenario.id) : '#e0e0e0'
+                borderColor: selectedScenario === scenario.id ? getScenarioColor(scenario.id) : undefined
               }}
             >
               <div
@@ -301,7 +301,7 @@ function ScenarioSimulationPage() {
 
           {/* 에러 메시지 */}
           {error && (
-            <div className="error-message">
+            <div className="scenario-error">
               <p>{error}</p>
             </div>
           )}
@@ -314,7 +314,7 @@ function ScenarioSimulationPage() {
           >
             {simulating ? (
               <>
-                <span className="spinner-small"></span>
+                <span className="scenario-spinner-small"></span>
                 모의실험 실행 중...
               </>
             ) : (

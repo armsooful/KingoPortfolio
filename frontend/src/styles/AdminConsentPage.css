@@ -1,3 +1,5 @@
+/* AdminConsentPage.css — theme-aware */
+
 .admin-consent-page {
   max-width: 1200px;
   margin: 0 auto;
@@ -5,21 +7,22 @@
 }
 
 .admin-consent-card {
-  background: #ffffff;
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 16px;
   padding: 2rem;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .admin-consent-header h1 {
   margin: 0 0 0.5rem;
   font-size: 1.8rem;
-  color: #111827;
+  color: var(--text, #1f2937);
 }
 
 .admin-consent-header p {
   margin: 0 0 1.5rem;
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
 }
 
 .admin-consent-filters {
@@ -38,20 +41,27 @@
 
 .filter-field label {
   font-size: 0.9rem;
-  color: #374151;
+  color: var(--text, #1f2937);
 }
 
 .filter-field input {
   padding: 0.6rem 0.8rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 10px;
   font-size: 0.9rem;
+  background: var(--card, #ffffff);
+  color: var(--text, #1f2937);
+}
+
+.filter-field input:focus {
+  outline: none;
+  border-color: var(--primary, #667eea);
 }
 
 .admin-consent-table {
   display: flex;
   flex-direction: column;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -61,9 +71,9 @@
   grid-template-columns: 1fr 1.5fr 1fr 0.7fr 1.4fr;
   gap: 1rem;
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-light, #f3f4f6);
   font-size: 0.9rem;
-  color: #374151;
+  color: var(--text, #1f2937);
 }
 
 .admin-consent-row:last-child {
@@ -71,7 +81,7 @@
 }
 
 .admin-consent-header-row {
-  background: #f8fafc;
+  background: var(--card-inner, #fafbfc);
   font-weight: 600;
-  color: #111827;
+  color: var(--text, #1f2937);
 }

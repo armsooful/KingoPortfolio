@@ -1,237 +1,239 @@
+/* ScenarioSimulation.css */
+
 .scenario-page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2rem 1rem;
 }
 
-/* 헤더 */
+/* ── Header ── */
 .scenario-header {
-  text-align: center;
-  margin-bottom: 2rem;
-  color: white;
+  margin-bottom: 1.5rem;
 }
 
 .scenario-header h1 {
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+  color: var(--text, #1f2937);
 }
 
 .scenario-header .subtitle {
-  font-size: 1.1rem;
-  opacity: 0.9;
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.875rem;
+  margin: 0;
   max-width: 600px;
-  margin: 0 auto;
 }
 
-/* 로딩 */
-.loading-container {
+/* ── Loading ── */
+.scenario-loading {
   text-align: center;
-  padding: 4rem 2rem;
-  color: white;
+  padding: 3rem 1rem;
+  color: var(--text-secondary, #6b7280);
 }
 
-.spinner {
-  width: 50px;
-  height: 50px;
-  border: 5px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
+.scenario-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--border, #e5e7eb);
+  border-top-color: var(--primary, #667eea);
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  animation: scenario-spin 0.8s linear infinite;
   margin: 0 auto 1rem;
 }
 
-.spinner-small {
+.scenario-spinner-small {
   display: inline-block;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border: 3px solid rgba(255, 255, 255, 0.3);
   border-top-color: white;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  animation: scenario-spin 0.8s linear infinite;
   margin-right: 0.5rem;
   vertical-align: middle;
 }
 
-@keyframes spin {
+@keyframes scenario-spin {
   to { transform: rotate(360deg); }
 }
 
-/* 시나리오 선택 섹션 */
+/* ── Scenario Selection Section ── */
 .scenario-selection {
-  background: white;
-  border-radius: 15px;
-  padding: 2rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  margin-bottom: 2rem;
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: var(--radius, 12px);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 1.5rem;
 }
 
 .scenario-selection h2 {
-  color: #333;
-  margin-bottom: 1.5rem;
-  font-size: 1.5rem;
+  color: var(--text, #1f2937);
+  margin-bottom: 1.25rem;
+  font-size: 1.15rem;
+  font-weight: 700;
 }
 
 .scenario-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
 }
 
 .scenario-card {
-  background: #f9f9f9;
-  border: 3px solid #e0e0e0;
-  border-radius: 15px;
-  padding: 1.5rem;
+  background: var(--card-inner, #fafbfc);
+  border: 2px solid var(--border, #e5e7eb);
+  border-radius: var(--radius, 12px);
+  padding: 1.25rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   position: relative;
 }
 
 .scenario-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary, #667eea);
 }
 
 .scenario-card.selected {
-  background: white;
-  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+  background: var(--card, #ffffff);
+  box-shadow: var(--shadow-md);
 }
 
 .scenario-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.8rem;
-  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .scenario-card h3 {
-  font-size: 1.3rem;
-  color: #333;
-  margin-bottom: 0.5rem;
+  font-size: 1.05rem;
+  color: var(--text, #1f2937);
+  margin-bottom: 0.35rem;
+  font-weight: 700;
 }
 
 .scenario-desc {
-  color: #666;
-  font-size: 0.95rem;
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.85rem;
   line-height: 1.5;
 }
 
 .selected-badge {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  top: 8px;
+  right: 8px;
+  background: linear-gradient(135deg, var(--primary, #667eea), var(--accent, #764ba2));
   color: white;
-  padding: 0.25rem 0.75rem;
-  border-radius: 15px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
 }
 
-/* 시나리오 상세 */
+/* ── Scenario Detail Section ── */
 .scenario-detail {
-  background: white;
-  border-radius: 15px;
-  padding: 2rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  margin-bottom: 2rem;
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: var(--radius, 12px);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 1.5rem;
 }
 
 .scenario-detail h2 {
-  color: #333;
-  margin-bottom: 1rem;
-  font-size: 1.5rem;
+  color: var(--text, #1f2937);
+  margin-bottom: 0.75rem;
+  font-size: 1.15rem;
+  font-weight: 700;
 }
 
 .detail-description {
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   line-height: 1.6;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.9rem;
 }
 
 .detail-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .detail-card {
-  background: #f5f5f5;
-  border-radius: 12px;
-  padding: 1.5rem;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: var(--radius, 12px);
+  padding: 1.25rem;
 }
 
 .detail-card h4 {
-  color: #333;
-  margin-bottom: 1rem;
-  font-size: 1.1rem;
+  color: var(--text, #1f2937);
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 700;
 }
 
-/* 자산 배분 바 */
+/* Allocation bars */
 .allocation-bars {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.6rem;
 }
 
 .allocation-item {
   display: grid;
-  grid-template-columns: 80px 1fr 50px;
+  grid-template-columns: 70px 1fr 42px;
   align-items: center;
   gap: 0.5rem;
 }
 
 .allocation-item span {
-  font-size: 0.9rem;
-  color: #666;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #6b7280);
 }
 
 .bar-container {
-  height: 20px;
-  background: #e0e0e0;
-  border-radius: 10px;
+  height: 18px;
+  background: var(--border, #e5e7eb);
+  border-radius: 9px;
   overflow: hidden;
 }
 
 .bar {
   height: 100%;
-  border-radius: 10px;
+  border-radius: 9px;
   transition: width 0.5s ease;
 }
 
-.bar-stocks { background-color: #f44336; }
-.bar-bonds { background-color: #2196F3; }
-.bar-money-market { background-color: #4CAF50; }
-.bar-gold { background-color: #FFC107; }
+.bar-stocks { background-color: #ef4444; }
+.bar-bonds { background-color: #3b82f6; }
+.bar-money-market { background-color: #22c55e; }
+.bar-gold { background-color: #eab308; }
 
-/* Inline link button */
-.ss-link-btn {
-  background: none;
-  border: none;
-  color: #667eea;
-  text-decoration: underline;
-  cursor: pointer;
-  padding: 0;
-  font: inherit;
+/* Risk card */
+.risk-card {
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid #fca5a5;
 }
 
-/* 위험 지표 카드 */
-.risk-card {
-  background: linear-gradient(135deg, #fff5f5 0%, #fff 100%);
-  border: 2px solid #ffcdd2;
+[data-theme="dark"] .risk-card {
+  border-color: #7f1d1d;
 }
 
 .risk-items {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.6rem;
 }
 
 .risk-item {
@@ -241,36 +243,41 @@
 }
 
 .risk-item .label {
-  color: #666;
-  font-size: 0.9rem;
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.85rem;
 }
 
 .risk-item .value {
   font-weight: 600;
-  color: #333;
+  color: var(--text, #1f2937);
+  font-size: 0.9rem;
 }
 
 .risk-item .value.negative {
-  color: #f44336;
+  color: #ef4444;
 }
 
 .risk-disclaimer {
-  font-size: 0.8rem;
-  color: #888;
+  font-size: 0.75rem;
+  color: var(--text-muted, #9ca3af);
   font-style: italic;
-  margin-top: 1rem;
+  margin-top: 0.75rem;
 }
 
-/* 학습 포인트 */
+/* Learning points */
 .learning-points {
-  background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
-  border-radius: 12px;
-  padding: 1.5rem;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border, #e5e7eb);
+  border-left: 4px solid var(--primary, #667eea);
+  border-radius: var(--radius, 12px);
+  padding: 1.25rem;
 }
 
 .learning-points h4 {
-  color: #333;
-  margin-bottom: 1rem;
+  color: var(--text, #1f2937);
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 700;
 }
 
 .learning-points ul {
@@ -280,66 +287,88 @@
 }
 
 .learning-points li {
-  padding: 0.5rem 0;
-  padding-left: 1.5rem;
+  padding: 0.35rem 0;
+  padding-left: 1.25rem;
   position: relative;
-  color: #555;
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.875rem;
+  line-height: 1.5;
 }
 
 .learning-points li::before {
-  content: "✓";
+  content: "\2713";
   position: absolute;
   left: 0;
-  color: #667eea;
+  color: var(--primary, #667eea);
   font-weight: bold;
 }
 
-/* 시뮬레이션 설정 */
+/* Inline link button */
+.ss-link-btn {
+  background: none;
+  border: none;
+  color: var(--primary, #667eea);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+}
+
+.ss-link-btn:hover {
+  color: var(--primary-dark, #5568d3);
+}
+
+/* ── Simulation Config ── */
 .simulation-config {
-  background: white;
-  border-radius: 15px;
-  padding: 2rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  margin-bottom: 2rem;
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: var(--radius, 12px);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 1.5rem;
 }
 
 .simulation-config h2 {
-  color: #333;
-  margin-bottom: 1.5rem;
-  font-size: 1.5rem;
+  color: var(--text, #1f2937);
+  margin-bottom: 1.25rem;
+  font-size: 1.15rem;
+  font-weight: 700;
 }
 
 .config-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
   margin-bottom: 1.5rem;
 }
 
 .config-item {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .config-item label {
   font-weight: 600;
-  color: #333;
+  color: var(--text, #1f2937);
+  font-size: 0.875rem;
 }
 
 .config-item select,
 .config-item input[type="text"] {
-  padding: 0.75rem;
-  border: 2px solid #e0e0e0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 8px;
-  font-size: 1rem;
-  transition: border-color 0.3s ease;
+  font-size: 0.875rem;
+  background: var(--card-inner, #fafbfc);
+  color: var(--text, #1f2937);
+  transition: border-color 0.2s;
 }
 
 .config-item select:focus,
 .config-item input[type="text"]:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: var(--primary, #667eea);
 }
 
 .config-item .unit {
@@ -347,145 +376,160 @@
   right: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  color: #666;
+  color: var(--text-secondary, #6b7280);
 }
 
 .loss-limit-input {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .loss-limit-input input[type="range"] {
   flex: 1;
-  height: 8px;
+  height: 6px;
   -webkit-appearance: none;
-  background: linear-gradient(to right, #4CAF50, #FFC107, #f44336);
-  border-radius: 4px;
+  background: linear-gradient(to right, #22c55e, #eab308, #ef4444);
+  border-radius: 3px;
 }
 
 .loss-limit-input input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 20px;
-  height: 20px;
-  background: white;
-  border: 3px solid #667eea;
+  width: 18px;
+  height: 18px;
+  background: var(--card, #ffffff);
+  border: 3px solid var(--primary, #667eea);
   border-radius: 50%;
   cursor: pointer;
 }
 
 .loss-value {
-  font-weight: 600;
-  color: #f44336;
-  min-width: 50px;
+  font-weight: 700;
+  color: #ef4444;
+  min-width: 45px;
   text-align: right;
+  font-size: 0.9rem;
 }
 
 .config-hint {
-  font-size: 0.85rem;
-  color: #888;
-  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--text-muted, #9ca3af);
+  margin-top: 0.15rem;
 }
 
-/* 에러 메시지 */
-.error-message {
-  background: #ffebee;
-  border-left: 4px solid #f44336;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1.5rem;
+/* Error */
+.scenario-error {
+  background: #fef2f2;
+  border-left: 4px solid #ef4444;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
 }
 
-.error-message p {
+[data-theme="dark"] .scenario-error {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.scenario-error p {
   margin: 0;
-  color: #c62828;
+  color: #ef4444;
+  font-size: 0.875rem;
 }
 
-/* 실행 버튼 */
+/* Simulate button */
 .btn-simulate {
   width: 100%;
-  padding: 1.25rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 0.85rem;
+  background: linear-gradient(135deg, var(--primary, #667eea), var(--accent, #764ba2));
   color: white;
   border: none;
-  border-radius: 12px;
-  font-size: 1.2rem;
-  font-weight: 600;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s, box-shadow 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .btn-simulate:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.35);
 }
 
 .btn-simulate:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
 .simulate-note {
   text-align: center;
-  color: #888;
-  font-size: 0.85rem;
-  margin-top: 1rem;
+  color: var(--text-muted, #9ca3af);
+  font-size: 0.8rem;
+  margin-top: 0.75rem;
 }
 
-/* 안내 섹션 */
-.info-section {
-  background: white;
-  border-radius: 15px;
-  padding: 2rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  color: #333;
+/* ── Info Section ── */
+.scenario-page .info-section {
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: var(--radius, 12px);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  color: var(--text, #1f2937);
 }
 
-.info-section h3 {
-  color: #667eea;
-  margin-top: 1.5rem;
-  margin-bottom: 1rem;
+.scenario-page .info-section h3 {
+  color: var(--primary, #667eea);
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
 }
 
-.info-section h3:first-child {
+.scenario-page .info-section h3:first-child {
   margin-top: 0;
 }
 
-.info-section p {
+.scenario-page .info-section p {
   line-height: 1.6;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.9rem;
 }
 
-.info-section ul {
+.scenario-page .info-section ul {
   list-style: none;
   padding-left: 0;
 }
 
-.info-section li {
-  padding: 0.5rem 0;
-  padding-left: 1.5rem;
+.scenario-page .info-section li {
+  padding: 0.35rem 0;
+  padding-left: 1.25rem;
   position: relative;
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.9rem;
 }
 
-.info-section li::before {
-  content: "•";
+.scenario-page .info-section li::before {
+  content: "\2022";
   position: absolute;
   left: 0;
-  color: #667eea;
+  color: var(--primary, #667eea);
   font-weight: bold;
 }
 
-/* 반응형 */
+.scenario-page .info-section li strong {
+  color: var(--text, #1f2937);
+}
+
+/* ── Responsive ── */
 @media (max-width: 768px) {
   .scenario-page {
-    padding: 1rem;
+    padding: 1.5rem 0.75rem;
   }
 
   .scenario-header h1 {
-    font-size: 2rem;
+    font-size: 1.25rem;
   }
 
   .scenario-cards {
@@ -501,6 +545,6 @@
   }
 
   .allocation-item {
-    grid-template-columns: 70px 1fr 40px;
+    grid-template-columns: 60px 1fr 36px;
   }
 }

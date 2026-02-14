@@ -1,50 +1,470 @@
-/* ============================================================
-   DiagnosisHistoryPage Styles
-   ============================================================ */
+/* DiagnosisHistory.css — theme-aware */
 
-/* PDF download button */
-.dh-pdf-btn {
-  margin-top: 10px;
-  width: 100%;
-  padding: 8px 12px;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
+/* ── Loading & Error ── */
+.dh-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+  gap: 1rem;
+}
+
+.dh-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--border, #e5e7eb);
+  border-top-color: var(--primary, #667eea);
+  border-radius: 50%;
+  animation: dh-spin 0.8s linear infinite;
+}
+
+@keyframes dh-spin {
+  to { transform: rotate(360deg); }
+}
+
+.dh-loading p {
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.95rem;
+}
+
+.dh-error {
+  background: var(--card, #ffffff);
+  border: 1px solid var(--stock-down, #dc2626);
+  border-radius: var(--radius, 12px);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+  color: var(--stock-down, #dc2626);
   font-size: 0.9rem;
-  font-weight: 500;
+}
+
+[data-theme="dark"] .dh-error {
+  color: #fca5a5;
+  border-color: #991b1b;
+  background: rgba(153, 27, 27, 0.15);
+}
+
+/* ── Container & Layout ── */
+.history-container {
+  padding: 1.5rem 1rem;
+}
+
+.history-layout {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 1.25rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ── Sections (List & Detail panels) ── */
+.history-container .history-list-section,
+.history-container .history-detail-section {
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: var(--radius, 12px);
+  box-shadow: var(--shadow-sm);
+  padding: 1.25rem;
+}
+
+/* ── Header ── */
+.history-container .history-header {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--border, #e5e7eb);
+}
+
+.history-container .history-header h1 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text, #1f2937);
+  margin-bottom: 0.25rem;
+}
+
+.history-container .history-count {
+  color: var(--text-muted, #9ca3af);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* ── History List ── */
+.history-container .history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+/* ── History Item (selectable card) ── */
+.history-container .history-item {
+  padding: 1rem;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s;
+  background: var(--card, #ffffff);
+}
+
+.history-container .history-item:hover {
+  border-color: var(--primary, #667eea);
+  background: var(--card-inner, #fafbfc);
+}
+
+.history-container .history-item.selected {
+  border-color: var(--primary, #667eea);
+  background: var(--card-inner, #fafbfc);
+  box-shadow: inset 3px 0 0 var(--primary, #667eea);
+}
+
+.history-container .history-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.625rem;
+}
+
+.history-container .history-type-badge {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.history-container .history-date {
+  font-size: 0.8rem;
+  color: var(--text-muted, #9ca3af);
+}
+
+.history-container .history-item-body {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.625rem;
+}
+
+.history-container .history-score,
+.history-container .history-confidence {
+  flex: 1;
+}
+
+.history-container .history-score .label,
+.history-container .history-confidence .label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-muted, #9ca3af);
+}
+
+.history-container .history-score .value,
+.history-container .history-confidence .value {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text, #1f2937);
+}
+
+.history-container .history-investment {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #6b7280);
+  padding-top: 0.625rem;
+  border-top: 1px solid var(--border-light, #f3f4f6);
+}
+
+/* ── PDF Download Button ── */
+.dh-pdf-btn {
+  margin-top: 0.75rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: var(--primary, #667eea);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: opacity 0.2s;
+}
+
+.dh-pdf-btn:hover:not(:disabled) {
+  opacity: 0.9;
 }
 
 .dh-pdf-btn:disabled {
-  background: #ccc;
+  background: var(--border, #e5e7eb);
+  color: var(--text-muted, #9ca3af);
   cursor: not-allowed;
 }
 
-/* Disclaimer text */
+/* ── Empty States ── */
+.history-container .empty-state {
+  text-align: center;
+  padding: 2.5rem 1.25rem;
+  color: var(--text-secondary, #6b7280);
+}
+
+.history-container .empty-state p {
+  margin-bottom: 1.25rem;
+}
+
+.history-container .empty-detail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: var(--text-muted, #9ca3af);
+  text-align: center;
+}
+
+/* ── Detail Card ── */
+.history-container .detail-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.history-container .detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1.25rem;
+  border-bottom: 2px solid var(--border, #e5e7eb);
+}
+
+.history-container .detail-type-badge {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text, #1f2937);
+}
+
+.history-container .detail-date {
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.9rem;
+}
+
+/* ── Detail Scores ── */
+.history-container .detail-scores {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.history-container .score-box {
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border, #e5e7eb);
+  padding: 1rem;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.history-container .score-box .score-label {
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.history-container .score-box .score-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+/* ── Detail Content Sections ── */
+.history-container .detail-description h3,
+.history-container .detail-characteristics h3,
+.history-container .detail-portfolio h3,
+.history-container .detail-return h3,
+.history-container .detail-investment h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  color: var(--text, #1f2937);
+}
+
+.history-container .detail-description p,
+.history-container .detail-return p,
+.history-container .detail-investment p {
+  color: var(--text-secondary, #6b7280);
+  line-height: 1.7;
+  font-size: 0.9rem;
+}
+
+/* ── Characteristics List ── */
+.history-container .detail-characteristics ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.history-container .detail-characteristics li {
+  padding: 0.5rem 0;
+  padding-left: 1.5rem;
+  position: relative;
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.history-container .detail-characteristics li:before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.75rem;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary, #667eea);
+}
+
+/* ── Portfolio Items ── */
+.history-container .portfolio-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.history-container .portfolio-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+}
+
+.history-container .portfolio-asset {
+  font-weight: 600;
+  color: var(--text, #1f2937);
+  font-size: 0.9rem;
+}
+
+.history-container .portfolio-ratio {
+  font-weight: 700;
+  color: var(--primary, #667eea);
+  font-size: 0.9rem;
+}
+
+/* ── Return Value ── */
+.history-container .return-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--primary, #667eea);
+}
+
+/* ── Detail Buttons ── */
+.history-container .detail-buttons {
+  margin-top: 0.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border, #e5e7eb);
+}
+
+.dh-btn-primary {
+  width: 100%;
+  padding: 0.65rem 1.25rem;
+  background: var(--primary, #667eea);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.dh-btn-primary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.dh-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Empty state button */
+.dh-btn-outline {
+  padding: 0.6rem 1.5rem;
+  background: var(--card, #ffffff);
+  color: var(--primary, #667eea);
+  border: 1px solid var(--primary, #667eea);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.dh-btn-outline:hover {
+  background: var(--primary, #667eea);
+  color: #ffffff;
+}
+
+/* ── Disclaimer Texts ── */
 .dh-disclaimer-text {
   font-size: 0.85rem;
-  color: #666;
-  margin-bottom: 12px;
+  color: var(--text-muted, #9ca3af);
+  margin-bottom: 0.75rem;
 }
 
-/* Reference disclaimer */
 .dh-reference-disclaimer {
-  font-size: 0.85rem;
-  color: #888;
-  margin-top: 8px;
+  font-size: 0.8rem;
+  color: var(--text-muted, #9ca3af);
+  margin-top: 0.5rem;
 }
 
-/* Legal notice box */
+/* ── Legal Notice ── */
 .dh-legal-notice {
-  margin-top: 24px;
-  padding: 16px;
-  background: #f8f9fa;
+  padding: 0.75rem 1rem;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border, #e5e7eb);
+  border-left: 4px solid var(--primary, #667eea);
   border-radius: 8px;
   font-size: 0.85rem;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
 }
 
 .dh-legal-notice p {
   margin: 0;
+  line-height: 1.6;
+}
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+  .history-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .history-container .history-list {
+    max-height: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .history-container {
+    padding: 1rem 0.75rem;
+  }
+
+  .history-container .history-list-section,
+  .history-container .history-detail-section {
+    padding: 1rem;
+  }
+
+  .history-container .history-header h1 {
+    font-size: 1.15rem;
+  }
+
+  .history-container .detail-scores {
+    grid-template-columns: 1fr;
+  }
+
+  .history-container .detail-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .history-container .history-list-section,
+  .history-container .history-detail-section {
+    padding: 0.75rem;
+  }
+
+  .history-container .score-box .score-value {
+    font-size: 1.25rem;
+  }
 }

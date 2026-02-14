@@ -97,8 +97,8 @@ function BacktestPage() {
   if (loading) {
     return (
       <div className="backtest-page">
-        <div className="loading-container">
-          <div className="spinner"></div>
+        <div className="backtest-loading">
+          <div className="backtest-spinner"></div>
           <p>백테스트를 실행하고 있습니다...</p>
         </div>
       </div>
@@ -117,15 +117,15 @@ function BacktestPage() {
       <Disclaimer type="backtest" />
 
       {/* 모드 전환 */}
-      <div className="mode-selector">
+      <div className="backtest-mode-selector">
         <button
-          className={`mode-btn ${!compareMode ? 'active' : ''}`}
+          className={`backtest-mode-btn ${!compareMode ? 'active' : ''}`}
           onClick={() => setCompareMode(false)}
         >
           단일 백테스트
         </button>
         <button
-          className={`mode-btn ${compareMode ? 'active' : ''}`}
+          className={`backtest-mode-btn ${compareMode ? 'active' : ''}`}
           onClick={() => setCompareMode(true)}
         >
           포트폴리오 비교
@@ -234,7 +234,7 @@ function BacktestPage() {
 
       {/* 에러 메시지 */}
       {error && (
-        <div className="error-message">
+        <div className="backtest-error">
           <p>{error}</p>
         </div>
       )}
@@ -336,7 +336,7 @@ function BacktestPage() {
           {/* 성과 해석 이동 */}
           <div className="nav-link-section">
             <button
-              className="btn-primary"
+              className="backtest-nav-btn"
               onClick={() => navigate('/analysis', {
                 state: {
                   metrics: {

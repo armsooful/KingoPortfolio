@@ -1,23 +1,22 @@
-/* ============================================================
-   StockDetailPage Styles
-   ============================================================ */
+/* StockDetail.css — theme-aware */
 
-/* Card max-width override */
+/* ── Card override ── */
 .sd-card {
   max-width: 1400px;
 }
 
-/* Search form panel */
+/* ── Search Panel ── */
 .sd-search-panel {
-  margin-top: 32px;
-  padding: 24px;
-  background: #f8f9fa;
-  border-radius: 12px;
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: var(--radius, 12px);
 }
 
 .sd-search-form {
   display: flex;
-  gap: 16px;
+  gap: 1rem;
   align-items: flex-end;
   position: relative;
 }
@@ -29,17 +28,31 @@
 
 .sd-label {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 0.5rem;
   font-weight: 600;
-  color: #333;
+  color: var(--text, #1f2937);
+  font-size: 0.9rem;
 }
 
 .sd-input {
   width: 100%;
-  padding: 12px 16px;
-  border: 2px solid #e0e0e0;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 8px;
   font-size: 1rem;
+  background: var(--card, #ffffff);
+  color: var(--text, #1f2937);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.sd-input:focus {
+  border-color: var(--primary, #667eea);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
+}
+
+[data-theme="dark"] .sd-input:focus {
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.25);
 }
 
 .sd-days-field {
@@ -48,110 +61,128 @@
 
 .sd-select {
   width: 100%;
-  padding: 12px 16px;
-  border: 2px solid #e0e0e0;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 8px;
   font-size: 1rem;
+  background: var(--card, #ffffff);
+  color: var(--text, #1f2937);
+  outline: none;
 }
 
 .sd-search-btn {
-  padding: 12px 32px;
+  padding: 0.7rem 2rem;
   white-space: nowrap;
 }
 
-/* Autocomplete dropdown */
+/* ── Autocomplete ── */
 .sd-suggestions {
   position: absolute;
   top: 100%;
   left: 0;
   right: 0;
-  background: white;
-  border: 1px solid #ddd;
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 8px;
   margin-top: 4px;
   max-height: 300px;
   overflow-y: auto;
   z-index: 1000;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-lg, 0 4px 12px rgba(0, 0, 0, 0.1));
 }
 
 .sd-suggestion-item {
-  padding: 12px 16px;
+  padding: 0.75rem 1rem;
   cursor: pointer;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-light, #f3f4f6);
   transition: background 0.2s;
 }
 
+.sd-suggestion-item:last-child {
+  border-bottom: none;
+}
+
 .sd-suggestion-item:hover {
-  background: #f8f9fa;
+  background: var(--card-hover, #f9fafb);
 }
 
 .sd-suggestion-name {
   font-weight: 600;
-  color: #333;
+  color: var(--text, #1f2937);
 }
 
 .sd-suggestion-meta {
   font-size: 0.85rem;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   margin-top: 4px;
 }
 
-/* Error message */
+/* ── Error ── */
 .sd-error {
-  margin-top: 24px;
-  padding: 16px;
-  background: #fee;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: rgba(220, 38, 38, 0.08);
   border-radius: 8px;
-  color: #c33;
-  border: 1px solid #fcc;
+  color: var(--stock-down, #dc2626);
+  border: 1px solid var(--stock-down, #dc2626);
 }
 
-/* Results area */
+[data-theme="dark"] .sd-error {
+  color: #fca5a5;
+  border-color: #991b1b;
+  background: rgba(153, 27, 27, 0.15);
+}
+
+/* ── Results ── */
 .sd-results {
-  margin-top: 32px;
+  margin-top: 2rem;
 }
 
-/* Info section box */
+/* ── Section ── */
 .sd-section {
-  padding: 24px;
-  background: white;
-  border-radius: 12px;
-  border: 1px solid #e0e0e0;
-  margin-bottom: 24px;
+  padding: 1.5rem;
+  background: var(--card, #ffffff);
+  border-radius: var(--radius, 12px);
+  border: 1px solid var(--border, #e5e7eb);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 1.5rem;
 }
 
 .sd-section-title {
-  font-size: 1.5rem;
-  margin-bottom: 20px;
-  color: #667eea;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0 0 1.25rem 0;
+  color: var(--text, #1f2937);
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--border, #e5e7eb);
 }
 
-/* Info grid */
+/* ── Info Grid ── */
 .sd-info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+  gap: 1rem;
 }
 
 .sd-info-label {
   font-size: 0.85rem;
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   margin-bottom: 4px;
 }
 
 .sd-info-value {
   font-size: 1.1rem;
   font-weight: 600;
+  color: var(--text, #1f2937);
 }
 
 .sd-info-value-highlight {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #667eea;
+  color: var(--primary, #667eea);
 }
 
-/* Table */
+/* ── Data Table ── */
 .sd-table-wrap {
   overflow-x: auto;
   max-height: 500px;
@@ -167,13 +198,15 @@
 .sd-table thead {
   position: sticky;
   top: 0;
-  background: #f8f9fa;
+  background: var(--card-inner, #fafbfc);
 }
 
 .sd-table th {
-  padding: 12px;
-  border-bottom: 2px solid #ddd;
+  padding: 0.75rem;
+  border-bottom: 2px solid var(--border, #e5e7eb);
   text-align: left;
+  font-weight: 600;
+  color: var(--text-secondary, #6b7280);
 }
 
 .sd-table th.right {
@@ -181,8 +214,9 @@
 }
 
 .sd-table td {
-  padding: 10px;
-  border-bottom: 1px solid #eee;
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid var(--border-light, #f3f4f6);
+  color: var(--text, #1f2937);
 }
 
 .sd-table td.right {
@@ -194,31 +228,36 @@
 }
 
 .sd-table td.high {
-  color: #f44336;
+  color: var(--stock-down, #dc2626);
 }
 
 .sd-table td.low {
-  color: #2196f3;
+  color: #2563eb;
+}
+
+[data-theme="dark"] .sd-table td.low {
+  color: #60a5fa;
 }
 
 .sd-table tbody tr:nth-child(even) {
-  background: #f9f9f9;
+  background: var(--card-inner, #fafbfc);
 }
 
-/* Empty state */
+.sd-table tbody tr:hover {
+  background: var(--card-hover, #f9fafb);
+}
+
+/* ── Empty State ── */
 .sd-empty {
   text-align: center;
-  padding: 40px;
-  color: #999;
+  padding: 2.5rem;
+  color: var(--text-muted, #9ca3af);
 }
 
-/* ============================================================
-   Compass Score Section
-   ============================================================ */
-
+/* ── Compass Score ── */
 .sd-compass {
   display: flex;
-  gap: 32px;
+  gap: 2rem;
   align-items: center;
 }
 
@@ -230,7 +269,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: #ffffff;
   flex-shrink: 0;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
@@ -252,27 +291,27 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0.625rem;
 }
 
 .sd-compass-bar-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 0.75rem;
 }
 
 .sd-compass-bar-label {
   width: 90px;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #555;
+  color: var(--text-secondary, #6b7280);
   flex-shrink: 0;
 }
 
 .sd-compass-bar-track {
   flex: 1;
   height: 8px;
-  background: #f0f0f0;
+  background: var(--border, #e5e7eb);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -287,42 +326,44 @@
   width: 50px;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #333;
+  color: var(--text, #1f2937);
   text-align: right;
   flex-shrink: 0;
 }
 
 .sd-compass-summary {
-  margin-top: 16px;
-  padding: 12px 16px;
-  background: #f8f9fa;
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 8px;
   font-size: 0.95rem;
-  color: #444;
+  color: var(--text, #1f2937);
   font-weight: 500;
 }
 
 .sd-compass-commentary {
-  margin-top: 12px;
-  padding: 16px;
-  background: #fafbfc;
+  margin-top: 0.75rem;
+  padding: 1rem;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 8px;
   font-size: 0.9rem;
-  color: #555;
+  color: var(--text-secondary, #6b7280);
   line-height: 1.7;
-  border-left: 3px solid #667eea;
+  border-left: 3px solid var(--primary, #667eea);
 }
 
 .sd-compass-actions {
-  margin-top: 16px;
+  margin-top: 1rem;
 }
 
 .sd-ai-btn {
-  padding: 10px 24px;
+  padding: 0.625rem 1.5rem;
   border: none;
   border-radius: 8px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
+  background: var(--primary, #667eea);
+  color: #ffffff;
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
@@ -335,44 +376,54 @@
 }
 
 .sd-ai-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
   transform: none;
 }
 
 .sd-ai-result {
-  margin-top: 16px;
-  padding: 16px;
-  background: #f5f0ff;
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 8px;
   font-size: 0.9rem;
-  color: #444;
+  color: var(--text-secondary, #6b7280);
   line-height: 1.7;
-  border-left: 3px solid #764ba2;
+  border-left: 3px solid var(--accent, #764ba2);
 }
 
 .sd-ai-result-header {
   font-weight: 700;
-  color: #764ba2;
-  margin-bottom: 8px;
+  color: var(--accent, #764ba2);
+  margin-bottom: 0.5rem;
   font-size: 0.85rem;
 }
 
 .sd-compass-meta {
-  margin-top: 12px;
+  margin-top: 0.75rem;
   font-size: 0.8rem;
-  color: #999;
+  color: var(--text-muted, #9ca3af);
 }
 
 .sd-compass-disclaimer {
-  margin-top: 8px;
+  margin-top: 0.5rem;
   font-size: 0.8rem;
-  color: #999;
+  color: var(--text-muted, #9ca3af);
   font-style: italic;
 }
 
-/* Responsive: mobile */
+/* ── Responsive ── */
 @media (max-width: 768px) {
+  .sd-search-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sd-days-field {
+    width: 100%;
+  }
+
   .sd-compass {
     flex-direction: column;
     align-items: flex-start;
@@ -386,5 +437,9 @@
   .sd-compass-bar-value {
     width: 45px;
     font-size: 0.8rem;
+  }
+
+  .sd-info-grid {
+    grid-template-columns: 1fr;
   }
 }

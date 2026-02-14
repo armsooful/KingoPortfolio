@@ -1,95 +1,210 @@
+/* SignupPage.css + Auth common — theme-aware */
+
+/* ── Auth Container & Card (shared Login/Signup) ── */
+.auth-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  padding: 2rem 1rem;
+}
+
+.auth-container .auth-card {
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: var(--radius, 12px);
+  box-shadow: var(--shadow-sm);
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 450px;
+}
+
+.auth-container .auth-card h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: var(--text, #1f2937);
+}
+
+.auth-container .subtitle {
+  color: var(--text-secondary, #6b7280);
+  margin-bottom: 1.75rem;
+  font-size: 0.95rem;
+}
+
+.auth-container .auth-card form {
+  margin-bottom: 1.25rem;
+}
+
+/* ── Auth Error ── */
+.auth-container .error-message {
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid var(--stock-down, #dc2626);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  color: var(--stock-down, #dc2626);
+  font-size: 0.9rem;
+}
+
+[data-theme="dark"] .auth-container .error-message {
+  color: #fca5a5;
+  border-color: #991b1b;
+  background: rgba(153, 27, 27, 0.15);
+}
+
+/* ── Form Group ── */
+.auth-container .form-group {
+  margin-bottom: 1.25rem;
+}
+
+.auth-container .form-group label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+  color: var(--text, #1f2937);
+  font-size: 0.9rem;
+}
+
+.auth-container .form-group input,
+.auth-container .form-group select,
+.auth-container .form-group textarea {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: var(--card, #ffffff);
+  color: var(--text, #1f2937);
+  transition: border-color 0.2s;
+  outline: none;
+}
+
+.auth-container .form-group input::placeholder {
+  color: var(--text-muted, #9ca3af);
+}
+
+.auth-container .form-group input:focus,
+.auth-container .form-group select:focus,
+.auth-container .form-group textarea:focus {
+  border-color: var(--primary, #667eea);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
+}
+
+[data-theme="dark"] .auth-container .form-group input:focus,
+[data-theme="dark"] .auth-container .form-group select:focus {
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.25);
+}
+
+.auth-container .form-group input:disabled,
+.auth-container .form-group select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-container .form-group small {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--text-muted, #9ca3af);
+}
+
+/* ── Form Actions ── */
+.auth-container .form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.auth-container .form-actions button {
+  flex: 1;
+}
+
+/* ── Auth Button ── */
+.auth-container .btn-primary {
+  width: 100%;
+  padding: 0.7rem 1.25rem;
+  background: var(--primary, #667eea);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  margin-top: 0.5rem;
+}
+
+.auth-container .btn-primary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.auth-container .btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Auth Footer ── */
+.auth-container .auth-footer {
+  text-align: center;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border, #e5e7eb);
+}
+
+.auth-container .auth-footer p {
+  margin: 0;
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.9rem;
+}
+
+.auth-container .link {
+  color: var(--primary, #667eea);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.auth-container .link:hover {
+  text-decoration: underline;
+}
+
+/* ── Signup-specific ── */
 .signup-card {
   max-width: 460px !important;
-  padding: 2.5rem !important;
 }
 
 .signup-hint {
   text-align: center;
-  margin-top: 1rem;
+  margin-top: 0.75rem;
   font-size: 0.85rem;
-  color: #888;
+  color: var(--text-muted, #9ca3af);
 }
 
-.form-group {
-  margin-bottom: 1.5rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: #333;
-  font-size: 0.95rem;
-}
-
-.form-group input,
-.form-group select {
-  width: 100%;
+/* ── Info Box ── */
+.auth-container .info-box {
+  background: var(--card-inner, #fafbfc);
+  border: 1px solid var(--border, #e5e7eb);
+  border-left: 4px solid var(--primary, #667eea);
   padding: 0.75rem 1rem;
-  border: 2px solid #e0e0e0;
   border-radius: 8px;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-  background: white;
+  margin-top: 1.25rem;
 }
 
-.form-group input:focus,
-.form-group select:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.form-group small {
-  display: block;
-  margin-top: 0.5rem;
-  font-size: 0.85rem;
-  color: #666;
-}
-
-.form-actions {
-  display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
-}
-
-.form-actions button {
-  flex: 1;
-}
-
-.info-box {
-  background: #f8f9ff;
-  border-left: 4px solid #667eea;
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  margin-top: 1.5rem;
-}
-
-.info-box p {
+.auth-container .info-box p {
   margin: 0;
   font-size: 0.9rem;
-  color: #555;
+  color: var(--text-secondary, #6b7280);
+  line-height: 1.6;
 }
 
-.info-box p:first-child {
-  margin-bottom: 0.5rem;
+.auth-container .info-box p:first-child {
+  margin-bottom: 0.4rem;
 }
 
-.info-box strong {
-  color: #667eea;
+.auth-container .info-box strong {
+  color: var(--primary, #667eea);
 }
 
-/* Responsive */
-@media (max-width: 640px) {
-  .signup-card {
-    padding: 1.5rem !important;
-  }
-}
-
-/* ============================================================
-   이메일 인증 페이지 스타일
-   ============================================================ */
-
+/* ── Email Verification Page ── */
 .verification-icon {
   text-align: center;
   margin-bottom: 1.5rem;
@@ -98,17 +213,21 @@
 
 .verification-icon .loading-spinner {
   font-size: 4rem;
-  animation: spin 1s linear infinite;
+  animation: auth-spin 1s linear infinite;
 }
 
 .verification-icon .success-icon {
-  color: #28a745;
+  color: var(--stock-up, #16a34a);
   font-size: 4rem;
 }
 
 .verification-icon .error-icon {
-  color: #dc3545;
+  color: var(--stock-down, #dc2626);
   font-size: 4rem;
+}
+
+[data-theme="dark"] .verification-icon .error-icon {
+  color: #fca5a5;
 }
 
 .verification-message {
@@ -117,11 +236,19 @@
 }
 
 .verification-message.success {
-  color: #155724;
+  color: var(--stock-up, #16a34a);
+}
+
+[data-theme="dark"] .verification-message.success {
+  color: #86efac;
 }
 
 .verification-message.error {
-  color: #721c24;
+  color: var(--stock-down, #dc2626);
+}
+
+[data-theme="dark"] .verification-message.error {
+  color: #fca5a5;
 }
 
 .verification-message p {
@@ -130,7 +257,7 @@
 }
 
 .verification-message .subtitle {
-  color: #666;
+  color: var(--text-secondary, #6b7280);
   font-size: 0.95rem;
   margin-bottom: 1.5rem;
 }
@@ -140,7 +267,28 @@
   min-width: 200px;
 }
 
-@keyframes spin {
+@keyframes auth-spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .auth-container .auth-card {
+    padding: 1.5rem;
+  }
+
+  .signup-card {
+    padding: 1.5rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-container .auth-card {
+    padding: 1.25rem;
+  }
+
+  .auth-container .auth-card h1 {
+    font-size: 1.35rem;
+  }
 }

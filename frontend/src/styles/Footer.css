@@ -1,9 +1,10 @@
 .footer {
   margin-top: 64px;
   padding: 32px 24px;
-  background: #f8f9fa;
-  border-top: 1px solid #e0e0e0;
+  background: var(--card, #f8f9fa);
+  border-top: 1px solid var(--border, #e0e0e0);
   text-align: center;
+  transition: background 0.3s, border-color 0.3s;
 }
 
 .footer-inner {
@@ -13,7 +14,7 @@
 
 .footer-legal {
   font-size: 0.75rem;
-  color: #666;
+  color: var(--text-secondary, #666);
   line-height: 1.6;
   margin-bottom: 16px;
   text-align: left;
@@ -22,6 +23,7 @@
 .footer-legal-title {
   margin-bottom: 8px;
   font-weight: 600;
+  color: var(--text, #333);
 }
 
 .footer-legal-item {
@@ -34,9 +36,9 @@
 
 .footer-copyright {
   padding-top: 16px;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--border, #e0e0e0);
   font-size: 0.875rem;
-  color: #999;
+  color: var(--text-muted, #999);
 }
 
 .footer-copyright p {

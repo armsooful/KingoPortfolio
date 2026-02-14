@@ -181,7 +181,7 @@ export default function BatchJobsPage() {
             <div className="result-icon">
               ⚙️
             </div>
-            <h1 className="result-type" style={{ color: '#FF9800' }}>
+            <h1 className="result-type">
               배치 작업 관리
             </h1>
             <p className="result-subtitle">

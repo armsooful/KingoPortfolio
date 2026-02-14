@@ -1,0 +1,113 @@
+/* ============================================================
+   Global Theme System — Design Tokens
+   Light (default) + Dark ([data-theme="dark"])
+   ============================================================ */
+
+:root {
+  /* Background */
+  --bg: #f0f2f7;
+  --card: #ffffff;
+  --card-inner: #fafbfc;
+  --card-hover: #f8f9ff;
+
+  /* Text */
+  --text: #1f2937;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+
+  /* Border & Shadow */
+  --border: #e5e7eb;
+  --border-light: #f3f4f6;
+  --radius: 12px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
+
+  /* Brand */
+  --primary: #667eea;
+  --primary-dark: #5568d3;
+  --primary-light: #8b9cf7;
+  --accent: #764ba2;
+
+  /* Stock Colors */
+  --stock-up: #e53935;
+  --stock-down: #1e88e5;
+
+  /* Grade Colors */
+  --grade-a: #16a34a;
+  --grade-b: #2563eb;
+  --grade-c: #ea580c;
+  --grade-d: #dc2626;
+
+  /* Component-specific */
+  --ai-bg: linear-gradient(135deg, #1e3a5f 0%, #2c5f8a 100%);
+  --skeleton-base: #f0f0f0;
+  --skeleton-shine: #e0e0e0;
+  --skel-ai-bg: #e5e7eb;
+
+  /* Banner */
+  --banner-bg: #fffbeb;
+  --banner-border: #fde68a;
+  --banner-label-bg: #fef3c7;
+  --banner-label-text: #92400e;
+  --banner-text: #78350f;
+
+  /* Toggle / Interactive */
+  --toggle-hover: #f3f4f6;
+
+  /* Mover bars */
+  --bar-bg-up-start: #ffcdd2;
+  --bar-bg-down-start: #bbdefb;
+}
+
+[data-theme="dark"] {
+  /* Background */
+  --bg: #0f1117;
+  --card: #1a1d2e;
+  --card-inner: #161928;
+  --card-hover: #1e2235;
+
+  /* Text */
+  --text: #e5e7eb;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+
+  /* Border & Shadow */
+  --border: #2d3148;
+  --border-light: #252840;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+
+  /* Brand — keep primary the same, lighten primary-light */
+  --primary-light: #8b9cf7;
+
+  /* Stock Colors — brighter for dark bg */
+  --stock-up: #ff6b6b;
+  --stock-down: #64b5f6;
+
+  /* Component-specific */
+  --ai-bg: linear-gradient(135deg, #162538 0%, #1c3650 100%);
+  --skeleton-base: #252840;
+  --skeleton-shine: #2d3148;
+  --skel-ai-bg: #1e2235;
+
+  /* Banner */
+  --banner-bg: #1c1a0f;
+  --banner-border: #5c4d1a;
+  --banner-label-bg: #3d3415;
+  --banner-label-text: #fbbf24;
+  --banner-text: #fcd34d;
+
+  /* Toggle / Interactive */
+  --toggle-hover: #252840;
+
+  /* Mover bars */
+  --bar-bg-up-start: rgba(255, 107, 107, 0.2);
+  --bar-bg-down-start: rgba(100, 181, 246, 0.2);
+}
+
+/* Smooth theme transition on body */
+body {
+  transition: background 0.3s, color 0.3s;
+}
