@@ -335,13 +335,16 @@ VITE_API_URL=http://localhost:8000
 
 | Location | Content |
 |----------|---------|
+| `docs/README.md` | 문서 디렉토리 전체 구조 & 인덱스 |
+| `docs/PRD.md` | Product Requirements Document |
 | `docs/ui-theme-guide.md` | CSS theme system guide + new page checklist |
-| `docs/ui-mockup/` | Dashboard redesign HTML mockup |
-| `docs/foresto-competitive-strategy-report.md` | Gap analysis vs competitors |
-| `docs/compass-score-project-report.md` | Compass Score implementation report |
+| `docs/strategy/` | Business consulting report, competitive analysis, Compass Score report |
 | `docs/compliance/` | Forbidden terms, terminology guide, legal review |
 | `docs/deployment/` | Vercel, Render, Cloudflare setup guides |
-| `docs/phase1/` ~ `docs/phase11/` | Phase-specific design documents |
+| `docs/architecture/` | System design, algorithms, technical specs |
+| `docs/guides/` | Developer & operator guides (DB, data loading, testing, APIs) |
+| `docs/ui-mockup/` | Dashboard redesign HTML mockup |
+| `docs/archive/` | Historical: phase1-11 docs, changelogs, reports (221 files) |
 | `backend/docs/TIER_SYSTEM_GUIDE.md` | VIP tier + membership plan reference |
 | `backend/docs/development/` | PROJECT_STATUS, CHANGELOG, TESTING |
 | `backend/docs/guides/` | Feature-specific guides (profile, export, rate limiting) |
@@ -349,7 +352,7 @@ VITE_API_URL=http://localhost:8000
 
 ## Development Status
 
-Phased development (Phase 0–11). Phase docs in `docs/phase*/`.
+Phased development (Phase 0–11). Phase docs archived in `docs/archive/phase*/`.
 
 **Completed milestones:**
 - Compass Score system (scoring engine, screener, watchlist, alerts, AI commentary)

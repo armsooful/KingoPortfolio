@@ -1,3 +1,0 @@
-2026-01-20 10:45:00 KST | user=external_unapproved | action=GET /api/v1/portfolio | status=403 | result=blocked
-2026-01-20 10:45:05 KST | user=external_approved | action=GET /api/v1/portfolio | status=200 | result=allowed
-2026-01-20 10:45:10 KST | user=external_approved | action=rate_limit_check | status=429 | result=blocked

@@ -57,6 +57,14 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Screenshots (temporary captures)
+*.png
+*.jpeg
+*.jpg
+!docs/**/*.png
+!frontend/public/**/*.png
+.playwright-mcp/
+
 # Misc
 .pytest_cache/
 .mypy_cache/
