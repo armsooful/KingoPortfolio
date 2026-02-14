@@ -11,7 +11,7 @@
 
 ### 1.1 배경
 
-경쟁사 분석(`docs/foresto-competitive-strategy-report.md`)을 통해 StockMatrix, AlphaSquare, IntelliQuant, Quantus, Securities Plus 등 한국 핀테크 투자 서비스의 강점과 약점을 파악하였다. 그 결과, **재무 + 밸류에이션 + 기술적 분석 + 리스크를 하나의 점수로 통합**하는 서비스가 시장에 부재함을 확인하고, 이를 Foresto Compass의 핵심 차별점으로 설정하였다.
+경쟁사 분석(`docs/strategy/foresto-competitive-strategy-report.md`)을 통해 StockMatrix, AlphaSquare, IntelliQuant, Quantus, Securities Plus 등 한국 핀테크 투자 서비스의 강점과 약점을 파악하였다. 그 결과, **재무 + 밸류에이션 + 기술적 분석 + 리스크를 하나의 점수로 통합**하는 서비스가 시장에 부재함을 확인하고, 이를 Foresto Compass의 핵심 차별점으로 설정하였다.
 
 ### 1.2 목표
 
