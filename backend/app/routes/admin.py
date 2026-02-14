@@ -2581,6 +2581,7 @@ async def get_all_users(
                     "name": u.name,
                     "phone": u.phone,
                     "birth_date": u.birth_date.isoformat() if u.birth_date else None,
+                    "age_group": getattr(u, 'age_group', None),
                     "occupation": u.occupation,
                     "company": u.company,
                     "annual_income": u.annual_income,

@@ -108,56 +108,14 @@ async def signup(
     """
     ## 회원가입
 
-    새로운 사용자 계정을 생성하고 즉시 로그인 상태로 JWT 토큰을 발급합니다.
+    이메일과 비밀번호만으로 계정을 생성하고 즉시 JWT 토큰을 발급합니다.
+    추가 프로필 정보는 가입 후 PUT /auth/profile로 업데이트합니다.
 
     ### 요청 필드
 
     - **email** (필수): 이메일 주소 (고유값, 중복 불가)
     - **password** (필수): 비밀번호 (최소 8자, 최대 72바이트)
-    - **name** (선택): 사용자 이름 (최대 50자)
-
-    ### 주의사항
-
-    - 비밀번호는 bcrypt로 해싱되어 저장됩니다
-    - 이메일은 대소문자 구분 없이 고유해야 합니다
-    - 기본 role은 'user'로 설정됩니다
-
-    ### 예제 요청
-
-    ```json
-    {
-        "email": "user@example.com",
-        "password": "securePassword123!",
-        "name": "홍길동"
-    }
-    ```
-
-    ### 예제 응답 (201 Created)
-
-    ```json
-    {
-        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-        "token_type": "bearer",
-        "user": {
-            "id": "usr_abc123xyz",
-            "email": "user@example.com",
-            "name": "홍길동",
-            "created_at": "2025-12-29T10:00:00Z"
-        }
-    }
-    ```
     """
-    
-    # 🔍 디버그 로그
-    print("\n" + "="*60)
-    print("📨 SIGNUP 요청 받음")
-    print(f"이메일: {user_create.email}")
-    print(f"이름: {user_create.name}")
-    print(f"비밀번호 (표시): {user_create.password}")
-    print(f"비밀번호 길이 (글자): {len(user_create.password)}")
-    print(f"비밀번호 길이 (바이트): {len(user_create.password.encode('utf-8'))}")
-    print(f"비밀번호 16진수: {user_create.password.encode('utf-8').hex()}")
-    print("="*60 + "\n")
     
     # 기존 이메일 확인
     existing_user = get_user_by_email(db, user_create.email)
@@ -728,6 +686,7 @@ async def get_profile(
         "name": getattr(current_user, "name", None),
         "phone": getattr(current_user, "phone", None),
         "birth_date": getattr(current_user, "birth_date", None),
+        "age_group": getattr(current_user, "age_group", None),
         "occupation": getattr(current_user, "occupation", None),
         "company": getattr(current_user, "company", None),
         "annual_income": getattr(current_user, "annual_income", None),
@@ -798,9 +757,9 @@ async def update_profile(
     ```
     """
     # 최소 하나의 필드는 제공되어야 함
-    if request.name is None and request.email is None:
+    if not any(v is not None for v in request.dict(exclude_unset=True).values()):
         raise KingoValidationError(
-            detail="최소 하나의 필드(name 또는 email)를 제공해야 합니다"
+            detail="최소 하나의 필드를 제공해야 합니다"
         )
 
     # 이메일 변경 시 중복 확인
@@ -810,22 +769,43 @@ async def update_profile(
             raise DuplicateEmailError(email=request.email)
         current_user.email = request.email
 
-    # 이름 변경
-    if request.name is not None:
-        current_user.name = request.name
+    # 모든 프로필 필드 업데이트
+    updatable_fields = [
+        "name", "phone", "birth_date", "age_group", "occupation", "company",
+        "annual_income", "total_assets", "city", "district",
+        "investment_experience", "investment_goal", "risk_tolerance",
+    ]
+    for field in updatable_fields:
+        value = getattr(request, field, None)
+        if value is not None:
+            setattr(current_user, field, value)
 
     db.commit()
     db.refresh(current_user)
 
-    print(f"✅ 프로필 수정 완료: {current_user.email}")
-
-    return {
-        "id": current_user.id,
-        "email": current_user.email,
-        "name": getattr(current_user, "name", None),
-        "role": current_user.role,
-        "created_at": current_user.created_at
-    }
+    return ProfileResponse(
+        id=current_user.id,
+        email=current_user.email,
+        name=current_user.name,
+        phone=current_user.phone,
+        birth_date=current_user.birth_date,
+        age_group=getattr(current_user, 'age_group', None),
+        occupation=current_user.occupation,
+        company=current_user.company,
+        annual_income=current_user.annual_income,
+        total_assets=current_user.total_assets,
+        city=current_user.city,
+        district=current_user.district,
+        investment_experience=current_user.investment_experience,
+        investment_goal=current_user.investment_goal,
+        risk_tolerance=current_user.risk_tolerance,
+        role=current_user.role,
+        is_email_verified=getattr(current_user, 'is_email_verified', False),
+        vip_tier=getattr(current_user, 'vip_tier', 'bronze'),
+        activity_points=getattr(current_user, 'activity_points', 0),
+        membership_plan=getattr(current_user, 'membership_plan', 'free'),
+        created_at=current_user.created_at
+    )
 
 @router.put(
     "/change-password",
@@ -995,6 +975,7 @@ async def get_profile(
         name=current_user.name,
         phone=current_user.phone,
         birth_date=current_user.birth_date,
+        age_group=getattr(current_user, 'age_group', None),
         occupation=current_user.occupation,
         company=current_user.company,
         annual_income=current_user.annual_income,
@@ -1079,6 +1060,7 @@ async def update_profile(
         name=current_user.name,
         phone=current_user.phone,
         birth_date=current_user.birth_date,
+        age_group=getattr(current_user, 'age_group', None),
         occupation=current_user.occupation,
         company=current_user.company,
         annual_income=current_user.annual_income,
@@ -1095,6 +1077,45 @@ async def update_profile(
         membership_plan=getattr(current_user, 'membership_plan', 'free'),
         created_at=current_user.created_at
     )
+
+
+# ============================================================
+# 프로필 완성도 확인
+# ============================================================
+
+@router.get(
+    "/profile/completion-status",
+    summary="프로필 완성도 조회",
+    description="사용자 프로필의 완성 여부와 미입력 항목을 반환합니다."
+)
+async def get_profile_completion_status(
+    current_user: User = Depends(get_current_user),
+):
+    """포트폴리오 맞춤 서비스에 필요한 프로필 필드 완성 상태를 반환합니다."""
+    required_fields = {
+        "name": "이름",
+        "age_group": "연령대",
+        "investment_experience": "투자 경험",
+        "risk_tolerance": "위험 성향",
+    }
+
+    missing = []
+    filled = 0
+    for field, label in required_fields.items():
+        value = getattr(current_user, field, None)
+        if value is None or value == "":
+            missing.append({"field": field, "label": label})
+        else:
+            filled += 1
+
+    total = len(required_fields)
+    return {
+        "is_complete": filled == total,
+        "completion_percent": round(filled / total * 100),
+        "filled_count": filled,
+        "total_count": total,
+        "missing_fields": missing,
+    }
 
 
 # ============================================================

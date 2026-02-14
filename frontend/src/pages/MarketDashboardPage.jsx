@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
-import api, { getMarketSubscriptionStatus, subscribeMarketEmail, getWatchlist } from '../services/api';
+import api, { getMarketSubscriptionStatus, subscribeMarketEmail, getWatchlist, getProfileCompletionStatus } from '../services/api';
+import ProfileCompletionModal from '../components/ProfileCompletionModal';
 import '../styles/MarketDashboard.css';
 
 function MarketDashboardPage() {
@@ -13,12 +14,44 @@ function MarketDashboardPage() {
   const [emailSub, setEmailSub] = useState(null);
   const [subLoading, setSubLoading] = useState(false);
   const [watchlistItems, setWatchlistItems] = useState([]);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileIncomplete, setProfileIncomplete] = useState(false);
+  const [profilePercent, setProfilePercent] = useState(0);
 
   useEffect(() => {
     fetchMarketData();
     fetchEmailSub();
     fetchWatchlist();
+    checkProfileCompletion();
   }, []);
+
+  const checkProfileCompletion = async () => {
+    try {
+      const res = await getProfileCompletionStatus();
+      const { is_complete, completion_percent } = res.data;
+      setProfilePercent(completion_percent);
+      if (!is_complete) {
+        setProfileIncomplete(true);
+        const dismissed = sessionStorage.getItem('profile_modal_dismissed');
+        if (!dismissed) {
+          setShowProfileModal(true);
+        }
+      }
+    } catch {
+      // ignore — not logged in or API error
+    }
+  };
+
+  const handleProfileModalClose = () => {
+    setShowProfileModal(false);
+    sessionStorage.setItem('profile_modal_dismissed', 'true');
+  };
+
+  const handleProfileComplete = () => {
+    setProfileIncomplete(false);
+    setProfilePercent(100);
+    setShowProfileModal(false);
+  };
 
   const fetchWatchlist = async () => {
     try {
@@ -111,6 +144,27 @@ function MarketDashboardPage() {
           학습 성향 진단하기
         </button>
       </div>
+
+      {/* 프로필 완성 유도 배너 */}
+      {profileIncomplete && (
+        <div className="profile-completion-banner">
+          <div className="pcb-content">
+            <div className="pcb-text">
+              <strong>프로필 완성하고 맞춤 학습을 시작하세요</strong>
+              <span>30초면 나에게 딱 맞는 포트폴리오 시뮬레이션을 이용할 수 있어요</span>
+            </div>
+            <div className="pcb-progress">
+              <div className="pcb-progress-bar">
+                <div className="pcb-progress-fill" style={{ width: `${profilePercent}%` }} />
+              </div>
+              <span className="pcb-progress-text">{profilePercent}%</span>
+            </div>
+            <button className="pcb-btn" onClick={() => setShowProfileModal(true)}>
+              프로필 완성하기
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* AI 시장 요약 */}
       {marketData?.summary && (
@@ -312,6 +366,14 @@ function MarketDashboardPage() {
           )}
         </div>
       </section>
+
+      {/* 프로필 완성 모달 */}
+      {showProfileModal && (
+        <ProfileCompletionModal
+          onClose={handleProfileModalClose}
+          onComplete={handleProfileComplete}
+        />
+      )}
     </div>
   );
 }

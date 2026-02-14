@@ -1,0 +1,166 @@
+.pcm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.pcm-modal {
+  background: white;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 440px;
+  padding: 2rem;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  animation: pcm-slide-up 0.3s ease;
+}
+
+@keyframes pcm-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pcm-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #999;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0.25rem;
+}
+
+.pcm-close:hover {
+  color: #333;
+}
+
+.pcm-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.pcm-header h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+  color: #1a1a2e;
+}
+
+.pcm-subtitle {
+  font-size: 0.9rem;
+  color: #666;
+  margin: 0 0 1rem;
+}
+
+.pcm-benefits {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.25rem;
+  text-align: left;
+}
+
+.pcm-benefits li {
+  position: relative;
+  padding-left: 1.5rem;
+  font-size: 0.88rem;
+  color: #444;
+  line-height: 1.8;
+}
+
+.pcm-benefits li::before {
+  content: '\2713';
+  position: absolute;
+  left: 0;
+  color: #667eea;
+  font-weight: 700;
+}
+
+.pcm-progress-bar {
+  height: 6px;
+  background: #e8e8e8;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.pcm-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.pcm-progress-text {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.pcm-error {
+  background: #fff5f5;
+  color: #dc3545;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.pcm-field {
+  margin-bottom: 1.25rem;
+}
+
+.pcm-field label {
+  display: block;
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: #333;
+  margin-bottom: 0.4rem;
+}
+
+.pcm-field input,
+.pcm-field select {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: border-color 0.2s;
+  background: white;
+}
+
+.pcm-field input:focus,
+.pcm-field select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.pcm-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.pcm-actions button {
+  flex: 1;
+}
+
+@media (max-width: 480px) {
+  .pcm-modal {
+    padding: 1.5rem;
+  }
+}

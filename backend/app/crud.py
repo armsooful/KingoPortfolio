@@ -26,22 +26,9 @@ def create_user(db: Session, user_create: UserCreate):
 
     hashed_password = hash_password(user_create.password)
 
-    # 모든 사용자 정보 포함
     db_user = User(
         email=user_create.email,
         hashed_password=hashed_password,
-        name=user_create.name,
-        phone=user_create.phone,
-        birth_date=user_create.birth_date,
-        occupation=user_create.occupation,
-        company=user_create.company,
-        annual_income=user_create.annual_income,
-        total_assets=user_create.total_assets,
-        city=user_create.city,
-        district=user_create.district,
-        investment_experience=user_create.investment_experience,
-        investment_goal=user_create.investment_goal,
-        risk_tolerance=user_create.risk_tolerance
     )
 
     try:

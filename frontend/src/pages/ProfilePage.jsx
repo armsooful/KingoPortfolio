@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api, { changePassword, listConsents, getMarketSubscriptionStatus, subscribeMarketEmail, unsubscribeMarketEmail } from '../services/api';
+import api, { changePassword, listConsents, getMarketSubscriptionStatus, subscribeMarketEmail, unsubscribeMarketEmail, getProfileCompletionStatus } from '../services/api';
 import '../styles/ProfilePage.css';
 
 function ProfilePage() {
@@ -19,6 +19,9 @@ function ProfilePage() {
   const [marketSub, setMarketSub] = useState(null);
   const [marketSubLoading, setMarketSubLoading] = useState(true);
   const [marketSubToggling, setMarketSubToggling] = useState(false);
+
+  // 프로필 완성도
+  const [completionStatus, setCompletionStatus] = useState(null);
 
   // 비밀번호 변경 관련 상태
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -92,10 +95,20 @@ function ProfilePage() {
     }
   };
 
+  const fetchCompletionStatus = async () => {
+    try {
+      const res = await getProfileCompletionStatus();
+      setCompletionStatus(res.data);
+    } catch {
+      // 실패 시 무시
+    }
+  };
+
   useEffect(() => {
     fetchProfile();
     fetchConsents();
     fetchMarketSub();
+    fetchCompletionStatus();
   }, []);
 
   // 프로필 수정
@@ -109,6 +122,7 @@ function ProfilePage() {
         name: formData.name || null,
         phone: formData.phone || null,
         birth_date: formData.birth_date || null,
+        age_group: formData.age_group || null,
         occupation: formData.occupation || null,
         company: formData.company || null,
         annual_income: formData.annual_income ? parseInt(formData.annual_income) : null,
@@ -124,6 +138,7 @@ function ProfilePage() {
       setProfile(response.data);
       setFormData(response.data);
       setIsEditing(false);
+      fetchCompletionStatus();
       setSuccessMessage('프로필이 성공적으로 업데이트되었습니다.');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
@@ -253,6 +268,23 @@ function ProfilePage() {
         </div>
       </div>
 
+      {completionStatus && !completionStatus.is_complete && (
+        <div className="profile-completion-banner">
+          <div className="completion-info">
+            <span>프로필 완성도 {completionStatus.completion_percent}%</span>
+            <span className="completion-hint">
+              미입력: {completionStatus.missing_fields.map(f => f.label).join(', ')}
+            </span>
+          </div>
+          <div className="completion-bar">
+            <div
+              className="completion-fill"
+              style={{ width: `${completionStatus.completion_percent}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       {error && <div className="alert alert-error">{error}</div>}
       {successMessage && <div className="alert alert-success">{successMessage}</div>}
 
@@ -362,16 +394,20 @@ function ProfilePage() {
             </div>
 
             <div className="profile-field">
-              <label>생년월일</label>
-              <input
-                type="date"
-                value={formData.birth_date || ''}
-                onChange={(e) => handleChange('birth_date', e.target.value)}
+              <label>연령대</label>
+              <select
+                value={formData.age_group || ''}
+                onChange={(e) => handleChange('age_group', e.target.value)}
                 disabled={!isEditing}
-              />
-              {formData.birth_date && (
-                <small>만 {calculateAge(formData.birth_date)}세</small>
-              )}
+              >
+                <option value="">선택해주세요</option>
+                <option value="10s">10대</option>
+                <option value="20s">20대</option>
+                <option value="30s">30대</option>
+                <option value="40s">40대</option>
+                <option value="50s">50대</option>
+                <option value="60s_plus">60대 이상</option>
+              </select>
             </div>
           </div>
         </div>

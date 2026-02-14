@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getSurveyQuestions, recordConsent, submitDiagnosis } from '../services/api';
+import { getSurveyQuestions, recordConsent, submitDiagnosis, getProfileCompletionStatus } from '../services/api';
 import SurveyQuestion from '../components/SurveyQuestion';
 import Disclaimer from '../components/Disclaimer';
+import ProfileCompletionModal from '../components/ProfileCompletionModal';
 
 function SurveyPage() {
   const [questions, setQuestions] = useState([]);
@@ -15,6 +16,7 @@ function SurveyPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const navigate = useNavigate();
 
   // 설문 문항 로드
@@ -143,6 +145,14 @@ const handleSubmit = async () => {
     setError('');
     setIsRecordingConsent(true);
     try {
+      // 프로필 완성도 체크
+      const profileRes = await getProfileCompletionStatus();
+      if (!profileRes.data.is_complete) {
+        setShowProfileModal(true);
+        setIsRecordingConsent(false);
+        return;
+      }
+
       await recordConsent({
         consent_type: 'diagnosis_notice',
         consent_version: 'v1',
@@ -268,6 +278,17 @@ const handleSubmit = async () => {
           </>
         )}
       </div>
+
+      {showProfileModal && (
+        <ProfileCompletionModal
+          onClose={() => setShowProfileModal(false)}
+          onComplete={() => {
+            setShowProfileModal(false);
+            // 프로필 완성 후 자동으로 설문 시작 재시도
+            handleStartSurvey();
+          }}
+        />
+      )}
     </div>
   );
 }

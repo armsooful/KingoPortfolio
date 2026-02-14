@@ -100,6 +100,20 @@ export const changePassword = (data) => {
   return api.put('/auth/change-password', data);
 };
 
+/**
+ * 프로필 완성도 조회
+ */
+export const getProfileCompletionStatus = () => {
+  return api.get('/auth/profile/completion-status');
+};
+
+/**
+ * 프로필 업데이트
+ */
+export const updateProfile = (data) => {
+  return api.put('/auth/profile', data);
+};
+
 // ============================================================
 // Survey API
 // ============================================================

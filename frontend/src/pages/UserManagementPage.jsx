@@ -275,10 +275,10 @@ function UserManagementPage() {
                     <span className="detail-value">{selectedUser.phone || '-'}</span>
                   </div>
                   <div className="detail-item">
-                    <span className="detail-label">생년월일</span>
+                    <span className="detail-label">연령대</span>
                     <span className="detail-value">
-                      {selectedUser.birth_date
-                        ? `${new Date(selectedUser.birth_date).toLocaleDateString('ko-KR')} (만 ${calculateAge(selectedUser.birth_date)}세)`
+                      {selectedUser.age_group
+                        ? { '10s': '10대', '20s': '20대', '30s': '30대', '40s': '40대', '50s': '50대', '60s_plus': '60대 이상' }[selectedUser.age_group] || selectedUser.age_group
                         : '-'}
                     </span>
                   </div>

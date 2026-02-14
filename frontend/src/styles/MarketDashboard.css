@@ -49,6 +49,103 @@
   box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
+/* Profile Completion Banner */
+.profile-completion-banner {
+  margin-bottom: 1.5rem;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid #667eea;
+}
+
+.pcb-content {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.pcb-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex-shrink: 0;
+}
+
+.pcb-text strong {
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.pcb-text span {
+  color: #888;
+  font-size: 0.8rem;
+}
+
+.pcb-progress {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.pcb-progress-bar {
+  flex: 1;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.pcb-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.pcb-progress-text {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #667eea;
+  white-space: nowrap;
+}
+
+.pcb-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.pcb-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+@media (max-width: 768px) {
+  .pcb-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .pcb-progress {
+    width: 100%;
+  }
+
+  .pcb-btn {
+    align-self: flex-end;
+  }
+}
+
 /* Market Summary Section */
 .market-summary {
   margin-bottom: 3rem;

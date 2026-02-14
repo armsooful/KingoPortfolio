@@ -17,7 +17,8 @@ class User(Base):
     # 기본 정보
     name = Column(String(50), nullable=True)  # 사용자 이름
     phone = Column(String(20), nullable=True)  # 전화번호
-    birth_date = Column(Date, nullable=True)  # 생년월일
+    birth_date = Column(Date, nullable=True)  # 생년월일 (레거시, 신규 사용자는 age_group 사용)
+    age_group = Column(String(10), nullable=True)  # 연령대 (10s, 20s, 30s, 40s, 50s, 60s_plus)
 
     # 직업 및 재무 정보
     occupation = Column(String(100), nullable=True)  # 직업

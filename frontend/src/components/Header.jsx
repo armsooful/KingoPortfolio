@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../App';
+import { getProfileCompletionStatus } from '../services/api';
 
 function Header() {
   const navigate = useNavigate();
@@ -8,6 +9,7 @@ function Header() {
   const { user, logout } = useAuth();
   const [openGroup, setOpenGroup] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileIncomplete, setProfileIncomplete] = useState(false);
   const navRef = useRef(null);
   const drawerRef = useRef(null);
 
@@ -123,6 +125,14 @@ function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // 프로필 완성 여부 확인
+  useEffect(() => {
+    if (!user) return;
+    getProfileCompletionStatus()
+      .then((res) => setProfileIncomplete(!res.data.is_complete))
+      .catch(() => {});
+  }, [user]);
+
   // body 스크롤 잠금
   useEffect(() => {
     document.body.style.overflow = mobileMenuOpen ? 'hidden' : '';
@@ -221,6 +231,14 @@ function Header() {
               <div className="user-name-section">
                 <span className="user-name">{user.name || user.email}</span>
                 <span className="user-email">({user.email})</span>
+                {profileIncomplete && (
+                  <button
+                    className="profile-incomplete-tag"
+                    onClick={(e) => { e.stopPropagation(); navigate('/profile'); }}
+                  >
+                    프로필 입력하기
+                  </button>
+                )}
               </div>
               <div className="user-tier-section">
                 <span
@@ -330,6 +348,14 @@ function Header() {
           <div className="mobile-menu-user">
             <div className="mobile-user-info">
               <span className="mobile-user-name">{user.name || user.email}</span>
+              {profileIncomplete && (
+                <button
+                  className="profile-incomplete-tag"
+                  onClick={(e) => { e.stopPropagation(); navigate('/profile'); closeMobileMenu(); }}
+                >
+                  프로필 입력하기
+                </button>
+              )}
               <div className="mobile-user-tiers">
                 <span
                   className="tier-badge vip-tier"
