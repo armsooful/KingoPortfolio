@@ -11,6 +11,7 @@ Foresto Compass (KingoPortfolio) — Investment portfolio simulation and educati
 - Forbidden terms: "투자 추천", "매수 추천", "수익 보장" — use "학습 도구", "시뮬레이션", "교육 목적" instead
 - Three permission levels: user (default), premium, admin
 - Email templates must include full legal notice referencing 자본시장법 제6조
+- Compliance docs: `docs/compliance/` (forbidden terms list, terminology guide, scan log)
 
 ## Commands
 
@@ -32,6 +33,8 @@ pytest tests/unit/test_auth.py -v         # Single file
 pytest tests/unit/test_auth.py::TestProfileEndpoints::test_get_profile -v  # Single test
 ```
 
+Test markers: `unit`, `integration`, `e2e`, `smoke`, `auth`, `admin`, `financial`, `quant`, `valuation`, `slow`
+
 ### Frontend (React/Vite)
 
 ```bash
@@ -47,9 +50,13 @@ npm run lint     # ESLint
 PostgreSQL required. No Alembic — schema is managed manually via SQL or `create_all` (SQLite only for local dev).
 
 ```bash
-# Ensure PostgreSQL is running with database 'kingo'
-createdb kingo   # if not exists
+createdb kingo                                    # Create database
+psql $DATABASE_URL -f db/ddl/foresto_phase1.sql   # Apply DDL
 ```
+
+- PostgreSQL: `create_all` is skipped; schema changes require manual SQL migration
+- SQLite: `create_all` runs automatically (local dev only)
+- `RESET_DB_ON_STARTUP=true` in .env drops and recreates all tables (dev only)
 
 ## Architecture
 
@@ -69,13 +76,16 @@ backend/app/
 │   └── fetchers/        # External API clients (DART, FSC, etc.)
 ├── models/              # SQLAlchemy ORM models
 ├── templates/           # Jinja2 email templates (inline CSS only)
-└── utils/email.py       # Async SMTP via aiosmtplib
+└── utils/               # email, export, kst_now, tier_permissions, structured_logging
 
 frontend/src/
-├── pages/           # Page components
-├── components/      # Reusable components (ProgressModal, ProfileCompletionModal, etc.)
-├── services/api.js  # Axios client with JWT injection
-└── styles/          # CSS and Tailwind
+├── pages/               # Page components (20+ pages)
+├── components/          # Reusable: ProgressModal, ProfileCompletionModal, DataTable, Disclaimer, Footer
+├── hooks/useTheme.js    # Dark mode toggle hook (localStorage + system preference)
+├── services/api.js      # Axios client with JWT injection + idempotency keys
+└── styles/
+    ├── theme.css        # CSS design tokens (:root light + [data-theme="dark"])
+    └── *.css            # Per-page/component CSS (all theme-aware)
 ```
 
 ### Request Flow
@@ -118,7 +128,41 @@ Routes → Services → Models (SQLAlchemy) → PostgreSQL. Pydantic schemas val
 | AI | `routes/stock_detail.py` | On-demand AI commentary (Claude Sonnet 4.5) |
 | Frontend | `components/ProgressModal.jsx` | Real-time progress display |
 | Frontend | `components/ProfileCompletionModal.jsx` | Post-signup profile completion |
+| Tier system | `utils/tier_permissions.py` | VIP tier + membership plan permission logic |
 | Tests | `tests/conftest.py` | Fixtures: db, client, test_user, test_admin |
+
+## UI Theme System
+
+### Architecture
+- **Guide document**: `docs/ui-theme-guide.md` — Complete CSS variable mapping, page patterns, new page checklist
+- **Design tokens**: `frontend/src/styles/theme.css` — `:root` (light) + `[data-theme="dark"]` (dark)
+- **Toggle hook**: `frontend/src/hooks/useTheme.js` — `useThemeInit()` for App.jsx, `useTheme()` for components
+- **Legacy bridge**: App.css `:root` maps `--primary-color` → `var(--primary)` for backward compat
+
+### CSS Variable Categories
+| Category | Variables | Light Example | Dark Example |
+|----------|-----------|---------------|--------------|
+| Background | `--bg`, `--card`, `--card-inner`, `--card-hover` | `#f0f2f5`, `#ffffff` | `#0f172a`, `#1e293b` |
+| Text | `--text`, `--text-secondary`, `--text-muted` | `#1f2937`, `#6b7280` | `#f1f5f9`, `#94a3b8` |
+| Border | `--border`, `--border-light` | `#e5e7eb`, `#f3f4f6` | `#334155`, `#1e293b` |
+| Shadow | `--shadow-sm`, `--shadow-md`, `--shadow-lg` | light rgba | dark rgba |
+| Brand | `--primary`, `--primary-dark`, `--accent` | `#667eea`, `#5a6fd1` | same values |
+| Stock | `--stock-up`, `--stock-down` | `#16a34a`, `#dc2626` | same values |
+
+### Rules for CSS
+- **All colors MUST use CSS variables**. No hardcoded `white`, `#333`, `#e0e0e0`.
+- **Class naming**: Page-scoped prefixes required (`{page}-table`, `{page}-error`) to prevent cross-file conflicts.
+- **Dark mode overrides**: Use `[data-theme="dark"] .selector` for colors that need different dark values (e.g., error backgrounds use higher opacity `rgba()`).
+- **Brand gradients**: `linear-gradient(135deg, #667eea 0%, #764ba2 100%)` is universal — no dark override needed.
+- **Disclaimer component**: Uses `.disclaimer-box` CSS class (no inline styles).
+
+### Theme Toggle Implementation
+```js
+// App.jsx — initialize theme once at app root
+const { theme, toggleTheme } = useThemeInit();
+// Sets document.documentElement.setAttribute('data-theme', theme)
+// Persists to localStorage, listens to system prefers-color-scheme
+```
 
 ## Compass Score System
 
@@ -140,6 +184,17 @@ Routes → Services → Models (SQLAlchemy) → PostgreSQL. Pydantic schemas val
 - Uses Claude Sonnet 4.5 to generate 5-7 sentence Korean analysis
 - Falls back to rule-based commentary if `ANTHROPIC_API_KEY` not set or API fails
 
+## Tier & Permission System
+
+Dual-tier system documented in `backend/docs/TIER_SYSTEM_GUIDE.md`:
+
+- **VIP Tiers** (activity-based): Bronze → Silver → Gold → Platinum → Diamond
+  - Earned via activity points: portfolio creation, diagnosis, reports, daily login
+  - VIP multiplier: 1.0x (Bronze) to 3.0x (Diamond)
+- **Membership Plans**: Free → Starter → Pro → Enterprise
+  - Controls feature limits: max portfolios, AI requests, historical data range
+- **API**: `GET /auth/tier/permissions`, `GET /auth/tier/status`
+
 ## Email System
 
 ### Two-Tier Schedule (APScheduler in main.py)
@@ -148,7 +203,7 @@ Routes → Services → Models (SQLAlchemy) → PostgreSQL. Pydantic schemas val
 | 07:30 | Daily market summary | `daily_market_email=True` |
 | 08:00 | Watchlist score alerts | `watchlist_score_alerts=True` |
 
-Both require `is_email_verified=True`.
+Both require `is_email_verified=True`. Uses `AsyncIOScheduler` with `CronTrigger(timezone="Asia/Seoul")`.
 
 ### Market Email Content
 - 4 indices (KOSPI, KOSDAQ, S&P 500, NASDAQ) via yfinance
@@ -209,6 +264,20 @@ def background_fn():
 
 **Frontend polling**: ProgressModal polls every 1 second, shows Phase 1/2 badges, auto-closes on completion.
 
+## Frontend Patterns
+
+### API Client (`services/api.js`)
+- Axios instance with `VITE_API_URL` base
+- Request interceptor: JWT token injection from localStorage
+- Idempotency keys: auto-generated for POST/PUT/PATCH/DELETE (header `X-Idempotency-Key`)
+- Response interceptor: 401 → clear token + redirect to login
+
+### Component Conventions
+- Hooks must appear before any conditional returns (React rules)
+- Use `useRef` for polling intervals to prevent multiple concurrent polls
+- ProgressModal: 3-retry 404 handling before giving up
+- Disclaimer: always use `<Disclaimer />` component, never inline disclaimer text
+
 ## Critical Implementation Notes
 
 ### DART API Parsing
@@ -225,11 +294,6 @@ def background_fn():
 - Must call `update_progress(success=True)` to populate `items_history` (required for Phase 2 detection in frontend)
 - `complete_task(status='completed')` takes status as param, not dict
 - Set total to 0 initially, update dynamically after API response
-
-### React ProgressModal
-- Hooks must appear before any conditional returns
-- Use `useRef` for polling intervals to prevent multiple concurrent polls
-- 3-retry 404 handling before giving up
 
 ### Model Registration
 - All new SQLAlchemy models must be imported in `main.py` with `# noqa` for `Base.metadata` registration
@@ -267,31 +331,39 @@ VITE_API_URL=http://localhost:8000
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 
-## Development Phases
+## Documentation Index
 
-Phased development (Phase 0–9). Currently on **Phase 3-C** (Real data loading). Phase docs in `docs/phase*/`. Backend docs index at `backend/docs/README.md`.
+| Location | Content |
+|----------|---------|
+| `docs/ui-theme-guide.md` | CSS theme system guide + new page checklist |
+| `docs/ui-mockup/` | Dashboard redesign HTML mockup |
+| `docs/foresto-competitive-strategy-report.md` | Gap analysis vs competitors |
+| `docs/compass-score-project-report.md` | Compass Score implementation report |
+| `docs/compliance/` | Forbidden terms, terminology guide, legal review |
+| `docs/deployment/` | Vercel, Render, Cloudflare setup guides |
+| `docs/phase1/` ~ `docs/phase11/` | Phase-specific design documents |
+| `backend/docs/TIER_SYSTEM_GUIDE.md` | VIP tier + membership plan reference |
+| `backend/docs/development/` | PROJECT_STATUS, CHANGELOG, TESTING |
+| `backend/docs/guides/` | Feature-specific guides (profile, export, rate limiting) |
+| `backend/docs/reference/` | API docs, RBAC, error handling reference |
+
+## Development Status
+
+Phased development (Phase 0–11). Phase docs in `docs/phase*/`.
 
 **Completed milestones:**
 - Compass Score system (scoring engine, screener, watchlist, alerts, AI commentary)
 - Market email service with Compass Score integration
 - Profile completion flow (signup simplification + modal-based onboarding)
-
-**Competitive analysis**: `docs/foresto-competitive-strategy-report.md` — gap analysis vs StockMatrix, AlphaSquare, IntelliQuant, Quantus, Securities Plus.
-
-## UI Theme System
-
-- **Guide document**: `docs/ui-theme-guide.md` — CSS variable mapping, page patterns, new page checklist
-- **Theme file**: `frontend/src/styles/theme.css` — `:root` (light) + `[data-theme="dark"]` (dark)
-- **Toggle hook**: `frontend/src/hooks/useTheme.js`
-- **Key rule**: All colors MUST use CSS variables (`--card`, `--text`, `--border`, `--card-inner`). No hardcoded `white`, `#333`, `#e0e0e0`.
-- **Class naming**: Page-scoped prefixes required (`{page}-table`, `{page}-error`) to prevent cross-file conflicts.
-- **Disclaimer component**: Uses `.disclaimer-box` CSS class (no inline styles).
+- Global theme system: dark/light mode with CSS variables across all 33+ CSS files
+- Dashboard UI redesign: KPI sparklines, AI summary, watchlist cards, news timeline
 
 ## Tech Stack
 
 - **Backend**: FastAPI, Python 3.11, SQLAlchemy 2.0, PostgreSQL
-- **Frontend**: React 18, Vite 5, Tailwind CSS 4, React Router 6, Chart.js
-- **Testing**: pytest with pytest-asyncio, pytest-cov (markers: unit, integration, e2e, smoke, auth, admin, financial, quant, valuation, slow)
+- **Frontend**: React 18, Vite 5, React Router 6, Chart.js
+- **Styling**: CSS custom properties (theme.css) — no CSS-in-JS, no Tailwind utility classes in components
+- **Testing**: pytest with pytest-asyncio, pytest-cov (81 tests, 32% coverage)
 - **Financial Data**: yfinance, pykrx, DART API, FSC API, Alpha Vantage
 - **Scheduling**: APScheduler (07:30 market email, 08:00 watchlist alerts)
 - **Email**: aiosmtplib via Resend SMTP, Jinja2 templates (inline CSS)
