@@ -3,246 +3,212 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      background-color: #f4f4f4;
-      margin: 0;
-      padding: 0;
-    }
-    .container {
-      max-width: 600px;
-      margin: 20px auto;
-      background: #ffffff;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 0 20px rgba(0,0,0,0.1);
-    }
-    .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 30px;
-      text-align: center;
-    }
-    .header h1 {
-      margin: 0 0 5px 0;
-      font-size: 24px;
-    }
-    .header .date {
-      font-size: 14px;
-      opacity: 0.9;
-    }
-    .content {
-      padding: 30px;
-    }
-    .section-title {
-      color: #667eea;
-      font-size: 18px;
-      font-weight: 700;
-      margin: 24px 0 12px 0;
-      padding-bottom: 8px;
-      border-bottom: 2px solid #e0e0f0;
-    }
-    .section-title:first-child {
-      margin-top: 0;
-    }
-    /* Indices grid */
-    .indices-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
-    .index-card {
-      flex: 1 1 calc(50% - 10px);
-      min-width: 140px;
-      background: #f8f9fa;
-      border-radius: 8px;
-      padding: 12px;
-      text-align: center;
-    }
-    .index-name {
-      font-size: 13px;
-      color: #666;
-      margin-bottom: 4px;
-    }
-    .index-value {
-      font-size: 20px;
-      font-weight: 700;
-      color: #333;
-    }
-    .index-change {
-      font-size: 14px;
-      font-weight: 600;
-      margin-top: 2px;
-    }
-    .positive { color: #e53935; }
-    .negative { color: #1e88e5; }
-    .neutral  { color: #666; }
-    /* Stock table */
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 8px;
-    }
-    th {
-      background: #f8f9fa;
-      text-align: left;
-      padding: 8px 10px;
-      font-size: 13px;
-      color: #666;
-      border-bottom: 2px solid #e0e0f0;
-    }
-    td {
-      padding: 8px 10px;
-      font-size: 14px;
-      border-bottom: 1px solid #f0f0f0;
-    }
-    .stock-change-up { color: #e53935; font-weight: 600; }
-    .stock-change-down { color: #1e88e5; font-weight: 600; }
-    /* News */
-    .news-item {
-      padding: 8px 0;
-      border-bottom: 1px solid #f0f0f0;
-    }
-    .news-item:last-child { border-bottom: none; }
-    .news-item a {
-      color: #333;
-      text-decoration: none;
-      font-size: 14px;
-    }
-    .news-item a:hover { color: #667eea; }
-    .news-meta {
-      font-size: 12px;
-      color: #999;
-      margin-top: 2px;
-    }
-    /* Disclaimer */
-    .disclaimer {
-      background: #fff3cd;
-      border-left: 4px solid #ffc107;
-      padding: 15px;
-      margin-top: 24px;
-      font-size: 12px;
-      color: #856404;
-      line-height: 1.5;
-    }
-    .footer {
-      background: #f8f9fa;
-      padding: 20px 30px;
-      text-align: center;
-      font-size: 12px;
-      color: #666;
-    }
-    .footer a {
-      color: #667eea;
-      text-decoration: none;
-    }
-  </style>
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>Foresto Compass 시장 요약</h1>
-      <div class="date">{{ date }}</div>
-    </div>
+<body style="font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; line-height:1.6; color:#333; background-color:#f4f4f4; margin:0; padding:0;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f4;">
+    <tr>
+      <td align="center" style="padding:20px 0;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%; background:#ffffff; border-radius:10px; overflow:hidden;">
 
-    <div class="content">
-      <!-- 주요 지수 -->
-      <div class="section-title">주요 지수</div>
-      <div class="indices-grid">
-        {% for idx in indices %}
-        <div class="index-card">
-          <div class="index-name">{{ idx.name }}</div>
-          <div class="index-value">{{ "{:,.2f}".format(idx.value) }}</div>
-          <div class="index-change {% if idx.changePercent > 0 %}positive{% elif idx.changePercent < 0 %}negative{% else %}neutral{% endif %}">
-            {% if idx.changePercent > 0 %}+{% endif %}{{ idx.change }} ({% if idx.changePercent > 0 %}+{% endif %}{{ idx.changePercent }}%)
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-
-      <!-- 상승 종목 -->
-      <div class="section-title">상승 종목 Top 3</div>
-      <table>
-        <thead>
-          <tr><th>종목</th><th>현재가</th><th>등락률</th></tr>
-        </thead>
-        <tbody>
-          {% for s in gainers %}
+          <!-- 헤더 -->
           <tr>
-            <td>{{ s.name }} <span style="color:#999;font-size:12px;">({{ s.symbol }})</span></td>
-            <td>{{ "{:,}".format(s.price) }}원</td>
-            <td class="stock-change-up">+{{ s.change }}%</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-
-      <!-- 하락 종목 -->
-      <div class="section-title">하락 종목 Top 3</div>
-      <table>
-        <thead>
-          <tr><th>종목</th><th>현재가</th><th>등락률</th></tr>
-        </thead>
-        <tbody>
-          {% for s in losers %}
-          <tr>
-            <td>{{ s.name }} <span style="color:#999;font-size:12px;">({{ s.symbol }})</span></td>
-            <td>{{ "{:,}".format(s.price) }}원</td>
-            <td class="stock-change-down">{{ s.change }}%</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-
-      <!-- 뉴스 -->
-      <div class="section-title">시장 뉴스</div>
-      {% for n in news %}
-      <div class="news-item">
-        <a href="{{ n.url }}">{{ n.title }}</a>
-        <div class="news-meta">{{ n.source }} &middot; {{ n.publishedAt }}</div>
-      </div>
-      {% endfor %}
-
-      {% if scored_stocks %}
-      <!-- Compass Score 하이라이트 -->
-      <div class="section-title">Compass Score 하이라이트</div>
-      <table>
-        <thead>
-          <tr><th>종목</th><th>점수</th><th>등급</th><th>요약</th></tr>
-        </thead>
-        <tbody>
-          {% for s in scored_stocks %}
-          <tr>
-            <td>{{ s.name }} <span style="color:#999;font-size:12px;">({{ s.ticker }})</span></td>
-            <td style="text-align:center;">
-              <span style="display:inline-block; width:36px; height:36px; line-height:36px; border-radius:50%; color:white; font-weight:700; font-size:14px; text-align:center; {% if s.compass_score >= 70 %}background:#4caf50;{% elif s.compass_score >= 50 %}background:#ff9800;{% else %}background:#f44336;{% endif %}">{{ s.compass_score | int }}</span>
+            <td style="background:#667eea; color:white; padding:30px; text-align:center;">
+              <h1 style="margin:0 0 5px 0; font-size:24px; color:white;">Foresto Compass 시장 요약</h1>
+              <div style="font-size:14px; color:rgba(255,255,255,0.9);">{{ date }}</div>
             </td>
-            <td style="text-align:center; font-weight:600; {% if s.compass_score >= 70 %}color:#4caf50;{% elif s.compass_score >= 50 %}color:#ff9800;{% else %}color:#f44336;{% endif %}">{{ s.grade }}</td>
-            <td style="font-size:13px; color:#555;">{{ s.summary }}</td>
           </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      {% endif %}
 
-      <!-- 법적 고지 -->
-      <div class="disclaimer">
-        <strong>법적 고지</strong><br>
-        본 이메일은 교육 목적의 참고 자료이며, 투자 권유, 추천, 자문에 해당하지 않습니다.
-        과거의 데이터가 미래의 수익을 보장하지 않습니다.
-        투자 판단의 책임은 투자자 본인에게 있으며, 본 서비스는 자본시장법상 투자자문업/투자일임업에 해당하지 않습니다.
-      </div>
-    </div>
+          <!-- 콘텐츠 -->
+          <tr>
+            <td style="padding:30px;">
 
-    <div class="footer">
-      <p>&copy; 2026 Foresto Compass. All rights reserved.</p>
-      <p>이 이메일은 발신 전용입니다. 회신하지 마세요.</p>
-      <p><a href="{{ frontend_url }}/profile">구독 해제하기</a></p>
-    </div>
-  </div>
+              <!-- 주요 지수 -->
+              <div style="color:#667eea; font-size:18px; font-weight:700; margin:0 0 12px 0; padding-bottom:8px; border-bottom:2px solid #e0e0f0;">주요 지수</div>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="8" style="margin-bottom:16px;">
+                {% for idx in indices %}
+                {% if loop.index0 % 2 == 0 %}<tr>{% endif %}
+                  <td width="50%" style="background:#f8f9fa; border-radius:8px; padding:12px; text-align:center;">
+                    <div style="font-size:13px; color:#666; margin-bottom:4px;">{{ idx.name }}</div>
+                    <div style="font-size:20px; font-weight:700; color:#333;">{{ "{:,.2f}".format(idx.value) }}</div>
+                    <div style="font-size:14px; font-weight:600; margin-top:2px; {% if idx.changePercent > 0 %}color:#e53935;{% elif idx.changePercent < 0 %}color:#1e88e5;{% else %}color:#666;{% endif %}">
+                      {% if idx.changePercent > 0 %}+{% endif %}{{ idx.change }} ({% if idx.changePercent > 0 %}+{% endif %}{{ idx.changePercent }}%)
+                    </div>
+                  </td>
+                {% if loop.index0 % 2 == 1 or loop.last %}</tr>{% endif %}
+                {% endfor %}
+              </table>
+
+              <!-- 상승 종목 -->
+              <div style="color:#667eea; font-size:18px; font-weight:700; margin:24px 0 12px 0; padding-bottom:8px; border-bottom:2px solid #e0e0f0;">상승 종목 Top 3</div>
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+                <tr>
+                  <th style="background:#f8f9fa; text-align:left; padding:8px 10px; font-size:13px; color:#666; border-bottom:2px solid #e0e0f0;">종목</th>
+                  <th style="background:#f8f9fa; text-align:left; padding:8px 10px; font-size:13px; color:#666; border-bottom:2px solid #e0e0f0;">현재가</th>
+                  <th style="background:#f8f9fa; text-align:left; padding:8px 10px; font-size:13px; color:#666; border-bottom:2px solid #e0e0f0;">등락률</th>
+                </tr>
+                {% for s in gainers %}
+                <tr>
+                  <td style="padding:8px 10px; font-size:14px; border-bottom:1px solid #f0f0f0;">{{ s.name }} <span style="color:#999;font-size:12px;">({{ s.symbol }})</span></td>
+                  <td style="padding:8px 10px; font-size:14px; border-bottom:1px solid #f0f0f0;">{{ "{:,}".format(s.price) }}원</td>
+                  <td style="padding:8px 10px; font-size:14px; border-bottom:1px solid #f0f0f0; color:#e53935; font-weight:600;">+{{ s.change }}%</td>
+                </tr>
+                {% endfor %}
+              </table>
+
+              <!-- 하락 종목 -->
+              <div style="color:#667eea; font-size:18px; font-weight:700; margin:24px 0 12px 0; padding-bottom:8px; border-bottom:2px solid #e0e0f0;">하락 종목 Top 3</div>
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+                <tr>
+                  <th style="background:#f8f9fa; text-align:left; padding:8px 10px; font-size:13px; color:#666; border-bottom:2px solid #e0e0f0;">종목</th>
+                  <th style="background:#f8f9fa; text-align:left; padding:8px 10px; font-size:13px; color:#666; border-bottom:2px solid #e0e0f0;">현재가</th>
+                  <th style="background:#f8f9fa; text-align:left; padding:8px 10px; font-size:13px; color:#666; border-bottom:2px solid #e0e0f0;">등락률</th>
+                </tr>
+                {% for s in losers %}
+                <tr>
+                  <td style="padding:8px 10px; font-size:14px; border-bottom:1px solid #f0f0f0;">{{ s.name }} <span style="color:#999;font-size:12px;">({{ s.symbol }})</span></td>
+                  <td style="padding:8px 10px; font-size:14px; border-bottom:1px solid #f0f0f0;">{{ "{:,}".format(s.price) }}원</td>
+                  <td style="padding:8px 10px; font-size:14px; border-bottom:1px solid #f0f0f0; color:#1e88e5; font-weight:600;">{{ s.change }}%</td>
+                </tr>
+                {% endfor %}
+              </table>
+
+              <!-- 뉴스 -->
+              <div style="color:#667eea; font-size:18px; font-weight:700; margin:24px 0 12px 0; padding-bottom:8px; border-bottom:2px solid #e0e0f0;">시장 뉴스</div>
+              {% for n in news %}
+              <div style="padding:8px 0; {% if not loop.last %}border-bottom:1px solid #f0f0f0;{% endif %}">
+                <a href="{{ n.url }}" style="color:#333; text-decoration:none; font-size:14px;">{{ n.title }}</a>
+                <div style="font-size:12px; color:#999; margin-top:2px;">{{ n.source }} &middot; {{ n.publishedAt }}</div>
+              </div>
+              {% endfor %}
+
+              {% if scored_stocks %}
+              <!-- Compass Score 하이라이트 -->
+              <div style="color:#667eea; font-size:18px; font-weight:700; margin:24px 0 12px 0; padding-bottom:8px; border-bottom:2px solid #e0e0f0;">Compass Score 하이라이트</div>
+              {% for s in scored_stocks %}
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px; border:1px solid #e0e0f0; border-radius:8px;">
+                <tr>
+                  <td style="padding:12px;">
+                    <!-- 종목명 + 점수 배지 + 등급 -->
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding:0; vertical-align:middle;">
+                          <span style="font-size:15px; font-weight:700;">{{ s.name }}</span>
+                          <span style="font-size:12px; color:#999;"> ({{ s.ticker }})</span>
+                        </td>
+                        <td style="padding:0; text-align:right; vertical-align:middle;">
+                          <span style="display:inline-block; width:36px; height:36px; line-height:36px; border-radius:50%; color:white; font-weight:700; font-size:14px; text-align:center; {% if s.compass_score >= 70 %}background:#4caf50;{% elif s.compass_score >= 50 %}background:#ff9800;{% else %}background:#f44336;{% endif %}">{{ s.compass_score | int }}</span>
+                          <span style="font-weight:600; font-size:16px; margin-left:4px; {% if s.compass_score >= 70 %}color:#4caf50;{% elif s.compass_score >= 50 %}color:#ff9800;{% else %}color:#f44336;{% endif %}">{{ s.grade }}</span>
+                        </td>
+                      </tr>
+                    </table>
+                    <!-- 4축 바 차트 -->
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:10px;">
+                      {% set axes = [
+                        ("재무", s.categories.financial, "#4caf50"),
+                        ("밸류", s.categories.valuation, "#2196f3"),
+                        ("기술", s.categories.technical, "#ff9800"),
+                        ("리스크", s.categories.risk, "#9c27b0")
+                      ] %}
+                      {% for label, score, color in axes %}
+                      <tr>
+                        <td style="padding:3px 8px 3px 0; font-size:12px; color:#666; width:50px; white-space:nowrap;">{{ label }}</td>
+                        <td style="padding:3px 0;">
+                          <table width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td style="padding:0; width:100%;">
+                                <div style="background:#f0f0f0; border-radius:4px; height:14px; width:100%;">
+                                  {% if score is not none %}
+                                  <div style="background:{{ color }}; border-radius:4px; height:14px; width:{{ score | int }}%;"></div>
+                                  {% else %}
+                                  <div style="background:#ddd; border-radius:4px; height:14px; width:0%;"></div>
+                                  {% endif %}
+                                </div>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                        <td style="padding:3px 0 3px 8px; font-size:12px; font-weight:600; color:#333; width:30px; text-align:right;">{% if score is not none %}{{ score | int }}{% else %}-{% endif %}</td>
+                      </tr>
+                      {% endfor %}
+                    </table>
+                    <!-- 코멘터리 -->
+                    {% if s.commentary %}
+                    <div style="margin-top:8px; padding:8px 10px; background:#f8f9fa; border-radius:4px; font-size:12px; color:#555; line-height:1.5;">
+                      {{ s.commentary }}
+                    </div>
+                    {% endif %}
+                  </td>
+                </tr>
+              </table>
+              {% endfor %}
+              {% endif %}
+
+              {% if score_movers %}
+              <!-- Score 변동 주목 종목 -->
+              <div style="color:#667eea; font-size:18px; font-weight:700; margin:24px 0 12px 0; padding-bottom:8px; border-bottom:2px solid #e0e0f0;">Score 변동 주목 종목</div>
+              {% for m in score_movers %}
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:12px; border:1px solid #e0e0f0; border-radius:8px;">
+                <tr>
+                  <td style="padding:12px;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding:0; vertical-align:middle;">
+                          {% if m.diff > 0 %}
+                          <span style="color:#e53935; font-size:18px; font-weight:700;">&#9650;</span>
+                          {% else %}
+                          <span style="color:#1e88e5; font-size:18px; font-weight:700;">&#9660;</span>
+                          {% endif %}
+                          <span style="font-size:15px; font-weight:700; margin-left:4px;">{{ m.name }}</span>
+                          <span style="font-size:12px; color:#999;"> ({{ m.ticker }})</span>
+                        </td>
+                        <td style="padding:0; text-align:right; vertical-align:middle;">
+                          <span style="font-size:13px; color:#999;">{{ m.prev_score }}점</span>
+                          <span style="font-size:13px; color:#666;"> &rarr; </span>
+                          <span style="font-size:16px; font-weight:700;">{{ m.current_score }}점</span>
+                          <span style="font-size:14px; font-weight:600; margin-left:4px; {% if m.diff > 0 %}color:#e53935;{% else %}color:#1e88e5;{% endif %}">
+                            ({% if m.diff > 0 %}+{% endif %}{{ m.diff }})
+                          </span>
+                          <span style="font-size:13px; font-weight:600; margin-left:4px; {% if m.current_score >= 70 %}color:#4caf50;{% elif m.current_score >= 50 %}color:#ff9800;{% else %}color:#f44336;{% endif %}">{{ m.grade }}</span>
+                        </td>
+                      </tr>
+                    </table>
+                    {% if m.commentary %}
+                    <div style="margin-top:6px; font-size:12px; color:#555; line-height:1.5;">
+                      {{ m.commentary }}
+                    </div>
+                    {% endif %}
+                  </td>
+                </tr>
+              </table>
+              {% endfor %}
+              {% endif %}
+
+              <!-- 법적 고지 -->
+              <div style="background:#fff3cd; border-left:4px solid #ffc107; padding:15px; margin-top:24px; font-size:12px; color:#856404; line-height:1.5;">
+                <strong>법적 고지</strong><br>
+                본 이메일은 교육 목적의 참고 자료이며, 자본시장과 금융투자업에 관한 법률(자본시장법) 제6조에 따른
+                금융투자상품에 대한 투자 권유, 투자 추천, 투자 자문에 해당하지 않습니다.
+                매수가격, 매도가격, 손절가, 목표가격 등 구체적 투자 판단을 제시하지 않습니다.
+                Compass Score 등 수치는 과거 데이터 기반 교육용 지표이며, 미래 수익을 보장하지 않습니다.
+                본 서비스는 자본시장법상 투자자문업·투자일임업에 해당하지 않으며,
+                모든 투자 판단과 그에 따른 손익의 책임은 투자자 본인에게 있습니다.
+              </div>
+
+            </td>
+          </tr>
+
+          <!-- 푸터 -->
+          <tr>
+            <td style="background:#f8f9fa; padding:20px 30px; text-align:center; font-size:12px; color:#666;">
+              <p style="margin:4px 0;">&copy; 2026 Foresto Compass. All rights reserved.</p>
+              <p style="margin:4px 0;">이 이메일은 발신 전용입니다. 회신하지 마세요.</p>
+              <p style="margin:4px 0;"><a href="{{ unsubscribe_url | default(frontend_url + '/profile') }}" style="color:#667eea; text-decoration:none;">구독 해제하기</a></p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>

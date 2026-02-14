@@ -4,8 +4,10 @@
 
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
+from app.auth import verify_unsubscribe_token
 from app.database import get_db
 from app.models.user import User
 from app.models.user_preferences import UserNotificationSetting
@@ -119,3 +121,55 @@ async def toggle_watchlist_alerts(
         "message": f"관심 종목 알림이 {status_text}되었습니다.",
         "enabled": setting.watchlist_score_alerts,
     }
+
+
+@router.get("/one-click-unsubscribe/{token}", response_class=HTMLResponse)
+async def one_click_unsubscribe(token: str, db: Session = Depends(get_db)):
+    """원클릭 구독 해제 (로그인 불필요, 토큰 기반)"""
+    user_id = verify_unsubscribe_token(token)
+    if not user_id:
+        return HTMLResponse(content=_unsub_html("링크가 만료되었거나 유효하지 않습니다.", success=False))
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return HTMLResponse(content=_unsub_html("사용자를 찾을 수 없습니다.", success=False))
+
+    setting = db.query(UserNotificationSetting).filter(
+        UserNotificationSetting.user_id == user_id
+    ).first()
+
+    if not setting or not setting.daily_market_email:
+        return HTMLResponse(content=_unsub_html("이미 구독이 해제된 상태입니다.", success=True))
+
+    setting.daily_market_email = False
+    setting.daily_market_email_unsubscribed_at = datetime.utcnow()
+    db.commit()
+
+    return HTMLResponse(content=_unsub_html("시장 요약 이메일 구독이 해제되었습니다.", success=True))
+
+
+def _unsub_html(message: str, success: bool) -> str:
+    color = "#4caf50" if success else "#f44336"
+    icon = "&#10003;" if success else "&#10007;"
+    return f"""<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>구독 해제 - Foresto Compass</title>
+  <style>
+    body {{ font-family: 'Segoe UI', sans-serif; background: #f4f4f4; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }}
+    .card {{ background: #fff; border-radius: 12px; padding: 48px 40px; text-align: center; max-width: 420px; box-shadow: 0 4px 24px rgba(0,0,0,0.1); }}
+    .icon {{ font-size: 48px; color: {color}; margin-bottom: 16px; }}
+    h1 {{ font-size: 20px; color: #333; margin: 0 0 12px; }}
+    p {{ font-size: 14px; color: #666; line-height: 1.6; }}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">{icon}</div>
+    <h1>{message}</h1>
+    <p>Foresto Compass를 이용해 주셔서 감사합니다.</p>
+  </div>
+</body>
+</html>"""

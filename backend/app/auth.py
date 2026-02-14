@@ -69,6 +69,28 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     return encoded_jwt
 
 
+def create_unsubscribe_token(user_id: str) -> str:
+    """이메일 구독 해제 토큰 생성 (30일 유효)"""
+    expire = datetime.utcnow() + timedelta(days=30)
+    to_encode = {
+        "sub": user_id,
+        "type": "unsubscribe",
+        "exp": expire,
+    }
+    return jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
+
+
+def verify_unsubscribe_token(token: str) -> Optional[str]:
+    """구독 해제 토큰 검증. 유효하면 user_id 반환, 아니면 None."""
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        if payload.get("type") != "unsubscribe":
+            return None
+        return payload.get("sub")
+    except JWTError:
+        return None
+
+
 def create_reset_token(user_id: str) -> str:
     """비밀번호 재설정 토큰 생성
 
