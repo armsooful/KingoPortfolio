@@ -427,7 +427,7 @@
   <h3>현재 개발 규모</h3>
   <div class="score-grid">
     <div class="score-card"><div class="label">백엔드 Python 파일</div><div class="value">156</div><div class="sub">74개 서비스, 40개 라우트</div></div>
-    <div class="score-card"><div class="label">프론트엔드 컴포넌트</div><div class="value">45</div><div class="sub">31개 페이지, 36개 CSS</div></div>
+    <div class="score-card"><div class="label">프론트엔드 컴포넌트</div><div class="value">45</div><div class="sub">31개 페이지, 43개 CSS</div></div>
     <div class="score-card"><div class="label">적재 종목 수</div><div class="value">2,885+</div><div class="sub">5개 외부 데이터 소스</div></div>
     <div class="score-card"><div class="label">테스트 파일</div><div class="value">58</div><div class="sub">pytest 기반 자동화 테스트</div></div>
   </div>
@@ -485,7 +485,7 @@
     </tbody>
   </table>
   <div class="highlight-box warn">
-    <strong>초기 목표:</strong> 1년 내 MAU 5,000명, 유료 전환 500명 달성 시 초기 사업 검증 완료.
+    <strong>초기 목표:</strong> 1년 내 MAU 8,000명, 유료 전환 400명 달성 시 초기 사업 검증 완료.
   </div>
 </div>
 
@@ -525,7 +525,22 @@
   </table>
   <p style="font-size:8.5pt;color:#6b7280;">● 핵심 기능 &nbsp; △ 부분 지원 &nbsp; - 미보유 &nbsp; <span style="color:#667eea;font-weight:700;">★ Foresto 유일 기능</span></p>
 
-  <h3>3.3 시장 포지셔닝</h3>
+  <h3>3.3 경쟁사 미구현 사유 분석</h3>
+  <p>Foresto의 차별 기능이 "시장 유일"인 이유를 단순히 경쟁 부재로 해석해서는 안 된다. 각 기능이 경쟁사에 존재하지 않는 구조적 이유를 분석한다.</p>
+  <table>
+    <thead><tr><th>차별 기능</th><th>경쟁사 미구현 사유</th><th>Foresto 구현 가능 배경</th></tr></thead>
+    <tbody>
+      <tr><td><strong>4축 통합 점수</strong></td><td>재무+기술 데이터를 동시에 수집·정규화하는 파이프라인 구축 비용이 높음. 대부분 한쪽에 특화</td><td>5개 외부 API 통합 파이프라인을 처음부터 설계</td></tr>
+      <tr><td><strong>DCF/DDM</strong></td><td>입력 파라미터 설정이 복잡하여 UX 난이도 높음. B2B에는 존재하나 B2C에서 ROI 불명확</td><td>교육 목적 포지셔닝 + 합리적 기본값 자동 설정</td></tr>
+      <tr><td><strong>시나리오 시뮬레이션</strong></td><td>거시경제↔종목 상관 모델링이 학술 수준 전문성 요구. 예측 정확도 리스크</td><td>"what-if" 학습 도구로 포지셔닝, 민감도 분석 형태 제공</td></tr>
+      <tr><td><strong>PDF 투자 보고서</strong></td><td>자본시장법상 "투자 자문" 리스크. 보고서 품질 관리 어려움</td><td>"교육 참고 자료" 면책 + 금지 용어 관리 내재화</td></tr>
+    </tbody>
+  </table>
+  <div class="highlight-box warn">
+    <strong>시사점:</strong> 경쟁사 미구현 사유는 (1) 데이터 통합 비용, (2) UX 설계 난이도, (3) 규제 리스크의 3가지 진입장벽. 다만 대형 플레이어가 리소스를 투입하면 극복 가능하므로, <strong>선점 효과(first-mover advantage)와 데이터 축적이 핵심 방어선</strong>이다.
+  </div>
+
+  <h3>3.4 시장 포지셔닝</h3>
   <div class="diagram">              기술적 분석 특화
                     │
               StockMatrix
@@ -558,7 +573,7 @@
       <tr><td class="center">1</td><td>투자 성향 진단</td><td>설문 → 성향 판정 → 성향별 포트폴리오 추천</td><td><span class="badge badge-purple">유일</span></td></tr>
       <tr><td class="center">2</td><td>재무제표 분석</td><td>ROE, ROA, 이익률, 부채비율, FCF, CAGR 심층 분석</td><td><span class="badge badge-purple">유일</span></td></tr>
       <tr><td class="center">3</td><td>밸류에이션</td><td>PER/PBR 멀티플 + DCF + DDM 절대가치 평가</td><td><span class="badge badge-purple">유일</span></td></tr>
-      <tr><td class="center">4</td><td>기술적 분석</td><td>11개 기술 지표 + 6개 리스크 지표 = 총 17개</td><td><span class="badge badge-green">동등</span></td></tr>
+      <tr><td class="center">4</td><td>기술적 분석</td><td>10개 기술 지표 + 6개 리스크 지표 = 총 16개</td><td><span class="badge badge-green">동등</span></td></tr>
       <tr><td class="center">5</td><td>포트폴리오 구성</td><td>MVO(평균-분산), Risk Parity 최적화</td><td><span class="badge badge-blue">차별</span></td></tr>
       <tr><td class="center">6</td><td>백테스트</td><td>과거 데이터 기반 성과 검증 + 리밸런싱</td><td><span class="badge badge-green">동등</span></td></tr>
       <tr><td class="center">7</td><td>시나리오 시뮬레이션</td><td>거시경제 변수별 포트폴리오 영향 분석</td><td><span class="badge badge-purple">유일</span></td></tr>
@@ -601,7 +616,7 @@
     <thead><tr><th>영역</th><th>기술</th><th class="right">규모</th></tr></thead>
     <tbody>
       <tr><td>백엔드</td><td>FastAPI, Python 3.11, SQLAlchemy 2.0</td><td class="right">156개 파일</td></tr>
-      <tr><td>프론트엔드</td><td>React 18, Vite 5, Chart.js</td><td class="right">45개 JSX, 36개 CSS</td></tr>
+      <tr><td>프론트엔드</td><td>React 18, Vite 5, Chart.js</td><td class="right">45개 JSX, 43개 CSS</td></tr>
       <tr><td>데이터베이스</td><td>PostgreSQL</td><td class="right">22개 모델</td></tr>
       <tr><td>API</td><td>40개 라우트 모듈</td><td class="right">200+ 엔드포인트</td></tr>
       <tr><td>서비스 레이어</td><td>비즈니스 로직 분리</td><td class="right">74개 서비스</td></tr>
@@ -768,22 +783,22 @@
     <thead><tr><th>지표</th><th class="right">보수적</th><th class="right">기본</th><th class="right">낙관적</th></tr></thead>
     <tbody>
       <tr><td>MAU</td><td class="right">3,000</td><td class="right">8,000</td><td class="right">20,000</td></tr>
-      <tr><td>유료 전환율</td><td class="right">4%</td><td class="right">7%</td><td class="right">10%</td></tr>
-      <tr><td>유료 사용자</td><td class="right">120명</td><td class="right">560명</td><td class="right">2,000명</td></tr>
+      <tr><td>유료 전환율</td><td class="right">3%</td><td class="right">5%</td><td class="right">7%</td></tr>
+      <tr><td>유료 사용자</td><td class="right">90명</td><td class="right">400명</td><td class="right">1,400명</td></tr>
       <tr><td>평균 ARPU</td><td class="right">18,000원</td><td class="right">22,000원</td><td class="right">25,000원</td></tr>
-      <tr style="background:#f0f0ff;"><td><strong>MRR (월 매출)</strong></td><td class="right"><strong>216만원</strong></td><td class="right"><strong>1,232만원</strong></td><td class="right"><strong>5,000만원</strong></td></tr>
-      <tr style="background:#f0f0ff;"><td><strong>ARR (연간 매출)</strong></td><td class="right"><strong>~2,600만원</strong></td><td class="right"><strong>~1.5억원</strong></td><td class="right"><strong>~6억원</strong></td></tr>
+      <tr style="background:#f0f0ff;"><td><strong>MRR (월 매출)</strong></td><td class="right"><strong>162만원</strong></td><td class="right"><strong>880만원</strong></td><td class="right"><strong>3,500만원</strong></td></tr>
+      <tr style="background:#f0f0ff;"><td><strong>ARR (연간 매출)</strong></td><td class="right"><strong>~1,900만원</strong></td><td class="right"><strong>~1.1억원</strong></td><td class="right"><strong>~4.2억원</strong></td></tr>
     </tbody>
   </table>
 
   <div class="two-col" style="margin-top:12px;">
-    <div class="highlight-box success">
-      <strong>월간 비용: 24~115만원</strong><br>
-      서버(10~30만), DB(5~20만), 이메일(2~10만), AI API(5~50만), 기타(2~5만)
+    <div class="highlight-box">
+      <strong>월간 비용: 374~815만원</strong><br>
+      인건비(300~500만), 마케팅(50~200만), 서버(10~30만), DB(5~20만), 이메일(2~10만), AI API(5~50만), 기타(2~5만)
     </div>
-    <div class="highlight-box success">
-      <strong>기본 시나리오 영업이익률: ~93%</strong><br>
-      MRR 1,232만원 - 비용 ~80만원 = SaaS 모델의 높은 마진 구조
+    <div class="highlight-box">
+      <strong>기본 시나리오 영업이익률: ~45%</strong><br>
+      MRR 880만원 - 비용 ~600만원. 인건비 제외 시 인프라만으로는 80%+ 마진. 매출 성장 시 비용 비중 점진 감소
     </div>
   </div>
 
@@ -946,7 +961,7 @@
       <tr><td><strong>DAU/MAU</strong></td><td>스티키니스 비율</td><td class="center">10%</td><td class="center">12.5%</td></tr>
       <tr><td><strong>D7 리텐션</strong></td><td>가입 7일 후 재방문율</td><td class="center">15%</td><td class="center">20%</td></tr>
       <tr><td><strong>D30 리텐션</strong></td><td>가입 30일 후 재방문율</td><td class="center">8%</td><td class="center">12%</td></tr>
-      <tr><td><strong>유료 전환율</strong></td><td>유료 사용자 / MAU</td><td class="center">5%</td><td class="center">7%</td></tr>
+      <tr><td><strong>유료 전환율</strong></td><td>유료 사용자 / MAU</td><td class="center">3%</td><td class="center">5%</td></tr>
     </tbody>
   </table>
 
@@ -966,8 +981,8 @@
   <table>
     <thead><tr><th>KPI</th><th>정의</th><th class="center">6개월 목표</th><th class="center">12개월 목표</th></tr></thead>
     <tbody>
-      <tr><td><strong>MRR</strong></td><td>월간 반복 매출</td><td class="center">270만원</td><td class="center">1,232만원</td></tr>
-      <tr><td><strong>ARR</strong></td><td>연간 반복 매출</td><td class="center">—</td><td class="center">~1.5억원</td></tr>
+      <tr><td><strong>MRR</strong></td><td>월간 반복 매출</td><td class="center">162만원</td><td class="center">880만원</td></tr>
+      <tr><td><strong>ARR</strong></td><td>연간 반복 매출</td><td class="center">—</td><td class="center">~1.1억원</td></tr>
       <tr><td><strong>ARPU</strong></td><td>유료 사용자당 월 평균 매출</td><td class="center">18,000원</td><td class="center">22,000원</td></tr>
       <tr><td><strong>LTV/CAC</strong></td><td>사업 건전성 지표</td><td class="center">&gt;3</td><td class="center">&gt;5</td></tr>
       <tr><td><strong>월간 Churn</strong></td><td>월간 이탈률</td><td class="center">&lt;8%</td><td class="center">&lt;5%</td></tr>
@@ -1042,7 +1057,7 @@
           <li>종목 비교 기능, 소셜 공유 기능 출시</li>
           <li>이메일 구독자 3,000명+</li>
         </ul>
-        <div class="timeline-goal">목표: MAU 3,000, MRR 270만원, 유료 150명</div>
+        <div class="timeline-goal">목표: MAU 3,000, MRR 162만원, 유료 90명</div>
       </div>
     </div>
     <div class="timeline-item">
@@ -1054,7 +1069,7 @@
           <li>B2B API 파일럿 (1~2개 핀테크 제휴)</li>
           <li>미국 주식 확장, Enterprise 정식 판매</li>
         </ul>
-        <div class="timeline-goal">목표: MAU 15,000+, ARR 1.5억원+, B2B 2건+</div>
+        <div class="timeline-goal">목표: MAU 15,000+, ARR 1.1억원+, B2B 2건+</div>
       </div>
     </div>
   </div>
@@ -1065,12 +1080,12 @@
     <strong>"재무+기술 통합 점수"라는 유일한 포지션</strong>을 차지하고 있다.<br><br>
     핵심 과제는 기술 개발이 아니라 <strong>"시장에 나가는 것"</strong>이다.<br>
     배포, 결제, SEO 기반 사용자 획득을 체계적으로 실행할 경우<br>
-    <strong>12개월 내 ARR 1.5억원</strong> 달성이 가능하다.
+    <strong>12개월 내 ARR 1억원+</strong> 달성이 가능하다.
   </div>
 
   <div class="page-footer" style="margin-top:40px;">
     <p>본 보고서의 시장 규모, 수익 시나리오, 경쟁사 분석은 2026년 2월 기준 공개 정보와 프로젝트 내부 데이터에 기반한 추정이며, 실제 결과는 달라질 수 있습니다.</p>
-    <p style="margin-top:8px;">Foresto Compass Business Consulting Report v1.0 &nbsp;|&nbsp; 2026-02-15 &nbsp;|&nbsp; Confidential</p>
+    <p style="margin-top:8px;">Foresto Compass Business Consulting Report v1.1 &nbsp;|&nbsp; 2026-02-15 &nbsp;|&nbsp; Confidential</p>
   </div>
 </div>
 
