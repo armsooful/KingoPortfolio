@@ -445,21 +445,141 @@ class OpsAlertService:
                 logger.error(f"Failed to send alert via {channel}: {e}")
 
     def _send_email(self, alert: OpsAlert) -> bool:
-        """이메일 발송 (스텁)"""
-        logger.info(f"[EMAIL] Alert: {alert.alert_title}")
-        # 실제 구현에서는 SMTP 발송
-        return True
+        """이메일 발송 (async send_email 호출)"""
+        alert_email = settings.alert_email
+        if not alert_email:
+            logger.info("[EMAIL] alert_email 미설정 — skip")
+            return False
+
+        import asyncio
+        from app.utils.email import send_email
+
+        level_colors = {
+            "CRITICAL": "#dc2626",
+            "ERROR": "#ea580c",
+            "WARN": "#d97706",
+            "INFO": "#2563eb",
+        }
+        color = level_colors.get(alert.alert_level, "#6b7280")
+
+        detail_html = ""
+        if alert.alert_detail:
+            import json
+            detail_html = (
+                f'<pre style="background:#f1f5f9;padding:12px;border-radius:6px;'
+                f'font-size:13px;overflow-x:auto;">'
+                f'{json.dumps(alert.alert_detail, ensure_ascii=False, indent=2)}</pre>'
+            )
+
+        html = (
+            f'<div style="font-family:sans-serif;max-width:600px;margin:0 auto;">'
+            f'<div style="background:{color};color:#fff;padding:16px 20px;border-radius:8px 8px 0 0;">'
+            f'<h2 style="margin:0;font-size:18px;">[{alert.alert_level}] {alert.alert_title}</h2>'
+            f'</div>'
+            f'<div style="padding:20px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">'
+            f'<p style="margin:0 0 12px;color:#374151;">{alert.alert_message}</p>'
+            f'{detail_html}'
+            f'<p style="margin:12px 0 0;font-size:12px;color:#9ca3af;">Foresto Compass Ops Alert</p>'
+            f'</div></div>'
+        )
+
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.ensure_future(send_email(
+                    to_email=alert_email,
+                    subject=f"[Ops {alert.alert_level}] {alert.alert_title}",
+                    html_content=html,
+                ))
+            else:
+                loop.run_until_complete(send_email(
+                    to_email=alert_email,
+                    subject=f"[Ops {alert.alert_level}] {alert.alert_title}",
+                    html_content=html,
+                ))
+            logger.info("[EMAIL] Alert sent to %s: %s", alert_email, alert.alert_title)
+            return True
+        except Exception as e:
+            logger.error("[EMAIL] Failed to send alert: %s", e)
+            return False
 
     def _send_slack(self, alert: OpsAlert) -> bool:
-        """Slack 발송 (스텁)"""
-        logger.info(f"[SLACK] Alert: {alert.alert_title}")
-        # 실제 구현에서는 Slack Webhook 호출
-        return True
+        """Slack Incoming Webhook 발송"""
+        webhook_url = settings.slack_webhook_url
+        if not webhook_url:
+            logger.info("[SLACK] slack_webhook_url 미설정 — skip")
+            return False
+
+        import json
+        import requests
+
+        level_colors = {
+            "CRITICAL": "#dc2626",
+            "ERROR": "#ea580c",
+            "WARN": "#d97706",
+            "INFO": "#2563eb",
+        }
+        color = level_colors.get(alert.alert_level, "#6b7280")
+
+        blocks = [
+            {
+                "type": "header",
+                "text": {"type": "plain_text", "text": f"[{alert.alert_level}] {alert.alert_title}"},
+            },
+            {
+                "type": "section",
+                "text": {"type": "mrkdwn", "text": alert.alert_message},
+            },
+        ]
+
+        if alert.alert_detail:
+            detail_text = json.dumps(alert.alert_detail, ensure_ascii=False, indent=2)
+            if len(detail_text) > 2900:
+                detail_text = detail_text[:2900] + "\n..."
+            blocks.append({
+                "type": "section",
+                "text": {"type": "mrkdwn", "text": f"```{detail_text}```"},
+            })
+
+        payload = {
+            "attachments": [{
+                "color": color,
+                "blocks": blocks,
+            }]
+        }
+
+        try:
+            resp = requests.post(webhook_url, json=payload, timeout=10)
+            resp.raise_for_status()
+            logger.info("[SLACK] Alert sent: %s", alert.alert_title)
+            return True
+        except Exception as e:
+            logger.error("[SLACK] Failed to send alert: %s", e)
+            return False
 
     def _send_webhook(self, alert: OpsAlert) -> bool:
-        """Webhook 발송 (스텁)"""
+        """Webhook 발송"""
         if not self._webhook_url:
             return False
-        logger.info(f"[WEBHOOK] Alert: {alert.alert_title}")
-        # 실제 구현에서는 HTTP POST
-        return True
+
+        import json
+        import requests
+
+        payload = {
+            "alert_id": alert.alert_id,
+            "alert_type": alert.alert_type,
+            "alert_level": alert.alert_level,
+            "title": alert.alert_title,
+            "message": alert.alert_message,
+            "detail": alert.alert_detail,
+            "sent_at": str(alert.sent_at),
+        }
+
+        try:
+            resp = requests.post(self._webhook_url, json=payload, timeout=10)
+            resp.raise_for_status()
+            logger.info("[WEBHOOK] Alert sent: %s", alert.alert_title)
+            return True
+        except Exception as e:
+            logger.error("[WEBHOOK] Failed to send alert: %s", e)
+            return False

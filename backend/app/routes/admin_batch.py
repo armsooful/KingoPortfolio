@@ -1,17 +1,18 @@
 """
-운영 관리자 API - 배치 실행/감사 로그/알림
+운영 관리자 API - 배치 실행/감사 로그/알림 + 수집 이력 모니터링
 """
 
 from datetime import datetime, date
 from typing import Optional, Dict, Any, List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
+from sqlalchemy import func, desc
 
 from app.auth import require_admin_permission
 from app.database import get_db
-from app.models.ops import BatchExecution, BatchExecutionLog, OpsAuditLog, OpsAlert
+from app.models.ops import BatchExecution, BatchExecutionLog, OpsAuditLog, OpsAlert, DataCollectionLog
 from app.models.user import User
 from app.services.audit_log_service import AuditLogService, AuditType, AuditAction
 from app.services.batch_execution import BatchExecutionService, RunType, ExecutionStatus, BatchExecutionError
@@ -495,3 +496,244 @@ def acknowledge_alert(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={"message": str(e), "error_code": e.error_code},
         )
+
+
+# ══════════════════════════════════════════
+# Phase 3: 데이터 수집 이력 모니터링 API
+# ══════════════════════════════════════════
+
+def _serialize_collection_log(log: DataCollectionLog) -> Dict[str, Any]:
+    return {
+        "id": log.id,
+        "job_name": log.job_name,
+        "job_label": log.job_label,
+        "status": log.status,
+        "started_at": log.started_at.isoformat() if log.started_at else None,
+        "completed_at": log.completed_at.isoformat() if log.completed_at else None,
+        "duration_seconds": log.duration_seconds,
+        "success_count": log.success_count,
+        "failed_count": log.failed_count,
+        "total_count": log.total_count,
+        "detail": log.detail,
+        "error_message": log.error_message,
+        "validation_status": log.validation_status,
+        "validation_detail": log.validation_detail,
+        "created_at": log.created_at.isoformat() if log.created_at else None,
+    }
+
+
+@router.get("/collection-logs")
+def list_collection_logs(
+    job_name: Optional[str] = None,
+    status_filter: Optional[str] = Query(None, alias="status"),
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
+    current_user: User = Depends(require_admin_permission("ADMIN_VIEW")),
+    db: Session = Depends(get_db),
+):
+    """데이터 수집 실행 이력 조회"""
+    query = db.query(DataCollectionLog)
+
+    if job_name:
+        query = query.filter(DataCollectionLog.job_name == job_name)
+    if status_filter:
+        query = query.filter(DataCollectionLog.status == status_filter)
+    if start_date:
+        query = query.filter(DataCollectionLog.created_at >= start_date)
+    if end_date:
+        query = query.filter(DataCollectionLog.created_at <= end_date)
+
+    total_count = query.count()
+    logs = (
+        query
+        .order_by(desc(DataCollectionLog.created_at))
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+
+    return {
+        "success": True,
+        "data": {
+            "items": [_serialize_collection_log(log) for log in logs],
+            "total": total_count,
+            "limit": limit,
+            "offset": offset,
+        },
+    }
+
+
+@router.get("/collection-logs/summary")
+def get_collection_summary(
+    current_user: User = Depends(require_admin_permission("ADMIN_VIEW")),
+    db: Session = Depends(get_db),
+):
+    """수집 이력 요약 통계 (job별 최근 실행, 성공률, 평균 소요시간)"""
+    from app.services.scheduled_data_collection import JOB_LABELS
+
+    summary = []
+    for job_name, job_label in JOB_LABELS.items():
+        # 최근 실행
+        last_log = (
+            db.query(DataCollectionLog)
+            .filter(DataCollectionLog.job_name == job_name)
+            .order_by(desc(DataCollectionLog.created_at))
+            .first()
+        )
+
+        # 최근 30일 통계
+        from datetime import timedelta
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+
+        stats_query = (
+            db.query(
+                func.count(DataCollectionLog.id).label("total_runs"),
+                func.count(DataCollectionLog.id).filter(
+                    DataCollectionLog.status == "completed"
+                ).label("success_runs"),
+                func.avg(DataCollectionLog.duration_seconds).label("avg_duration"),
+            )
+            .filter(
+                DataCollectionLog.job_name == job_name,
+                DataCollectionLog.created_at >= thirty_days_ago,
+            )
+            .first()
+        )
+
+        total_runs = stats_query.total_runs or 0
+        success_runs = stats_query.success_runs or 0
+        avg_duration = round(stats_query.avg_duration, 1) if stats_query.avg_duration else None
+        success_rate = round((success_runs / total_runs) * 100, 1) if total_runs > 0 else None
+
+        # 최근 실패 건수 (7일)
+        seven_days_ago = datetime.utcnow() - timedelta(days=7)
+        recent_failures = (
+            db.query(func.count(DataCollectionLog.id))
+            .filter(
+                DataCollectionLog.job_name == job_name,
+                DataCollectionLog.status == "failed",
+                DataCollectionLog.created_at >= seven_days_ago,
+            )
+            .scalar() or 0
+        )
+
+        summary.append({
+            "job_name": job_name,
+            "job_label": job_label,
+            "last_run": _serialize_collection_log(last_log) if last_log else None,
+            "total_runs_30d": total_runs,
+            "success_rate_30d": success_rate,
+            "avg_duration_seconds": avg_duration,
+            "recent_failures_7d": recent_failures,
+        })
+
+    # 전체 요약
+    overall_total = sum(s["total_runs_30d"] for s in summary)
+    overall_success = sum(
+        s["total_runs_30d"] * (s["success_rate_30d"] / 100)
+        for s in summary if s["success_rate_30d"] is not None
+    )
+    overall_failures = sum(s["recent_failures_7d"] for s in summary)
+
+    return {
+        "success": True,
+        "data": {
+            "jobs": summary,
+            "overall": {
+                "total_runs_30d": overall_total,
+                "success_rate_30d": round((overall_success / overall_total) * 100, 1) if overall_total > 0 else None,
+                "recent_failures_7d": overall_failures,
+            },
+        },
+    }
+
+
+@router.get("/collection-logs/{log_id}")
+def get_collection_log_detail(
+    log_id: int,
+    current_user: User = Depends(require_admin_permission("ADMIN_VIEW")),
+    db: Session = Depends(get_db),
+):
+    """개별 수집 이력 상세"""
+    log = db.query(DataCollectionLog).filter_by(id=log_id).first()
+    if not log:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Collection log not found",
+        )
+    return {
+        "success": True,
+        "data": _serialize_collection_log(log),
+    }
+
+
+@router.get("/scheduler/status")
+def get_scheduler_status(
+    current_user: User = Depends(require_admin_permission("ADMIN_VIEW")),
+    db: Session = Depends(get_db),
+):
+    """현재 스케줄러 상태 (7개 job, 다음 실행 시간, 실행 중 여부)"""
+    from app.main import _app_scheduler
+    from app.services.scheduled_data_collection import _running_tasks, JOB_LABELS
+
+    # 스케줄러 job 정보
+    jobs_info = []
+
+    # APScheduler job ID → 수집 함수 task_name 매핑
+    scheduler_job_map = {
+        "daily_incremental_prices": "incremental_prices",
+        "daily_compass_score": "compass_batch",
+        "weekly_stock_refresh": "weekly_stock_refresh",
+        "weekly_dart_financials": "dart_financials",
+        "monthly_financial_products": "monthly_products",
+        "daily_market_email": None,
+        "watchlist_score_alerts": None,
+    }
+
+    scheduler_jobs = {}
+    if _app_scheduler:
+        for job in _app_scheduler.get_jobs():
+            scheduler_jobs[job.id] = {
+                "next_run_time": job.next_run_time.isoformat() if job.next_run_time else None,
+                "trigger": str(job.trigger),
+            }
+
+    for scheduler_id, task_name in scheduler_job_map.items():
+        sched_info = scheduler_jobs.get(scheduler_id, {})
+
+        # 최근 DataCollectionLog
+        last_log = None
+        if task_name:
+            last_log_obj = (
+                db.query(DataCollectionLog)
+                .filter(DataCollectionLog.job_name == task_name)
+                .order_by(desc(DataCollectionLog.created_at))
+                .first()
+            )
+            if last_log_obj:
+                last_log = _serialize_collection_log(last_log_obj)
+
+        is_running = task_name in _running_tasks if task_name else False
+        job_label = JOB_LABELS.get(task_name, scheduler_id)
+
+        jobs_info.append({
+            "scheduler_id": scheduler_id,
+            "task_name": task_name,
+            "job_label": job_label,
+            "next_run_time": sched_info.get("next_run_time"),
+            "trigger": sched_info.get("trigger"),
+            "is_running": is_running,
+            "last_run": last_log,
+        })
+
+    return {
+        "success": True,
+        "data": {
+            "scheduler_active": _app_scheduler is not None and _app_scheduler.running,
+            "total_jobs": len(jobs_info),
+            "running_count": sum(1 for j in jobs_info if j["is_running"]),
+            "jobs": jobs_info,
+        },
+    }

@@ -48,6 +48,9 @@ from app.models import performance as performance_models  # noqa
 from app.models import data_quality as data_quality_models  # noqa
 from app import models as diagnosis_models  # noqa - Diagnosis, DiagnosisAnswer, SurveyQuestion
 
+# Phase 3: 스케줄러 인스턴스 (API에서 접근)
+_app_scheduler = None
+
 logger = logging.getLogger(__name__)
 
 def init_db():
@@ -84,6 +87,7 @@ async def lifespan(app: FastAPI):
         logger.error("Database initialization FAILED: %s", e, exc_info=True)
 
     # APScheduler: 매일 07:30 KST 시장 요약 이메일 발송
+    global _app_scheduler
     scheduler = None
     try:
         from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -144,6 +148,7 @@ async def lifespan(app: FastAPI):
             replace_existing=True,
         )
         scheduler.start()
+        _app_scheduler = scheduler
         logger.info("APScheduler started: daily(16:30 prices, 17:00 compass), "
                      "weekly(sat 10:00 stocks, 11:00 dart), "
                      "monthly(1st 13:00 products), "

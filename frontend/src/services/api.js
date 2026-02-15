@@ -1049,3 +1049,20 @@ export const batchComputeCompassScores = (params = {}) => {
   if (params.limit) queryParams.append('limit', params.limit);
   return api.post(`/admin/scoring/batch-compute?${queryParams.toString()}`);
 };
+
+// ── Phase 3: 수집 이력 모니터링 ──
+export const getCollectionLogs = (params = {}) => {
+  return api.get('/admin/collection-logs', { params });
+};
+
+export const getCollectionSummary = () => {
+  return api.get('/admin/collection-logs/summary');
+};
+
+export const getCollectionLogDetail = (logId) => {
+  return api.get(`/admin/collection-logs/${logId}`);
+};
+
+export const getSchedulerStatus = () => {
+  return api.get('/admin/scheduler/status');
+};

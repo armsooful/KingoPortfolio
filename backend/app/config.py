@@ -60,6 +60,8 @@ class Settings:
         "OPS_ALERT_WEBHOOK_URL",
         ""
     )
+    alert_email: str = os.getenv("ALERT_EMAIL", "")
+    slack_webhook_url: str = os.getenv("SLACK_WEBHOOK_URL", "")
 
     # 데이터베이스 초기화 옵션
     reset_db_on_startup: bool = os.getenv(

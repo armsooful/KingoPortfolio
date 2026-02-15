@@ -26,6 +26,13 @@ export default function DataManagementPage() {
   const [fdrMarket, setFdrMarket] = useState('KRX');
   const [fdrAsOf, setFdrAsOf] = useState(new Date().toISOString().split('T')[0]);
   const [bondQualityFilter, setBondQualityFilter] = useState('all');
+  // Phase 3: 수집 스케줄 탭 상태
+  const [scheduleView, setScheduleView] = useState('status'); // 'status' | 'logs'
+  const [schedulerStatus, setSchedulerStatus] = useState(null);
+  const [collectionLogs, setCollectionLogs] = useState([]);
+  const [collectionSummary, setCollectionSummary] = useState(null);
+  const [logJobFilter, setLogJobFilter] = useState('');
+  const [logDetailModal, setLogDetailModal] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -43,6 +50,27 @@ export default function DataManagementPage() {
       }
     }
   };
+
+  const fetchSchedulerData = useCallback(async () => {
+    try {
+      const [statusRes, summaryRes, logsRes] = await Promise.all([
+        api.getSchedulerStatus(),
+        api.getCollectionSummary(),
+        api.getCollectionLogs({ limit: 50, job_name: logJobFilter || undefined }),
+      ]);
+      setSchedulerStatus(statusRes.data.data);
+      setCollectionSummary(summaryRes.data.data);
+      setCollectionLogs(logsRes.data.data.items || []);
+    } catch (err) {
+      console.error('Failed to fetch scheduler data:', err);
+    }
+  }, [logJobFilter]);
+
+  useEffect(() => {
+    if (activeTab === 'schedule') {
+      fetchSchedulerData();
+    }
+  }, [activeTab, fetchSchedulerData]);
 
   const handleLoadData = async (type) => {
     const typeNames = { stocks: '주식', etfs: 'ETF' };
@@ -696,6 +724,218 @@ export default function DataManagementPage() {
               <h2>Alpha Vantage - 미국 주식</h2>
               <p>추후 지원 예정입니다. 현재는 한국 시장 데이터에 집중합니다.</p>
             </div>
+          </div>
+
+          {/* ─── Phase 3: 수집 스케줄 모니터링 ─── */}
+          <div className="description-section dm-section">
+            <h2>{stepBadge(6, '#0d9488')} 수집 스케줄 모니터링</h2>
+            <p className="dm-section-subtitle">
+              자동 수집 스케줄 상태와 실행 이력을 확인합니다.
+            </p>
+
+            <div className="dm-tab-row" style={{ marginTop: '15px' }}>
+              <button
+                onClick={() => { setScheduleView('status'); if (!schedulerStatus) fetchSchedulerData(); }}
+                className={scheduleView === 'status' ? 'btn btn-primary' : 'btn btn-secondary'}
+              >
+                스케줄 상태
+              </button>
+              <button
+                onClick={() => { setScheduleView('logs'); if (!collectionLogs.length) fetchSchedulerData(); }}
+                className={scheduleView === 'logs' ? 'btn btn-primary' : 'btn btn-secondary'}
+              >
+                실행 이력
+              </button>
+            </div>
+
+            {/* 요약 통계 */}
+            {collectionSummary && (
+              <div className="dm-status-grid" style={{ marginTop: '15px' }}>
+                <div className="score-card">
+                  <div className="score-label">30일 실행</div>
+                  <div className="score-value" style={{ color: '#2563eb' }}>
+                    {collectionSummary.overall?.total_runs_30d || 0}회
+                  </div>
+                </div>
+                <div className="score-card">
+                  <div className="score-label">성공률</div>
+                  <div className="score-value" style={{ color: 'var(--stock-up)' }}>
+                    {collectionSummary.overall?.success_rate_30d != null
+                      ? `${collectionSummary.overall.success_rate_30d}%`
+                      : '-'}
+                  </div>
+                </div>
+                <div className="score-card">
+                  <div className="score-label">7일 실패</div>
+                  <div className="score-value" style={{
+                    color: (collectionSummary.overall?.recent_failures_7d || 0) > 0
+                      ? 'var(--stock-down)' : 'var(--stock-up)'
+                  }}>
+                    {collectionSummary.overall?.recent_failures_7d || 0}건
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 스케줄 상태 뷰 */}
+            {scheduleView === 'status' && schedulerStatus && (
+              <div className="dm-grid" style={{ marginTop: '15px' }}>
+                {schedulerStatus.jobs.map((job) => (
+                  <div key={job.scheduler_id} className="dm-card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <h3 style={{ margin: 0, fontSize: '0.9rem' }}>{job.job_label}</h3>
+                      {job.is_running ? (
+                        <span className="dm-schedule-status dm-schedule-running">실행중</span>
+                      ) : job.last_run?.status === 'completed' ? (
+                        <span className="dm-schedule-status dm-schedule-completed">성공</span>
+                      ) : job.last_run?.status === 'failed' ? (
+                        <span className="dm-schedule-status dm-schedule-failed">실패</span>
+                      ) : (
+                        <span className="dm-schedule-status dm-schedule-pending">대기</span>
+                      )}
+                    </div>
+                    <div className="dm-hint-sm" style={{ marginTop: 0 }}>
+                      {job.next_run_time ? (
+                        <>다음 실행: {new Date(job.next_run_time).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</>
+                      ) : '스케줄 없음'}
+                    </div>
+                    {job.last_run && (
+                      <div className="dm-hint-sm" style={{ marginTop: '4px' }}>
+                        마지막: {new Date(job.last_run.started_at).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        {job.last_run.duration_seconds != null && ` (${Math.round(job.last_run.duration_seconds)}초)`}
+                        {job.last_run.validation_status && (
+                          <span className={`dm-validation-badge dm-validation-${job.last_run.validation_status}`}>
+                            {job.last_run.validation_status}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 실행 이력 뷰 */}
+            {scheduleView === 'logs' && (
+              <div className="dm-panel" style={{ marginTop: '15px' }}>
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '12px', alignItems: 'center' }}>
+                  <select
+                    value={logJobFilter}
+                    onChange={(e) => setLogJobFilter(e.target.value)}
+                    className="dm-input"
+                    style={{ maxWidth: '200px' }}
+                  >
+                    <option value="">전체 작업</option>
+                    <option value="incremental_prices">일별 시세</option>
+                    <option value="compass_batch">Compass Score</option>
+                    <option value="weekly_stock_refresh">주간 종목 갱신</option>
+                    <option value="dart_financials">DART 재무제표</option>
+                    <option value="monthly_products">월간 금융상품</option>
+                  </select>
+                  <button onClick={fetchSchedulerData} className="btn btn-secondary" style={{ padding: '8px 16px' }}>
+                    새로고침
+                  </button>
+                </div>
+
+                <div className="dm-log-table-wrap">
+                  <table className="dm-log-table">
+                    <thead>
+                      <tr>
+                        <th>작업명</th>
+                        <th>상태</th>
+                        <th>시작</th>
+                        <th>소요</th>
+                        <th>성공/실패</th>
+                        <th>검증</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {collectionLogs.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>
+                            실행 이력이 없습니다
+                          </td>
+                        </tr>
+                      ) : (
+                        collectionLogs.map((log) => (
+                          <tr
+                            key={log.id}
+                            className={`dm-log-row dm-log-row-${log.status}`}
+                            onClick={() => setLogDetailModal(log)}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            <td>{log.job_label}</td>
+                            <td>
+                              <span className={`dm-schedule-status dm-schedule-${log.status}`}>
+                                {log.status === 'completed' ? '성공' : log.status === 'failed' ? '실패' : '실행중'}
+                              </span>
+                            </td>
+                            <td className="dm-log-time">
+                              {log.started_at
+                                ? new Date(log.started_at).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                                : '-'}
+                            </td>
+                            <td>{log.duration_seconds != null ? `${Math.round(log.duration_seconds)}초` : '-'}</td>
+                            <td>
+                              <span style={{ color: 'var(--stock-up)' }}>{log.success_count || 0}</span>
+                              {' / '}
+                              <span style={{ color: 'var(--stock-down)' }}>{log.failed_count || 0}</span>
+                            </td>
+                            <td>
+                              {log.validation_status && (
+                                <span className={`dm-validation-badge dm-validation-${log.validation_status}`}>
+                                  {log.validation_status}
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* 상세 모달 */}
+            {logDetailModal && (
+              <div className="dm-log-detail-overlay" onClick={() => setLogDetailModal(null)}>
+                <div className="dm-log-detail-modal" onClick={(e) => e.stopPropagation()}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <h3 style={{ margin: 0, color: 'var(--text)' }}>{logDetailModal.job_label}</h3>
+                    <button onClick={() => setLogDetailModal(null)} className="btn btn-secondary" style={{ padding: '4px 12px' }}>X</button>
+                  </div>
+                  <div className="dm-log-detail-grid">
+                    <div><span className="dm-label">상태</span><span className={`dm-schedule-status dm-schedule-${logDetailModal.status}`}>{logDetailModal.status}</span></div>
+                    <div><span className="dm-label">시작</span>{logDetailModal.started_at ? new Date(logDetailModal.started_at).toLocaleString('ko-KR') : '-'}</div>
+                    <div><span className="dm-label">완료</span>{logDetailModal.completed_at ? new Date(logDetailModal.completed_at).toLocaleString('ko-KR') : '-'}</div>
+                    <div><span className="dm-label">소요시간</span>{logDetailModal.duration_seconds != null ? `${Math.round(logDetailModal.duration_seconds)}초` : '-'}</div>
+                    <div><span className="dm-label">성공</span><span style={{ color: 'var(--stock-up)' }}>{logDetailModal.success_count || 0}</span></div>
+                    <div><span className="dm-label">실패</span><span style={{ color: 'var(--stock-down)' }}>{logDetailModal.failed_count || 0}</span></div>
+                    <div><span className="dm-label">전체</span>{logDetailModal.total_count || 0}</div>
+                    <div><span className="dm-label">검증</span>{logDetailModal.validation_status && <span className={`dm-validation-badge dm-validation-${logDetailModal.validation_status}`}>{logDetailModal.validation_status}</span>}</div>
+                  </div>
+                  {logDetailModal.error_message && (
+                    <div style={{ marginTop: '12px' }}>
+                      <span className="dm-label">에러</span>
+                      <pre className="dm-log-detail-pre">{logDetailModal.error_message}</pre>
+                    </div>
+                  )}
+                  {logDetailModal.detail && (
+                    <div style={{ marginTop: '12px' }}>
+                      <span className="dm-label">상세</span>
+                      <pre className="dm-log-detail-pre">{JSON.stringify(logDetailModal.detail, null, 2)}</pre>
+                    </div>
+                  )}
+                  {logDetailModal.validation_detail && (
+                    <div style={{ marginTop: '12px' }}>
+                      <span className="dm-label">검증 상세</span>
+                      <pre className="dm-log-detail-pre">{JSON.stringify(logDetailModal.validation_detail, null, 2)}</pre>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ─── Data View ─── */}

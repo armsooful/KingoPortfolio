@@ -5,7 +5,7 @@ Phase 3-C / Epic C-1: 운영 안정성 ORM 모델
 """
 
 from sqlalchemy import (
-    Column, String, Integer, Boolean, DateTime, Text, ForeignKey,
+    Column, String, Integer, Float, Boolean, DateTime, Text, ForeignKey,
     Index, UniqueConstraint, JSON
 )
 from sqlalchemy.orm import relationship
@@ -252,3 +252,32 @@ class ErrorCodeMaster(Base):
 
     def __repr__(self):
         return f"<ErrorCodeMaster {self.error_code}: {self.ops_message[:30]}...>"
+
+
+class DataCollectionLog(Base):
+    """데이터 수집 실행 이력 (스케줄러 모니터링용)"""
+    __tablename__ = "data_collection_log"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    job_name = Column(String(50), nullable=False, index=True)
+    job_label = Column(String(100), nullable=False)
+    status = Column(String(20), nullable=False, index=True)  # running, completed, failed
+    started_at = Column(DateTime, nullable=False)
+    completed_at = Column(DateTime, nullable=True)
+    duration_seconds = Column(Float, nullable=True)
+    success_count = Column(Integer, default=0)
+    failed_count = Column(Integer, default=0)
+    total_count = Column(Integer, default=0)
+    detail = Column(JSON, nullable=True)
+    error_message = Column(Text, nullable=True)
+    validation_status = Column(String(20), nullable=True)  # pass, warn, fail
+    validation_detail = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=kst_now)
+
+    __table_args__ = (
+        Index("idx_dcl_job_status", "job_name", "status"),
+        Index("idx_dcl_created_at", "created_at"),
+    )
+
+    def __repr__(self):
+        return f"<DataCollectionLog {self.job_name} [{self.status}]>"
