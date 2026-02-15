@@ -38,10 +38,9 @@
 | 13 | 전세자금대출 | FSS 금융상품 한눈에 | `rent_house_loan_products` + options | ~50건 | 없음 | 10~30초 |
 | 14 | 개인신용대출 | FSS 금융상품 한눈에 | `credit_loan_products` + options | ~50건 | 없음 | 10~30초 |
 | 15 | 기업 액션 | DART API | `corporate_actions` | 분기별 | 1 req/sec | 종목 수 의존 |
-| 16 | 미국 주식 | Alpha Vantage OVERVIEW | `alpha_vantage_stocks` | ~30건 | **5 req/min** (무료) | 10분+ |
-| 17 | 미국 ETF | Alpha Vantage | `alpha_vantage_etfs` | ~10건 | 5 req/min | 5분+ |
-| 18 | 미국 시계열 | Alpha Vantage TIME_SERIES | `alpha_vantage_timeseries` | 수천건/종목 | 5 req/min | 30분+ |
-| 19 | Compass Score | 내부 계산 (4축 엔진) | `stocks` (compass_* 컬럼) | ~2,900건 | CPU bound | 10~30분 |
+| 16 | Compass Score | 내부 계산 (4축 엔진) | `stocks` (compass_* 컬럼) | ~2,900건 | CPU bound | 10~30분 |
+
+> **참고**: Alpha Vantage (미국 주식/ETF/시계열) API는 구현되어 있으나, 미국 시장 데이터는 **추후 제공 예정**이므로 현재 운영 스케줄에서 제외한다. 엔드포인트: `POST /admin/alpha-vantage/*` (6개)
 
 ## 1.2 현행 자동화 스케줄
 
@@ -109,31 +108,20 @@ scheduler.add_job(
 | 18 | `POST /admin/load-rent-house-loans` | FSS 전세자금대출 | 백그라운드 | `admin.py:1000` |
 | 19 | `POST /admin/load-credit-loans` | FSS 개인신용대출 | 백그라운드 | `admin.py:1119` |
 
-### Alpha Vantage (미국 시장)
-
-| # | 엔드포인트 | 설명 | 실행 방식 | 소스 위치 |
-|---|---|---|---|---|
-| 20 | `POST /admin/alpha-vantage/load-all-stocks` | 미국 인기주 전체 | 백그라운드 | `admin.py:1569` |
-| 21 | `POST /admin/alpha-vantage/load-stock/{symbol}` | 미국 개별 주식 | 백그라운드 | `admin.py:1610` |
-| 22 | `POST /admin/alpha-vantage/load-financials/{symbol}` | 미국 재무제표 | 백그라운드 | `admin.py:1687` |
-| 23 | `POST /admin/alpha-vantage/load-all-etfs` | 미국 인기 ETF | 백그라운드 | `admin.py:1764` |
-| 24 | `POST /admin/alpha-vantage/load-all-timeseries` | 미국 시계열 전체 | 백그라운드 | `admin.py:1873` |
-| 25 | `POST /admin/alpha-vantage/load-timeseries/{symbol}` | 미국 시계열 개별 | 백그라운드 | `admin.py:1921` |
-
 ### Compass Score
 
 | # | 엔드포인트 | 설명 | 실행 방식 | 소스 위치 |
 |---|---|---|---|---|
-| 26 | `POST /admin/scoring/batch-compute` | Compass Score 일괄 계산 | 백그라운드 | `admin.py:2956` |
-| 27 | `GET /admin/scoring/compass/{ticker}` | 개별 Compass Score 조회/계산 | 동기 | `admin.py:2941` |
+| 20 | `POST /admin/scoring/batch-compute` | Compass Score 일괄 계산 | 백그라운드 | `admin.py:2956` |
+| 21 | `GET /admin/scoring/compass/{ticker}` | 개별 Compass Score 조회/계산 | 동기 | `admin.py:2941` |
 
 ### v1 Data Load API (별도 라우터)
 
 | # | 엔드포인트 | 설명 | 실행 방식 | 소스 위치 |
 |---|---|---|---|---|
-| 28 | `POST /api/v1/admin/data-load/stock-prices` | 주식 시세 적재 (v1) | 동기 | `admin_data_load.py:184` |
-| 29 | `POST /api/v1/admin/data-load/index-prices` | 지수 시세 적재 (v1) | 동기 | `admin_data_load.py:238` |
-| 30 | `POST /api/v1/admin/data-load/stock-info` | 종목 정보 적재 (v1) | 동기 | `admin_data_load.py:291` |
+| 22 | `POST /api/v1/admin/data-load/stock-prices` | 주식 시세 적재 (v1) | 동기 | `admin_data_load.py:184` |
+| 23 | `POST /api/v1/admin/data-load/index-prices` | 지수 시세 적재 (v1) | 동기 | `admin_data_load.py:238` |
+| 24 | `POST /api/v1/admin/data-load/stock-info` | 종목 정보 적재 (v1) | 동기 | `admin_data_load.py:291` |
 
 ## 1.4 데이터 의존성 그래프
 
@@ -148,18 +136,17 @@ scheduler.add_job(
  │     │
  │     ├──▶ [6] financial_statement (재무제표 — ticker + crno 참조)
  │     │     │
- │     │     └──▶ [26] Compass Score 계산 (재무 점수 = financial_statement 기반)
+ │     │     └──▶ [20] Compass Score 계산 (재무 점수 = financial_statement 기반)
  │     │
  │     ├──▶ [7/8] dividend_history (배당 이력 — ticker 참조)
  │     │
- │     └──▶ [26] Compass Score 계산 (기술 + 리스크 점수 = stock_price_daily 기반)
+ │     └──▶ [20] Compass Score 계산 (기술 + 리스크 점수 = stock_price_daily 기반)
  │
  └──▶ [3] etfs (ETF — 독립적이지만 stock_listing 후 실행 권장)
 
 [8~14] 채권 & 금융상품 → 독립 (주식 데이터와 무관)
-[15~20] Alpha Vantage → 독립 (한국 데이터와 무관)
 
-[26] Compass Score → [2] stocks + [4] stock_price_daily + [6] financial_statement 필수
+[20] Compass Score → [2] stocks + [4] stock_price_daily + [6] financial_statement 필수
  │
  └──▶ [07:30] 시장 이메일 (Compass Score 참조)
       [08:00] 워치리스트 알림 (Compass Score 참조)
@@ -253,8 +240,6 @@ curl -X POST "http://localhost:8000/admin/dart/load-financials?fiscal_year=2024&
 | 전세자금대출 | `POST /admin/load-rent-house-loans` | 월 1회 | ~50건, 30초 이하 |
 | 개인신용대출 | `POST /admin/load-credit-loans` | 월 1회 | ~50건, 30초 이하 |
 | 기업 액션 (분할/합병) | `POST /admin/dart/load-corporate-actions` | 분기 1회 | 분기별 조회 |
-| Alpha Vantage 미국 주식 | `POST /admin/alpha-vantage/load-all-stocks` | 월 1회 | 5 req/min 제한 |
-| Alpha Vantage 미국 시계열 | `POST /admin/alpha-vantage/load-all-timeseries` | 월 1회 | outputsize=compact |
 
 ## 2.4 Compass Score 재계산 타이밍
 
@@ -315,9 +300,7 @@ Compass Score는 3가지 데이터에 의존하므로, 모든 데이터가 갱�
  13:10 ┃ [월간] 금융상품 6종 일괄 적재 ──────────── 5분 이하
        ┃   (예금 → 적금 → 연금저축 → 주담대 → 전세대 → 신용대)
        ┃
- 13:20 ┃ [월간] Alpha Vantage 미국 주식 ─────────── 10분+
-       ┃
- 13:40 ┃ (월간 수집 완료)
+ 13:20 ┃ (월간 수집 완료)
 ```
 
 ---
@@ -601,14 +584,6 @@ async def safe_scheduled_task(task_name: str, task_func):
 | API 서버 장애 | 500 에러 | 1시간 후 재시도 |
 | 기준일자 데이터 없음 | 빈 응답 | 전 영업일로 재시도 (코드에 이미 구현됨) |
 | FSS API 키 만료 | 401 | .env FSS_API_KEY 확인 |
-
-### Alpha Vantage
-
-| 장애 유형 | 증상 | 대응 |
-|---|---|---|
-| 5 req/min 초과 | `API rate limit` 메시지 | 60초 대기 후 재시도 |
-| 한국주식 조회 시도 | 빈 응답 `{}` | **한국주식 미지원** — 미국주식만 사용 |
-| 무료 키 일일 한도 | 500 req/day 초과 | 다음날 재시도 |
 
 ### PostgreSQL
 
