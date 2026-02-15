@@ -90,6 +90,10 @@ async def lifespan(app: FastAPI):
         from apscheduler.triggers.cron import CronTrigger
         from app.services.market_email_service import scheduled_daily_email
         from app.services.watchlist_alert_service import scheduled_watchlist_alerts
+        from app.services.scheduled_data_collection import (
+            scheduled_incremental_load,
+            scheduled_compass_batch_compute,
+        )
 
         scheduler = AsyncIOScheduler()
         scheduler.add_job(
@@ -104,8 +108,22 @@ async def lifespan(app: FastAPI):
             id="watchlist_score_alerts",
             replace_existing=True,
         )
+        # Phase 1: 데이터 수집 자동화
+        scheduler.add_job(
+            scheduled_incremental_load,
+            CronTrigger(hour=16, minute=30, day_of_week="mon-fri", timezone="Asia/Seoul"),
+            id="daily_incremental_prices",
+            replace_existing=True,
+        )
+        scheduler.add_job(
+            scheduled_compass_batch_compute,
+            CronTrigger(hour=17, minute=0, day_of_week="mon-fri", timezone="Asia/Seoul"),
+            id="daily_compass_score",
+            replace_existing=True,
+        )
         scheduler.start()
-        logger.info("APScheduler started (daily_market_email @ 07:30 KST, watchlist_score_alerts @ 08:00 KST)")
+        logger.info("APScheduler started (daily_market_email @ 07:30, watchlist @ 08:00, "
+                     "incremental_prices @ 16:30, compass_score @ 17:00 KST)")
     except Exception as e:
         logger.warning("APScheduler setup failed: %s", e)
 
