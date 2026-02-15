@@ -44,21 +44,24 @@
 
 ## 1.2 자동화 스케줄 현황
 
-APScheduler로 자동화된 작업 **4건** (데이터 수집 2건 + 이메일 발송 2건):
+APScheduler로 자동화된 작업 **7건** (데이터 수집 5건 + 이메일 발송 2건):
 
 | 시간 (KST) | Job ID | 작업 | 함수 | 비고 |
 |---|---|---|---|---|
-| 16:30 (월~금) | `daily_incremental_prices` | 일별 시세 증분 적재 | `scheduled_incremental_load` | pykrx → stock_price_daily ✅ Phase 1 |
-| 17:00 (월~금) | `daily_compass_score` | Compass Score 일괄 계산 | `scheduled_compass_batch_compute` | stocks compass_* 갱신 ✅ Phase 1 |
-| 07:30 (매일) | `daily_market_email` | 일일 시장 요약 이메일 | `scheduled_daily_email` | yfinance 4개 지수 + pykrx 등락 + 뉴스 |
+| 16:30 (월~금) | `daily_incremental_prices` | 일별 시세 증분 적재 | `scheduled_incremental_load` | ✅ Phase 1 |
+| 17:00 (월~금) | `daily_compass_score` | Compass Score 일괄 계산 | `scheduled_compass_batch_compute` | ✅ Phase 1 |
+| 토 10:00 | `weekly_stock_refresh` | 종목 마스터 + 주식 + ETF 순차 갱신 | `scheduled_weekly_stock_refresh` | ✅ Phase 2 |
+| 토 11:00 | `weekly_dart_financials` | DART 재무제표 적재 | `scheduled_dart_financials` | ✅ Phase 2 |
+| 매월 1일 13:00 | `monthly_financial_products` | 채권 + 금융상품 6종 순차 적재 | `scheduled_monthly_financial_products` | ✅ Phase 2 |
+| 07:30 (매일) | `daily_market_email` | 일일 시장 요약 이메일 | `scheduled_daily_email` | yfinance + pykrx + 뉴스 |
 | 08:00 (매일) | `watchlist_score_alerts` | 관심 종목 점수 변동 알림 | `scheduled_watchlist_alerts` | ±5점 변동 시 발송 |
 
 **소스 위치**:
-- 스케줄 등록: `backend/app/main.py:86-130`
+- 스케줄 등록: `backend/app/main.py:86-155`
 - 수집 서비스: `backend/app/services/scheduled_data_collection.py`
 
-> **Phase 1 완료 (2026-02-15)**: 16:30 시세 적재 + 17:00 Compass Score 계산이 자동화되어,
-> 07:30 이메일이 항상 최신 데이터를 참조하게 됨. 동시 실행 방지 Lock + OpsAlert 실패 알림 포함.
+> **Phase 2 완료 (2026-02-15)**: 일별(Phase 1) + 주간/월간(Phase 2) 수집이 모두 자동화되어,
+> 수동 curl 실행이 불필요해짐. 모든 작업에 동시 실행 방지 Lock + OpsAlert 실패 알림 포함.
 
 ## 1.3 수동 수집 엔드포인트 전체 목록
 
@@ -179,18 +182,19 @@ curl -X POST "http://localhost:8000/admin/scoring/batch-compute?limit=3000" \
   -H "X-Idempotency-Key: $(uuidgen)"
 ```
 
-## 2.2 주간 스케줄 (매주 토요일 또는 일요일)
+## 2.2 주간 스케줄 (매주 토요일) — ✅ 자동화 완료
 
-시장이 쉬는 주말에 시간이 오래 걸리는 대량 수집 작업을 실행한다.
+시장이 쉬는 주말에 시간이 오래 걸리는 대량 수집 작업을 자동 실행한다.
 
-| 작업 | 엔드포인트 | 예상 소요 | 빈도 |
-|---|---|---|---|
-| 종목 마스터 갱신 | `POST /admin/fdr/load-stock-listing` | 10~20초 | 주 1회 |
-| 주식 기본 정보 갱신 | `POST /admin/load-stocks` | 3~5분 | 주 1회 |
-| ETF 기본 정보 갱신 | `POST /admin/load-etfs` | 5~10분 | 주 1회 |
-| DART 재무제표 (최신 연도) | `POST /admin/dart/load-financials?fiscal_year=2024` | 40~60분 | 주 1회 |
+| 시간 (KST) | 작업 | 함수 | 예상 소요 | 비고 |
+|---|---|---|---|---|
+| 토 10:00 | 종목 마스터 → 주식 정보 → ETF (3단계 순차) | `scheduled_weekly_stock_refresh` | 10~15분 | 의존성 체인 보장 |
+| 토 11:00 | DART 재무제표 (최신 연도) | `scheduled_dart_financials` | 40~60분 | fiscal_year 자동 계산 |
 
-### 주간 실행 curl 명령
+> **수동 실행은 불필요.** 비정상 상황 시 아래 curl 명령으로 개별 재실행 가능.
+
+<details>
+<summary>수동 실행 curl 명령 (비상용)</summary>
 
 ```bash
 # 1. 종목 마스터 갱신
@@ -215,21 +219,19 @@ curl -X POST "http://localhost:8000/admin/dart/load-financials?fiscal_year=2024&
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "X-Idempotency-Key: $(uuidgen)"
 ```
+</details>
 
-## 2.3 월간/분기별 스케줄
+## 2.3 월간/분기별 스케줄 — ✅ 월간 자동화 완료
 
 변동이 적은 데이터는 월 1회 또는 분기 1회로 충분하다.
 
-| 작업 | 엔드포인트 | 빈도 | 비고 |
+| 시간 (KST) | 작업 | 함수 | 비고 |
 |---|---|---|---|
-| 채권 전체 조회 | `POST /admin/load-bonds` | 월 1회 | ~19,000건, 2~5분 |
-| 정기예금 | `POST /admin/load-deposits` | 월 1회 | ~37건, 30초 이하 |
-| 적금 | `POST /admin/load-savings` | 월 1회 | ~100건, 30초 이하 |
-| 연금저축 | `POST /admin/load-annuity-savings` | 월 1회 | ~200건, 1분 이하 |
-| 주택담보대출 | `POST /admin/load-mortgage-loans` | 월 1회 | ~100건, 30초 이하 |
-| 전세자금대출 | `POST /admin/load-rent-house-loans` | 월 1회 | ~50건, 30초 이하 |
-| 개인신용대출 | `POST /admin/load-credit-loans` | 월 1회 | ~50건, 30초 이하 |
-| 기업 액션 (분할/합병) | `POST /admin/dart/load-corporate-actions` | 분기 1회 | 분기별 조회 |
+| 매월 1일 13:00 | 채권 + 금융상품 6종 순차 적재 | `scheduled_monthly_financial_products` | ✅ 자동 (7단계 순차) |
+| 분기 1회 (수동) | 기업 액션 (분할/합병) | `POST /admin/dart/load-corporate-actions` | 수동 유지 |
+
+> **월간 금융상품 7개 항목**: 채권 → 정기예금 → 적금 → 연금저축 → 주택담보대출 → 전세자금대출 → 개인신용대출.
+> 개별 step 실패 시 나머지는 계속 실행되며, 실패 항목은 OpsAlert WARN으로 기록.
 
 ## 2.4 Compass Score 재계산 타이밍
 
@@ -268,27 +270,24 @@ Compass Score는 3가지 데이터에 의존하므로, 모든 데이터가 갱�
  08:00 ┃ ⚡ [자동] 워치리스트 점수 알림 발송
        ┃
 
-주말 (토/일)
+주말 — 토요일
 ═══════════════════════════════════════════════════════════
 
- 10:00 ┃ [주간] 종목 마스터 갱신 ─────────────────── 20초
+ 10:00 ┃ ⚡ [자동] 종목 마스터 → 주식 정보 → ETF 순차 갱신 ── 10~15분
+       ┃    (scheduled_weekly_stock_refresh)
        ┃
- 10:01 ┃ [주간] 주식 기본 정보 갱신 ─────────────── 3~5분
+ 11:00 ┃ ⚡ [자동] DART 재무제표 적재 ───────────── 40~60분
+       ┃    (scheduled_dart_financials)
        ┃
- 10:10 ┃ [주간] ETF 기본 정보 갱신 ──────────────── 5~10분
-       ┃
- 10:20 ┃ [주간] DART 재무제표 적재 ──────────────── 40~60분
-       ┃
- 11:30 ┃ (주간 수집 완료)
+ 12:00 ┃ (주간 수집 완료)
        ┃
 
-매월 첫째 주말
+매월 1일
 ═══════════════════════════════════════════════════════════
 
- 13:00 ┃ [월간] 채권 전체 조회 ──────────────────── 2~5분
-       ┃
- 13:10 ┃ [월간] 금융상품 6종 일괄 적재 ──────────── 5분 이하
-       ┃   (예금 → 적금 → 연금저축 → 주담대 → 전세대 → 신용대)
+ 13:00 ┃ ⚡ [자동] 채권 + 금융상품 6종 순차 적재 ── 10~15분
+       ┃    (scheduled_monthly_financial_products)
+       ┃   채권 → 예금 → 적금 → 연금저축 → 주담대 → 전세대 → 신용대
        ┃
  13:20 ┃ (월간 수집 완료)
 ```
@@ -337,68 +336,54 @@ scheduler.add_job(
   - Compass Score: 실패율 > 30% → WARN, 전체 실패 → CRITICAL
 - **progress_tracker 미사용**: 스케줄 작업은 UI 모니터링 불필요
 
-### Phase 2에서 추가할 스케줄 (미구현)
+## 3.2 Phase 2 — 주간/월간 수집 자동화 ✅ 구현 완료 (2026-02-15)
+
+### 구현 파일
+
+- **`backend/app/services/scheduled_data_collection.py`** (3개 함수 추가)
+- **`backend/app/main.py`** lifespan에 CronTrigger 3개 추가 (총 7개 job)
+
+### 등록된 스케줄 (main.py)
 
 ```python
-# 3. 종목 마스터 + 주식 정보 갱신 — 매주 토요일 10:00 KST
+# Phase 2: 주간/월간 수집 자동화
 scheduler.add_job(
     scheduled_weekly_stock_refresh,
     CronTrigger(hour=10, minute=0, day_of_week="sat", timezone="Asia/Seoul"),
     id="weekly_stock_refresh",
+    replace_existing=True,
 )
-
-# 4. DART 재무제표 — 매주 토요일 11:00 KST
 scheduler.add_job(
     scheduled_dart_financials,
     CronTrigger(hour=11, minute=0, day_of_week="sat", timezone="Asia/Seoul"),
     id="weekly_dart_financials",
+    replace_existing=True,
 )
-
-# 5. 채권 + 금융상품 — 매월 1일 13:00 KST
 scheduler.add_job(
     scheduled_monthly_financial_products,
     CronTrigger(day=1, hour=13, minute=0, timezone="Asia/Seoul"),
     id="monthly_financial_products",
+    replace_existing=True,
 )
 ```
 
-## 3.2 수집 순서 오케스트레이션 (의존성 기반)
+### 주요 기능
 
-복합 수집 작업(주간 등)은 의존 체인을 지켜야 한다.
+| 함수 | 실행 내용 | 실패 알림 |
+|---|---|---|
+| `scheduled_weekly_stock_refresh` | FDR 종목 마스터 → 주식 정보 → ETF (3단계 순차) | 전체 실패 → CRITICAL |
+| `scheduled_dart_financials` | DART 재무제표 (fiscal_year 자동 계산: 4월 기준) | 실패율 >50% → WARN, 전체 실패 → CRITICAL |
+| `scheduled_monthly_financial_products` | 채권 + 금융상품 6종 (7단계 순차, 개별 예외 처리) | 부분 실패 → WARN, 전체 실패 → CRITICAL |
 
-```python
-async def scheduled_weekly_stock_refresh():
-    """주간 종목 마스터 + 주식 정보 + ETF 순차 갱신"""
-    db = SessionLocal()
-    try:
-        loader = RealDataLoader(db)
+- **동시 실행 방지**: Phase 1과 동일한 `_running_tasks` + `threading.Lock` 패턴
+- **의존성 보장**: `weekly_stock_refresh`는 FDR → stocks → ETF 순차 실행
+- **개별 step 내결함성**: `monthly_financial_products`는 한 상품 실패 시 나머지 계속 실행
 
-        # Step 1: 종목 마스터
-        logger.info("[WEEKLY] Step 1: FDR 종목 마스터 적재")
-        loader.load_fdr_stock_listing(
-            market="KRX",
-            as_of_date=date.today(),
-            operator_id="system",
-            operator_reason="주간 자동 갱신",
-        )
+## 3.3 수집 순서 오케스트레이션 (의존성 기반)
 
-        # Step 2: 주식 기본 정보 (Step 1 완료 후)
-        logger.info("[WEEKLY] Step 2: 주식 기본 정보 적재")
-        loader.load_stocks_from_fdr(
-            operator_id="system",
-            operator_reason="주간 자동 갱신",
-        )
+복합 수집 작업(주간 등)은 의존 체인을 지켜야 한다. Phase 2 구현에서 보장됨.
 
-        # Step 3: ETF (독립적이지만 순차 실행으로 부하 분산)
-        logger.info("[WEEKLY] Step 3: ETF 적재")
-        # ... ETF 적재 로직
-    except Exception as e:
-        logger.error(f"[WEEKLY] Stock refresh failed: {e}", exc_info=True)
-    finally:
-        db.close()
-```
-
-## 3.3 실패 처리 & 재시도 전략
+## 3.4 실패 처리 & 재시도 전략 (Phase 3 예정)
 
 | 에러 유형 | 대응 전략 | 재시도 횟수 | 대기 시간 |
 |---|---|---|---|
@@ -409,7 +394,7 @@ async def scheduled_weekly_stock_refresh():
 | 데이터 없음 (DART 013) | 스킵 (정상) | 0회 | — |
 | DB 커넥션 오류 | 세션 재생성 후 재시도 | 2회 | 5초 |
 
-### APScheduler 재시도 데코레이터
+### APScheduler 재시도 데코레이터 (미구현 — Phase 3 예정)
 
 ```python
 import functools
@@ -433,7 +418,7 @@ def with_retry(max_retries=3, base_delay=30):
     return decorator
 ```
 
-## 3.4 모니터링 & 알림 (OpsAlert 활용)
+## 3.5 모니터링 & 알림 (OpsAlert 활용)
 
 기존 `OpsAlert` 모델을 활용하여 수집 실패 시 알림을 생성한다.
 
@@ -465,7 +450,7 @@ def create_collection_alert(db, job_name: str, error_message: str, severity: str
 | pykrx KRX 서버 응답 없음 | **warning** | 일시적 장애 (보통 자동 복구) |
 | DB 커넥션 풀 고갈 | **critical** | 전체 서비스 장애 위험 |
 
-## 3.5 8GB RAM 환경 최적화
+## 3.6 8GB RAM 환경 최적화
 
 | 항목 | 제한 설정 | 이유 |
 |---|---|---|
@@ -699,30 +684,29 @@ curl -X DELETE "http://localhost:8000/admin/progress/{task_id}" \
 
 ### Phase 1 완료 검증 결과
 
-- ✅ 서버 시작 시 APScheduler 4개 job 등록 로그 확인
+- ✅ 서버 시작 시 APScheduler job 등록 로그 확인 (Phase 1 시점 4개)
 - ✅ `scheduled_incremental_load` 수동 실행 — success=2,884, inserted=8,641
 - ✅ `scheduled_compass_batch_compute` 수동 실행 — success=2,872, fail=14 (0.5%)
 - ✅ 동시 실행 방지 — 2개 스레드 동시 호출 시 두 번째 즉시 스킵
 - ✅ OpsAlert 테이블에 WARN 알림 4건 정상 기록
 
-## Phase 2: 전체 자동화 (예상 공수: 2~3일)
+## ~~Phase 2: 전체 자동화~~ ✅ 완료 (2026-02-15)
 
-주간/월간 수집까지 자동화한다.
-
-| 항목 | 작업 내용 | 우선순위 |
+| 항목 | 작업 내용 | 상태 |
 |---|---|---|
-| 2-1 | `scheduled_weekly_stock_refresh()` 구현 — 종목 마스터 + 주식 정보 + ETF | 높음 |
-| 2-2 | `scheduled_dart_financials()` 구현 — DART 재무제표 | 높음 |
-| 2-3 | `scheduled_monthly_financial_products()` 구현 — 채권 + 금융상품 6종 | 중간 |
-| 2-4 | main.py에 3개 CronTrigger 추가 (토 10:00, 토 11:00, 1일 13:00) | 중간 |
-| 2-5 | 의존성 기반 순차 실행 로직 (weekly는 3단계 순차) | 중간 |
-| 2-6 | 재시도 데코레이터 (`with_retry`) 적용 | 낮음 |
+| 2-1 | `scheduled_weekly_stock_refresh()` 구현 — 종목 마스터 + 주식 정보 + ETF | ✅ 3단계 순차 |
+| 2-2 | `scheduled_dart_financials()` 구현 — DART 재무제표 | ✅ fiscal_year 자동 계산 |
+| 2-3 | `scheduled_monthly_financial_products()` 구현 — 채권 + 금융상품 6종 | ✅ 7단계 순차 |
+| 2-4 | main.py에 3개 CronTrigger 추가 (토 10:00, 토 11:00, 1일 13:00) | ✅ |
+| 2-5 | 의존성 기반 순차 실행 로직 (weekly는 3단계 순차) | ✅ |
+| 2-6 | 재시도 데코레이터 (`with_retry`) 적용 | ⏭️ Phase 3으로 이연 |
 
-### Phase 2 완료 기준
+### Phase 2 완료 검증 결과
 
-- 주간/월간 수집이 자동으로 실행됨
-- 수동 curl 실행이 불필요해짐
-- 의존 순서가 보장됨
+- ✅ 서버 시작 시 APScheduler 7개 job 등록 로그 확인
+- ✅ 5개 함수 import 정상 (Python syntax + import 검증)
+- ✅ 동시 실행 방지 — Phase 1과 동일한 `_running_tasks` Lock 패턴
+- ✅ OpsAlert 연동 — WARN/CRITICAL 알림 생성
 
 ## Phase 3: 모니터링 대시보드 + 알림 고도화 (예상 공수: 3~5일)
 
@@ -749,8 +733,8 @@ curl -X DELETE "http://localhost:8000/admin/progress/{task_id}" \
 
 | 파일 | 설명 |
 |---|---|
-| `backend/app/main.py:86-130` | APScheduler 설정 (수집 2개 + 이메일 2개) |
-| `backend/app/services/scheduled_data_collection.py` | 데이터 수집 스케줄 서비스 (Phase 1) |
+| `backend/app/main.py:86-155` | APScheduler 설정 (수집 5개 + 이메일 2개) |
+| `backend/app/services/scheduled_data_collection.py` | 데이터 수집 스케줄 서비스 (Phase 1 + Phase 2) |
 | `backend/app/routes/admin.py` | 전체 수집 엔드포인트 (27개+) |
 | `backend/app/services/pykrx_loader.py` | pykrx 병렬 + 배치 로더 |
 | `backend/app/services/real_data_loader.py` | 마스터 데이터 로더 |
