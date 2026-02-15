@@ -39,7 +39,7 @@ def grant_admin_role(email: str, create_if_not_exists: bool = False, password: s
 
                 print(f"✅ 관리자 계정 생성 완료!")
                 print(f"   이메일: {email}")
-                print(f"   비밀번호: {password}")
+                print(f"   비밀번호: {'*' * len(password)}")
                 print(f"   역할: {user.role}")
                 return True
             else:

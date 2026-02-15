@@ -94,7 +94,7 @@ def fetch_naver_finance_news(limit: int = 5) -> List[Dict[str, str]]:
                         break
 
             except Exception as e:
-                print(f"뉴스 파싱 오류: {e}")
+                logger.warning("뉴스 파싱 오류: %s", e)
                 continue
 
         # 뉴스가 없으면 기본 Mock 데이터 반환
@@ -104,7 +104,7 @@ def fetch_naver_finance_news(limit: int = 5) -> List[Dict[str, str]]:
         return news_list[:limit]
 
     except Exception as e:
-        print(f"네이버 금융 뉴스 크롤링 실패: {e}")
+        logger.error("네이버 금융 뉴스 크롤링 실패: %s", e)
         return get_mock_news()
 
 
@@ -228,7 +228,7 @@ def get_top_stocks_by_change(limit: int = 5) -> tuple:
                         "change": round(change_percent, 2)
                     })
             except Exception as e:
-                print(f"{ticker} 조회 실패: {e}")
+                logger.warning("%s 조회 실패: %s", ticker, e)
                 continue
 
         if not all_stocks:
@@ -243,7 +243,7 @@ def get_top_stocks_by_change(limit: int = 5) -> tuple:
         return top_gainers, top_losers
 
     except Exception as e:
-        print(f"실시간 종목 데이터 조회 실패: {e}")
+        logger.error("실시간 종목 데이터 조회 실패: %s", e)
         # Mock 데이터 반환
         return get_mock_stocks()
 
@@ -342,7 +342,7 @@ def generate_market_summary(indices: List[Dict], top_gainers: List[Dict], top_lo
         }
 
     except Exception as e:
-        print(f"AI 요약 생성 실패: {e}")
+        logger.error("AI 요약 생성 실패: %s", e)
         return generate_simple_summary(indices, top_gainers, top_losers)
 
 
@@ -423,7 +423,7 @@ async def get_market_overview(
                     "updatedAt": datetime.now().isoformat()
                 })
         except Exception as e:
-            print(f"KOSPI 데이터 조회 실패: {e}")
+            logger.warning("KOSPI 데이터 조회 실패: %s", e)
             indices.append({
                 "name": "KOSPI",
                 "value": 2645.85,
@@ -459,7 +459,7 @@ async def get_market_overview(
                     "updatedAt": datetime.now().isoformat()
                 })
         except Exception as e:
-            print(f"KOSDAQ 데이터 조회 실패: {e}")
+            logger.warning("KOSDAQ 데이터 조회 실패: %s", e)
             indices.append({
                 "name": "KOSDAQ",
                 "value": 845.23,
@@ -495,7 +495,7 @@ async def get_market_overview(
                     "updatedAt": datetime.now().isoformat()
                 })
         except Exception as e:
-            print(f"S&P 500 데이터 조회 실패: {e}")
+            logger.warning("S&P 500 데이터 조회 실패: %s", e)
             indices.append({
                 "name": "S&P 500",
                 "value": 4783.45,
@@ -531,7 +531,7 @@ async def get_market_overview(
                     "updatedAt": datetime.now().isoformat()
                 })
         except Exception as e:
-            print(f"NASDAQ 데이터 조회 실패: {e}")
+            logger.warning("NASDAQ 데이터 조회 실패: %s", e)
             indices.append({
                 "name": "NASDAQ",
                 "value": 15043.97,
@@ -558,7 +558,7 @@ async def get_market_overview(
         }
 
     except Exception as e:
-        print(f"Market overview error: {e}")
+        logger.error("Market overview error: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=f"시장 데이터 조회 중 오류가 발생했습니다: {str(e)}")
 
 
@@ -609,5 +609,5 @@ async def get_index_detail(
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Index detail error: {e}")
+        logger.error("Index detail error: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=f"지수 정보 조회 중 오류가 발생했습니다: {str(e)}")

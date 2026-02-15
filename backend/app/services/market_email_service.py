@@ -119,12 +119,12 @@ def _fetch_score_movers(db: Session, limit: int = 3) -> List[Dict[str, Any]]:
     전일 대비 Compass Score 변동이 큰 종목 선별.
     Stock 모델에 저장된 compass_score(이전 값)와 현재 재계산 값을 비교.
     """
-    # compass_score가 기록된 종목만 대상 (최대 30개로 제한)
+    # compass_score가 기록된 종목만 대상 (최대 15개로 제한하여 부하 절감)
     stocks = (
         db.query(Stock)
         .filter(Stock.compass_score.isnot(None))
         .order_by(Stock.market_cap.desc().nullslast())
-        .limit(30)
+        .limit(15)
         .all()
     )
 

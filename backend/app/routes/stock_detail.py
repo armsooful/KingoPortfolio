@@ -136,8 +136,33 @@ def generate_ai_commentary(
     from app.services.scoring_engine import ScoringEngine
     from app.config import settings
 
-    # 1. Compass Score 계산 (실시간)
-    result = ScoringEngine.calculate_compass_score(db, ticker)
+    # 1. Compass Score — DB 캐시 우선 사용 (24시간 이내)
+    stock = db.query(Stock).filter(Stock.ticker == ticker).first()
+    if not stock:
+        raise HTTPException(status_code=404, detail=f"종목 {ticker}을 찾을 수 없습니다")
+
+    from app.utils.kst_now import kst_now, KST
+    now = kst_now()
+    updated_at = stock.compass_updated_at
+    # DB에서 읽은 naive datetime을 KST로 변환 (timezone 불일치 방지)
+    if updated_at is not None and updated_at.tzinfo is None:
+        updated_at = KST.localize(updated_at)
+    if (
+        stock.compass_score is not None
+        and updated_at
+        and (now - updated_at).total_seconds() < 86400
+    ):
+        result = {
+            "compass_score": stock.compass_score,
+            "grade": stock.compass_grade,
+            "summary": stock.compass_summary or "",
+            "commentary": stock.compass_commentary or "",
+            "company_name": stock.name,
+            "categories": {},
+        }
+    else:
+        result = ScoringEngine.calculate_compass_score(db, ticker)
+
     if "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
 
@@ -152,7 +177,10 @@ def generate_ai_commentary(
     try:
         import anthropic
 
-        client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+        client = anthropic.Anthropic(
+            api_key=settings.anthropic_api_key,
+            timeout=30.0,
+        )
 
         # 카테고리 점수 요약
         cat_summary = []
@@ -197,10 +225,11 @@ def generate_ai_commentary(
         }
 
     except Exception as e:
-        logger.warning(f"AI commentary failed for {ticker}: {e}")
+        logger.error("AI commentary failed for %s: %s", ticker, e, exc_info=True)
         return {
             "success": True,
             "source": "rule_based_fallback",
+            "ai_error": str(e),
             "commentary": result.get("commentary", "AI 해설 생성에 실패했습니다."),
         }
 
