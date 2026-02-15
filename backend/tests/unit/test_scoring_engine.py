@@ -2,9 +2,11 @@
 ScoringEngine 단위 테스트 — 순수 로직 (DB 불필요)
 
 _score_financial, _score_valuation, _score_technical, _score_risk,
-_determine_grade, _generate_summary 정적 메서드를 dict 입출력으로 테스트.
+_determine_grade, _generate_summary, _generate_commentary 정적 메서드를 dict 입출력으로 테스트.
+calculate_compass_score는 3개 분석기를 mock하여 오케스트레이션 테스트.
 """
 import pytest
+from unittest.mock import patch, MagicMock
 from app.services.scoring_engine import ScoringEngine, GRADE_TABLE
 
 
@@ -465,3 +467,396 @@ class TestWeightRedistribution:
             for k in available
         )
         assert compass == pytest.approx(55.0)
+
+
+# ============================================================================
+# _score_technical — 세부 지표별 테스트 추가
+# ============================================================================
+
+@pytest.mark.unit
+class TestScoreTechnicalDetails:
+    """기술 점수 세부 지표 개별 테스트"""
+
+    def test_stochastic_zones(self):
+        """Stochastic K 구간별 점수 (10점 배점)"""
+        cases = [
+            (50, 10),   # 20-80: 중립
+            (15, 8),    # <20: 과매도
+            (85, 3),    # >80: 과매수
+        ]
+        for k_val, expected in cases:
+            quant = {"technical_indicators": {"stochastic": {"k": k_val}}}
+            result = ScoringEngine._score_technical(quant)
+            assert result["details"]["Stochastic"]["earned"] == expected, \
+                f"K={k_val} → expected {expected}"
+
+    def test_stochastic_boundaries(self):
+        """Stochastic 경계값"""
+        # k=20 → 중립(10점)
+        quant = {"technical_indicators": {"stochastic": {"k": 20}}}
+        result = ScoringEngine._score_technical(quant)
+        assert result["details"]["Stochastic"]["earned"] == 10
+
+        # k=80 → 중립(10점)
+        quant = {"technical_indicators": {"stochastic": {"k": 80}}}
+        result = ScoringEngine._score_technical(quant)
+        assert result["details"]["Stochastic"]["earned"] == 10
+
+    def test_macd_statuses(self):
+        """MACD status별 점수 (15점 배점)"""
+        cases = [
+            ("골든크로스 감지", 15),
+            ("상승 추세 지속", 12),
+            ("하락 전환 가능성", 5),
+            ("데드크로스", 2),
+        ]
+        for status, expected in cases:
+            quant = {"technical_indicators": {"macd": {"status": status}}}
+            result = ScoringEngine._score_technical(quant)
+            assert result["details"]["MACD"]["earned"] == expected, \
+                f"status='{status}' → expected {expected}"
+
+    def test_week52_position_zones(self):
+        """52주 위치 구간별 점수 (10점 배점)"""
+        cases = [
+            (55, 10),   # 40-70
+            (30, 7),    # 20-40
+            (75, 7),    # 70-80
+            (10, 5),    # <20
+            (90, 4),    # >80
+        ]
+        for pos, expected in cases:
+            quant = {"technical_indicators": {"week52_position": {"position": pos}}}
+            result = ScoringEngine._score_technical(quant)
+            assert result["details"]["52주 위치"]["earned"] == expected, \
+                f"position={pos} → expected {expected}"
+
+    def test_obv_trends(self):
+        """OBV 추세별 점수 (10점 배점)"""
+        cases = [
+            ("상승", 10),
+            ("중립", 5),
+            ("하락", 2),
+        ]
+        for trend, expected in cases:
+            quant = {"technical_indicators": {"obv": {"trend": trend}}}
+            result = ScoringEngine._score_technical(quant)
+            assert result["details"]["OBV 추세"]["earned"] == expected
+
+    def test_partial_indicators(self):
+        """일부 지표만 있을 때 정규화"""
+        quant = {
+            "technical_indicators": {
+                "rsi": {"rsi": 50},       # 15/15
+                "stochastic": {"k": 50},  # 10/10
+            }
+        }
+        result = ScoringEngine._score_technical(quant)
+        # (15 + 10) / (15 + 10) * 100 = 100
+        assert result["score"] == 100.0
+
+
+# ============================================================================
+# _generate_commentary
+# ============================================================================
+
+@pytest.mark.unit
+class TestGenerateCommentary:
+    """해설 자동 생성 테스트"""
+
+    def _categories(self, fin=80, val=70, tech=65, risk=60):
+        """카테고리 dict 생성 헬퍼"""
+        cats = {}
+        if fin is not None:
+            cats["financial"] = {"score": fin}
+        else:
+            cats["financial"] = None
+        if val is not None:
+            cats["valuation"] = {"score": val}
+        else:
+            cats["valuation"] = None
+        if tech is not None:
+            cats["technical"] = {"score": tech}
+        else:
+            cats["technical"] = None
+        if risk is not None:
+            cats["risk"] = {"score": risk}
+        else:
+            cats["risk"] = None
+        return cats
+
+    def _financial_result(self, roe=12.0, op_margin=15.0, debt=80.0):
+        return {
+            "profitability": {"roe": roe},
+            "profit_margins": {"operating_margin": op_margin},
+            "financial_health": {"debt_to_equity": debt},
+        }
+
+    def _valuation_result(self, pe_vs=-25, pb_vs=10):
+        return {
+            "pe_comparison": {"vs_industry": pe_vs},
+            "pb_comparison": {"vs_industry": pb_vs},
+        }
+
+    def _quant_result(self, rsi=50, adx=25, alignment="정배열", macd_status="상승 추세",
+                       vol=20.0, mdd=-15.0, sharpe=1.2):
+        return {
+            "technical_indicators": {
+                "ma_alignment": {"alignment": alignment},
+                "adx": {"adx": adx},
+                "rsi": {"rsi": rsi},
+                "macd": {"status": macd_status},
+            },
+            "risk_metrics": {
+                "volatility": vol,
+                "max_drawdown": {"max_drawdown": mdd},
+                "sharpe_ratio": {"sharpe_ratio": sharpe},
+            },
+        }
+
+    def test_full_commentary(self):
+        """모든 카테고리 있을 때 4개 섹션 포함"""
+        cats = self._categories()
+        commentary = ScoringEngine._generate_commentary(
+            ticker="005930", company_name="삼성전자", compass_score=72.5, grade="A",
+            categories=cats,
+            financial_result=self._financial_result(),
+            valuation_result=self._valuation_result(),
+            quant_result=self._quant_result(),
+        )
+        assert "삼성전자(005930)" in commentary
+        assert "72.5점" in commentary
+        assert "A등급" in commentary
+        assert "ROE" in commentary
+        assert "영업이익률" in commentary
+        assert "PER" in commentary or "PBR" in commentary
+        assert "기술적으로" in commentary
+        assert "리스크" in commentary
+
+    def test_no_company_name(self):
+        """company_name=None → ticker 사용"""
+        cats = self._categories(fin=None, val=None, tech=None, risk=None)
+        commentary = ScoringEngine._generate_commentary(
+            ticker="005930", company_name=None, compass_score=50.0, grade="B",
+            categories=cats,
+            financial_result=None, valuation_result=None, quant_result=None,
+        )
+        assert "005930" in commentary
+        assert "50.0점" in commentary
+
+    def test_financial_high_score_commentary(self):
+        """재무 점수 ≥70 → '재무 건전성이 우수하며'"""
+        cats = self._categories(fin=80, val=None, tech=None, risk=None)
+        commentary = ScoringEngine._generate_commentary(
+            ticker="TEST", company_name="테스트", compass_score=80.0, grade="A+",
+            categories=cats,
+            financial_result=self._financial_result(roe=20),
+            valuation_result=None, quant_result=None,
+        )
+        assert "재무 건전성이 우수하며" in commentary
+
+    def test_financial_low_score_commentary(self):
+        """재무 점수 < 50 → '재무 개선이 필요하며'"""
+        cats = self._categories(fin=30, val=None, tech=None, risk=None)
+        commentary = ScoringEngine._generate_commentary(
+            ticker="TEST", company_name="테스트", compass_score=30.0, grade="C",
+            categories=cats,
+            financial_result=self._financial_result(roe=-5, op_margin=-3),
+            valuation_result=None, quant_result=None,
+        )
+        assert "재무 개선이 필요하며" in commentary
+
+    def test_valuation_overvalued_commentary(self):
+        """밸류에이션 점수 < 50 → '고평가 구간'"""
+        cats = self._categories(fin=None, val=30, tech=None, risk=None)
+        commentary = ScoringEngine._generate_commentary(
+            ticker="TEST", company_name="테스트", compass_score=30.0, grade="C",
+            categories=cats,
+            financial_result=None,
+            valuation_result=self._valuation_result(pe_vs=50, pb_vs=40),
+            quant_result=None,
+        )
+        assert "고평가" in commentary
+
+    def test_technical_strong_uptrend(self):
+        """기술 점수 ≥70 → '강한 상승 추세'"""
+        cats = self._categories(fin=None, val=None, tech=80, risk=None)
+        commentary = ScoringEngine._generate_commentary(
+            ticker="TEST", company_name="테스트", compass_score=80.0, grade="A+",
+            categories=cats,
+            financial_result=None, valuation_result=None,
+            quant_result=self._quant_result(rsi=50, adx=30, alignment="정배열"),
+        )
+        assert "강한 상승 추세" in commentary
+
+    def test_risk_high_warning(self):
+        """리스크 점수 < 50 → '주의가 필요'"""
+        cats = self._categories(fin=None, val=None, tech=None, risk=30)
+        commentary = ScoringEngine._generate_commentary(
+            ticker="TEST", company_name="테스트", compass_score=30.0, grade="C",
+            categories=cats,
+            financial_result=None, valuation_result=None,
+            quant_result=self._quant_result(vol=80, mdd=-55, sharpe=-1.5),
+        )
+        assert "주의가 필요" in commentary
+
+    def test_rsi_overbought_label(self):
+        """RSI > 70 → '(과매수)' 라벨"""
+        cats = self._categories(fin=None, val=None, tech=50, risk=None)
+        commentary = ScoringEngine._generate_commentary(
+            ticker="TEST", company_name="테스트", compass_score=50.0, grade="B",
+            categories=cats,
+            financial_result=None, valuation_result=None,
+            quant_result=self._quant_result(rsi=75),
+        )
+        assert "과매수" in commentary
+
+    def test_rsi_oversold_label(self):
+        """RSI < 30 → '(과매도)' 라벨"""
+        cats = self._categories(fin=None, val=None, tech=50, risk=None)
+        commentary = ScoringEngine._generate_commentary(
+            ticker="TEST", company_name="테스트", compass_score=50.0, grade="B",
+            categories=cats,
+            financial_result=None, valuation_result=None,
+            quant_result=self._quant_result(rsi=25),
+        )
+        assert "과매도" in commentary
+
+
+# ============================================================================
+# calculate_compass_score — 통합 테스트 (3개 분석기 mock)
+# ============================================================================
+
+@pytest.mark.unit
+class TestCalculateCompassScore:
+    """calculate_compass_score 오케스트레이션 테스트"""
+
+    def _mock_db(self):
+        return MagicMock()
+
+    @patch("app.services.scoring_engine.QuantAnalyzer")
+    @patch("app.services.scoring_engine.ValuationAnalyzer")
+    @patch("app.services.scoring_engine.FinancialAnalyzer")
+    def test_all_analyzers_success(self, mock_fin, mock_val, mock_quant):
+        """3개 분석기 모두 성공 → 정상 compass score"""
+        mock_fin.analyze_stock.return_value = {
+            "success": True,
+            "company_name": "삼성전자",
+            "profitability": {"roe": 15},
+            "profit_margins": {"operating_margin": 20, "net_margin": 15},
+            "financial_health": {"debt_to_equity": 50},
+        }
+        mock_val.compare_multiples.return_value = {
+            "company_name": "삼성전자",
+            "pe_comparison": {"vs_industry": -25},
+            "pb_comparison": {"vs_industry": 0},
+        }
+        mock_quant.comprehensive_quant_analysis.return_value = {
+            "technical_indicators": {
+                "ma_alignment": {"alignment": "정배열"},
+                "adx": {"adx": 30, "direction": "상승 추세"},
+                "rsi": {"rsi": 50},
+                "stochastic": {"k": 50},
+                "macd": {"status": "골든크로스 감지"},
+                "week52_position": {"position": 55},
+                "obv": {"trend": "상승"},
+            },
+            "risk_metrics": {
+                "volatility": 18,
+                "max_drawdown": {"max_drawdown": -8},
+                "sharpe_ratio": {"sharpe_ratio": 1.5},
+            },
+        }
+
+        result = ScoringEngine.calculate_compass_score(self._mock_db(), "005930")
+
+        assert "error" not in result
+        assert result["ticker"] == "005930"
+        assert result["company_name"] == "삼성전자"
+        assert 0 <= result["compass_score"] <= 100
+        assert result["grade"] in ["S", "A+", "A", "B+", "B", "C+", "C", "D", "F"]
+        assert result["disclaimer"] == "교육 목적 참고 정보이며 투자 권유가 아닙니다"
+        assert "categories" in result
+        assert all(k in result["categories"] for k in ["financial", "valuation", "technical", "risk"])
+
+    @patch("app.services.scoring_engine.QuantAnalyzer")
+    @patch("app.services.scoring_engine.ValuationAnalyzer")
+    @patch("app.services.scoring_engine.FinancialAnalyzer")
+    def test_all_analyzers_fail(self, mock_fin, mock_val, mock_quant):
+        """3개 분석기 모두 실패 → error 반환"""
+        mock_fin.analyze_stock.side_effect = Exception("DB error")
+        mock_val.compare_multiples.side_effect = Exception("DB error")
+        mock_quant.comprehensive_quant_analysis.side_effect = Exception("DB error")
+
+        result = ScoringEngine.calculate_compass_score(self._mock_db(), "005930")
+
+        assert "error" in result
+
+    @patch("app.services.scoring_engine.QuantAnalyzer")
+    @patch("app.services.scoring_engine.ValuationAnalyzer")
+    @patch("app.services.scoring_engine.FinancialAnalyzer")
+    def test_partial_data_weight_redistribution(self, mock_fin, mock_val, mock_quant):
+        """재무만 성공 → 가중치 재분배 (재무 100%)"""
+        mock_fin.analyze_stock.return_value = {
+            "success": True,
+            "company_name": "테스트기업",
+            "profitability": {"roe": 15},
+            "profit_margins": {"operating_margin": 20, "net_margin": 15},
+            "financial_health": {"debt_to_equity": 50},
+        }
+        mock_val.compare_multiples.side_effect = Exception("No data")
+        mock_quant.comprehensive_quant_analysis.return_value = {"error": "데이터 부족"}
+
+        result = ScoringEngine.calculate_compass_score(self._mock_db(), "TEST")
+
+        assert "error" not in result
+        # 재무만 100점이면 compass_score도 100점 (유일한 카테고리)
+        assert result["compass_score"] == 100.0
+        assert result["data_availability"]["financial"] is True
+        assert result["data_availability"]["valuation"] is False
+        assert result["data_availability"]["technical"] is False
+        assert result["data_availability"]["risk"] is False
+
+    @patch("app.services.scoring_engine.QuantAnalyzer")
+    @patch("app.services.scoring_engine.ValuationAnalyzer")
+    @patch("app.services.scoring_engine.FinancialAnalyzer")
+    def test_financial_not_success(self, mock_fin, mock_val, mock_quant):
+        """FinancialAnalyzer.success=False → 재무 N/A"""
+        mock_fin.analyze_stock.return_value = {"success": False}
+        mock_val.compare_multiples.return_value = {
+            "pe_comparison": {"vs_industry": -30},
+            "pb_comparison": {"vs_industry": -25},
+        }
+        mock_quant.comprehensive_quant_analysis.return_value = {"error": "no data"}
+
+        result = ScoringEngine.calculate_compass_score(self._mock_db(), "TEST")
+
+        assert "error" not in result
+        assert result["data_availability"]["financial"] is False
+        assert result["data_availability"]["valuation"] is True
+
+    @patch("app.services.scoring_engine.QuantAnalyzer")
+    @patch("app.services.scoring_engine.ValuationAnalyzer")
+    @patch("app.services.scoring_engine.FinancialAnalyzer")
+    def test_grade_and_category_grades(self, mock_fin, mock_val, mock_quant):
+        """각 카테고리에 grade 필드가 부여되는지 확인"""
+        mock_fin.analyze_stock.return_value = {
+            "success": True,
+            "profitability": {"roe": 15},
+            "profit_margins": {"operating_margin": 20, "net_margin": 15},
+            "financial_health": {"debt_to_equity": 50},
+        }
+        mock_val.compare_multiples.side_effect = Exception("N/A")
+        mock_quant.comprehensive_quant_analysis.side_effect = Exception("N/A")
+
+        result = ScoringEngine.calculate_compass_score(self._mock_db(), "TEST")
+
+        fin_cat = result["categories"]["financial"]
+        assert "grade" in fin_cat
+        assert "weight" in fin_cat
+        assert fin_cat["weight"] == "30%"
+
+        # N/A 카테고리는 기본 구조
+        val_cat = result["categories"]["valuation"]
+        assert val_cat["score"] is None
+        assert val_cat["grade"] == "N/A"
