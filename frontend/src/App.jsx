@@ -1,41 +1,45 @@
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect, createContext, useContext, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { getCurrentUser, logout as logoutApi } from './services/api';
 import { ThemeContext, useThemeInit } from './hooks/useTheme';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import './styles/App.css';
+
+// Public — 정적 import (첫 화면/인증)
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import EmailVerificationPage from './pages/EmailVerificationPage';
-import ProfilePage from './pages/ProfilePage';
-import SurveyPage from './pages/SurveyPage';
-import TerminologyPage from './pages/TerminologyPage';
-import DiagnosisResultPage from './pages/DiagnosisResultPage';
-import DiagnosisHistoryPage from './pages/DiagnosisHistoryPage';
-import AdminPage from './pages/AdminPage';
-import AdminConsentPage from './pages/AdminConsentPage';
-import DataManagementPage from './pages/DataManagementPage';
-import UserManagementPage from './pages/UserManagementPage';
-import PortfolioManagementPage from './pages/PortfolioManagementPage';
-import PortfolioComparisonPage from './pages/PortfolioComparisonPage';
-import BatchJobsPage from './pages/BatchJobsPage';
-import StockDetailPage from './pages/StockDetailPage';
-import FinancialAnalysisPage from './pages/FinancialAnalysisPage';
-import ValuationPage from './pages/ValuationPage';
-import QuantAnalysisPage from './pages/QuantAnalysisPage';
-import ReportPage from './pages/ReportPage';
-import MarketDashboardPage from './pages/MarketDashboardPage';
-import PortfolioRecommendationPage from './pages/PortfolioRecommendationPage';
-import BacktestPage from './pages/BacktestPage';
-import ScenarioSimulationPage from './pages/ScenarioSimulationPage';
-import StockScreenerPage from './pages/StockScreenerPage';
-import WatchlistPage from './pages/WatchlistPage';
-import PortfolioExplanationPage from './pages/PortfolioExplanationPage';
-import ReportHistoryPage from './pages/ReportHistoryPage';
-import Phase7PortfolioEvaluationPage from './pages/Phase7PortfolioEvaluationPage';
-import PortfolioBuilderPage from './pages/PortfolioBuilderPage';
-import './styles/App.css';
+
+// Protected — lazy import (온디맨드 로딩)
+const MarketDashboardPage = lazy(() => import('./pages/MarketDashboardPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const SurveyPage = lazy(() => import('./pages/SurveyPage'));
+const TerminologyPage = lazy(() => import('./pages/TerminologyPage'));
+const DiagnosisResultPage = lazy(() => import('./pages/DiagnosisResultPage'));
+const DiagnosisHistoryPage = lazy(() => import('./pages/DiagnosisHistoryPage'));
+const PortfolioRecommendationPage = lazy(() => import('./pages/PortfolioRecommendationPage'));
+const BacktestPage = lazy(() => import('./pages/BacktestPage'));
+const ScenarioSimulationPage = lazy(() => import('./pages/ScenarioSimulationPage'));
+const StockScreenerPage = lazy(() => import('./pages/StockScreenerPage'));
+const WatchlistPage = lazy(() => import('./pages/WatchlistPage'));
+const PortfolioExplanationPage = lazy(() => import('./pages/PortfolioExplanationPage'));
+const ReportHistoryPage = lazy(() => import('./pages/ReportHistoryPage'));
+const Phase7PortfolioEvaluationPage = lazy(() => import('./pages/Phase7PortfolioEvaluationPage'));
+const PortfolioBuilderPage = lazy(() => import('./pages/PortfolioBuilderPage'));
+const AdminPage = lazy(() => import('./pages/AdminPage'));
+const AdminConsentPage = lazy(() => import('./pages/AdminConsentPage'));
+const DataManagementPage = lazy(() => import('./pages/DataManagementPage'));
+const UserManagementPage = lazy(() => import('./pages/UserManagementPage'));
+const PortfolioManagementPage = lazy(() => import('./pages/PortfolioManagementPage'));
+const PortfolioComparisonPage = lazy(() => import('./pages/PortfolioComparisonPage'));
+const BatchJobsPage = lazy(() => import('./pages/BatchJobsPage'));
+const StockDetailPage = lazy(() => import('./pages/StockDetailPage'));
+const FinancialAnalysisPage = lazy(() => import('./pages/FinancialAnalysisPage'));
+const ValuationPage = lazy(() => import('./pages/ValuationPage'));
+const QuantAnalysisPage = lazy(() => import('./pages/QuantAnalysisPage'));
+const ReportPage = lazy(() => import('./pages/ReportPage'));
 
 // ============================================================
 // Auth Context
@@ -148,6 +152,7 @@ function AppContent() {
     <div className="app">
       {isAuthenticated && <Header />}
       <main className="main-content">
+        <Suspense fallback={<div className="loading-container"><div className="spinner"></div><p>로딩 중...</p></div>}>
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
@@ -384,6 +389,7 @@ function AppContent() {
           {/* Default Route */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </main>
       <Footer />
     </div>
