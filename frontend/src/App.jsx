@@ -4,6 +4,7 @@ import { getCurrentUser, logout as logoutApi } from './services/api';
 import { ThemeContext, useThemeInit } from './hooks/useTheme';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import ErrorBoundary from './components/ErrorBoundary';
 import './styles/App.css';
 
 // Public — 정적 import (첫 화면/인증)
@@ -152,6 +153,7 @@ function AppContent() {
     <div className="app">
       {isAuthenticated && <Header />}
       <main className="main-content">
+        <ErrorBoundary>
         <Suspense fallback={<div className="loading-container"><div className="spinner"></div><p>로딩 중...</p></div>}>
         <Routes>
           {/* Public Routes */}
@@ -390,6 +392,7 @@ function AppContent() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         </Suspense>
+        </ErrorBoundary>
       </main>
       <Footer />
     </div>
