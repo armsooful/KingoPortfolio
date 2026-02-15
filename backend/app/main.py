@@ -93,6 +93,9 @@ async def lifespan(app: FastAPI):
         from app.services.scheduled_data_collection import (
             scheduled_incremental_load,
             scheduled_compass_batch_compute,
+            scheduled_weekly_stock_refresh,
+            scheduled_dart_financials,
+            scheduled_monthly_financial_products,
         )
 
         scheduler = AsyncIOScheduler()
@@ -121,9 +124,30 @@ async def lifespan(app: FastAPI):
             id="daily_compass_score",
             replace_existing=True,
         )
+        # Phase 2: 주간/월간 수집 자동화
+        scheduler.add_job(
+            scheduled_weekly_stock_refresh,
+            CronTrigger(hour=10, minute=0, day_of_week="sat", timezone="Asia/Seoul"),
+            id="weekly_stock_refresh",
+            replace_existing=True,
+        )
+        scheduler.add_job(
+            scheduled_dart_financials,
+            CronTrigger(hour=11, minute=0, day_of_week="sat", timezone="Asia/Seoul"),
+            id="weekly_dart_financials",
+            replace_existing=True,
+        )
+        scheduler.add_job(
+            scheduled_monthly_financial_products,
+            CronTrigger(day=1, hour=13, minute=0, timezone="Asia/Seoul"),
+            id="monthly_financial_products",
+            replace_existing=True,
+        )
         scheduler.start()
-        logger.info("APScheduler started (daily_market_email @ 07:30, watchlist @ 08:00, "
-                     "incremental_prices @ 16:30, compass_score @ 17:00 KST)")
+        logger.info("APScheduler started: daily(16:30 prices, 17:00 compass), "
+                     "weekly(sat 10:00 stocks, 11:00 dart), "
+                     "monthly(1st 13:00 products), "
+                     "email(07:30 market, 08:00 watchlist) KST")
     except Exception as e:
         logger.warning("APScheduler setup failed: %s", e)
 
