@@ -1,6 +1,7 @@
 """
 PDF 리포트 생성 API 라우트
 """
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
@@ -14,6 +15,7 @@ from app.models.user import User
 from app.services.pdf_report_generator import PDFReportGenerator
 from app.services.portfolio_engine import create_default_portfolio
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/reports", tags=["PDF Reports"])
 
@@ -85,7 +87,7 @@ async def generate_portfolio_pdf_report(
     except HTTPException:
         raise
     except Exception as e:
-        print(f"[PDF Report Error] {str(e)}")
+        logger.error("PDF Report Error: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate PDF report: {str(e)}"
@@ -161,7 +163,7 @@ async def generate_diagnosis_pdf_report(
     except HTTPException:
         raise
     except Exception as e:
-        print(f"[PDF Report Error] {str(e)}")
+        logger.error("PDF Report Error: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate PDF report: {str(e)}"

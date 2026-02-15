@@ -7,6 +7,9 @@ from app.models import User
 from app.schemas import UserCreate
 from app.auth import hash_password, verify_password
 import app.models as models
+import logging
+
+logger = logging.getLogger(__name__)
 
 # ============ USER CRUD ============
 
@@ -45,26 +48,16 @@ def create_user(db: Session, user_create: UserCreate):
 
 def authenticate_user(db: Session, email: str, password: str):
     """사용자 인증 (로그인)"""
-    print("\n" + "="*60)
-    print("🔐 authenticate_user 호출됨")
-    print(f"이메일: {email}")
-    print(f"입력 비밀번호: {password}")
-    print(f"비밀번호 길이: {len(password)}")
-    print(f"비밀번호 바이트: {len(password.encode('utf-8'))}")
+    logger.debug("authenticate_user 호출: email=%s", email)
 
     user = get_user_by_email(db, email)
 
     if not user:
-        print("❌ 사용자 없음")
-        print("="*60 + "\n")
+        logger.debug("인증 실패: 사용자 없음 (email=%s)", email)
         return None
 
-    print(f"✅ 사용자 발견: {user.email}")
-    print(f"DB 해시: {user.hashed_password[:50]}...")
-
     verification_result = verify_password(password, user.hashed_password)
-    print(f"비밀번호 검증 결과: {verification_result}")
-    print("="*60 + "\n")
+    logger.debug("비밀번호 검증 결과: %s (email=%s)", verification_result, email)
 
     if not verification_result:
         return None
@@ -306,7 +299,7 @@ def get_or_create_stock(db: Session, ticker: str, **kwargs):
 
     if stock:
         # Update existing stock with new data
-        print(f"[CRUD] Updating stock {ticker}")
+        logger.debug("Updating stock %s", ticker)
         updated_fields = []
         for key, value in kwargs.items():
             if value is not None and hasattr(stock, key):
@@ -315,15 +308,15 @@ def get_or_create_stock(db: Session, ticker: str, **kwargs):
                 updated_fields.append(f"{key}: {old_value} -> {value}")
 
         if updated_fields:
-            print(f"[CRUD] Updated fields: {', '.join(updated_fields)}")
+            logger.debug("Updated fields for %s: %s", ticker, ", ".join(updated_fields))
 
         db.commit()
         db.refresh(stock)
-        print(f"[CRUD] Stock {ticker} updated successfully")
+        logger.debug("Stock %s updated successfully", ticker)
         return stock
 
     # Create new stock
-    print(f"[CRUD] Creating new stock {ticker}")
+    logger.debug("Creating new stock %s", ticker)
     stock = Stock(ticker=ticker, **kwargs)
     db.add(stock)
     db.commit()

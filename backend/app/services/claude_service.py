@@ -3,10 +3,13 @@ Claude AI 서비스 모듈
 투자성향 진단 결과에 대한 AI 분석 및 맞춤 설명 생성
 """
 
+import logging
 from typing import List, Dict
 import anthropic
 from app.config import settings
 from app.schemas import DiagnosisAnswerRequest
+
+logger = logging.getLogger(__name__)
 
 
 class ClaudeService:
@@ -72,7 +75,7 @@ class ClaudeService:
             return parsed_response
 
         except Exception as e:
-            print(f"Claude API 호출 실패: {str(e)}")
+            logger.error("Claude API 호출 실패: %s", e)
             # 에러 시 기본 응답 반환
             return self._get_fallback_response(investment_type)
 
@@ -168,7 +171,7 @@ class ClaudeService:
                 result["personalized_analysis"] = response_text.strip()
 
         except Exception as e:
-            print(f"응답 파싱 실패: {str(e)}")
+            logger.warning("응답 파싱 실패: %s", e)
             result["personalized_analysis"] = response_text.strip()
 
         return result

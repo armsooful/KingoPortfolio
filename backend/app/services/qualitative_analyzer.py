@@ -4,12 +4,15 @@
 - 재무제표 질적 평가
 """
 
+import logging
 import os
 from typing import Dict, List, Optional
 from anthropic import Anthropic
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from app.utils.http_client import get_with_retry
+
+logger = logging.getLogger(__name__)
 
 # .env 파일 로드
 load_dotenv()
@@ -58,7 +61,7 @@ class QualitativeAnalyzer:
             return news_items
 
         except Exception as e:
-            print(f"Error fetching news: {e}")
+            logger.warning("Error fetching news: %s", e)
             return []
 
     @staticmethod
@@ -141,7 +144,7 @@ class QualitativeAnalyzer:
             }
 
         except Exception as e:
-            print(f"Error in AI analysis: {e}")
+            logger.error("Error in AI analysis: %s", e)
             # AI 분석 실패시 Alpha Vantage 감성으로 대체
             return QualitativeAnalyzer._analyze_with_av_sentiment(symbol, news_articles)
 

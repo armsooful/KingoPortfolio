@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import List
 from dotenv import load_dotenv
@@ -147,15 +148,15 @@ class Settings:
                 "https://kingo-portfolio-*.vercel.app",
             ]
         
-        print(f"✅ CORS Allowed Origins: {self.allowed_origins}")
-        print(f"✅ Database URL: {self.database_url[:30]}...")
-        print(f"✅ App Name: {self.app_name}")
-        print(f"✅ App Version: {self.app_version}")
-        print(f"✅ Engine Version: {self.engine_version}")
-        print(f"🚩 Feature Flag - Recommendation Engine: {'ENABLED' if self.feature_recommendation_engine else 'DISABLED (Default)'}")
-        print(f"🚩 Feature Flag - Sim Store (Phase 1): {'ENABLED' if self.use_sim_store else 'DISABLED (Default)'}")
-        print(f"🚩 Feature Flag - Scenario DB (Phase 1): {'ENABLED' if self.use_scenario_db else 'DISABLED (Default)'}")
-        print(f"🚩 Feature Flag - Rebalancing (Phase 2): {'ENABLED' if self.use_rebalancing else 'DISABLED (Default)'}")
+        _logger = logging.getLogger(__name__)
+        _logger.info("CORS Allowed Origins: %s", self.allowed_origins)
+        _logger.info("Database URL: %s...", self.database_url[:30])
+        _logger.info("App: %s v%s (engine %s)", self.app_name, self.app_version, self.engine_version)
+        _logger.info(
+            "Feature Flags — Recommendation: %s, SimStore: %s, ScenarioDB: %s, Rebalancing: %s",
+            self.feature_recommendation_engine, self.use_sim_store,
+            self.use_scenario_db, self.use_rebalancing,
+        )
 
 
 # 싱글톤 인스턴스

@@ -51,39 +51,37 @@ from app import models as diagnosis_models  # noqa - Diagnosis, DiagnosisAnswer,
 logger = logging.getLogger(__name__)
 
 def init_db():
-    print(f"🔧 init_db() 시작 - DB URL: {settings.database_url[:50]}...")
-    print(f"🔧 등록된 테이블: {list(Base.metadata.tables.keys())}")
+    logger.info("init_db() 시작 - DB URL: %s...", settings.database_url[:50])
+    logger.info("등록된 테이블: %s", list(Base.metadata.tables.keys()))
 
     if settings.reset_db_on_startup:
         # 환경변수 RESET_DB_ON_STARTUP=true 일 때만 기존 테이블 삭제 후 재생성 (데이터 손실)
         Base.metadata.drop_all(bind=engine)
-        print("⚠️ Database tables dropped (RESET_DB_ON_STARTUP=true)")
+        logger.warning("Database tables dropped (RESET_DB_ON_STARTUP=true)")
 
     # PostgreSQL 환경에서는 마이그레이션으로만 스키마 관리
     if settings.database_url.startswith("postgresql"):
-        print("ℹ️ Skipping Base.metadata.create_all (PostgreSQL)")
+        logger.info("Skipping Base.metadata.create_all (PostgreSQL)")
         return
 
     # SQLite 등 로컬 개발 환경만 create_all 사용
     try:
         Base.metadata.create_all(bind=engine)
-        print(f"✅ Database initialized - {len(Base.metadata.tables)} tables created/verified")
+        logger.info("Database initialized - %d tables created/verified", len(Base.metadata.tables))
     except Exception as e:
-        print(f"❌ Table creation failed: {e}")
+        logger.error("Table creation failed: %s", e, exc_info=True)
         raise
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("🚀 Lifespan startup 시작")
+    logger.info("Lifespan startup 시작")
     setup_logging()
     try:
         init_db()
-        print("✅ Database initialized successfully")
+        logger.info("Database initialized successfully")
     except Exception as e:
-        print(f"❌ Database initialization FAILED: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.error("Database initialization FAILED: %s", e, exc_info=True)
 
     # APScheduler: 매일 07:30 KST 시장 요약 이메일 발송
     scheduler = None
@@ -107,15 +105,15 @@ async def lifespan(app: FastAPI):
             replace_existing=True,
         )
         scheduler.start()
-        print("✅ APScheduler started (daily_market_email @ 07:30 KST, watchlist_score_alerts @ 08:00 KST)")
+        logger.info("APScheduler started (daily_market_email @ 07:30 KST, watchlist_score_alerts @ 08:00 KST)")
     except Exception as e:
-        print(f"⚠️ APScheduler setup failed: {e}")
+        logger.warning("APScheduler setup failed: %s", e)
 
     yield
 
     if scheduler:
         scheduler.shutdown(wait=False)
-    print("🛑 Lifespan shutdown")
+    logger.info("Lifespan shutdown")
 
 
 app = FastAPI(

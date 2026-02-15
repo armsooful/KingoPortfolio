@@ -1,6 +1,7 @@
 """
 이메일 발송 유틸리티
 """
+import logging
 import os
 import secrets
 from datetime import datetime, timedelta
@@ -20,6 +21,8 @@ SMTP_FROM_NAME = os.getenv("SMTP_FROM_NAME", "Foresto Compass")
 
 # 프론트엔드 URL (이메일 인증 링크에 사용)
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+
+logger = logging.getLogger(__name__)
 
 
 def generate_verification_token() -> str:
@@ -46,7 +49,7 @@ async def send_email(
         bool: 발송 성공 여부
     """
     if not SMTP_USER or not SMTP_PASSWORD:
-        print("⚠️ SMTP credentials not configured. Email not sent.")
+        logger.warning("SMTP credentials not configured. Email not sent.")
         return False
 
     try:
@@ -86,11 +89,11 @@ async def send_email(
                 start_tls=True,
             )
 
-        print(f"✅ Email sent successfully to {to_email}")
+        logger.info("Email sent successfully to %s", to_email)
         return True
 
     except Exception as e:
-        print(f"❌ Failed to send email to {to_email}: {str(e)}")
+        logger.error("Failed to send email to %s: %s", to_email, e)
         return False
 
 

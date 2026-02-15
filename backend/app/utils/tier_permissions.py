@@ -3,9 +3,12 @@
 
 VIP 등급과 멤버십 플랜에 따른 권한을 관리합니다.
 """
+import logging
 from typing import Dict, Any
 from datetime import datetime
 from app.models.user import User
+
+logger = logging.getLogger(__name__)
 
 
 # ============================================================
@@ -332,13 +335,13 @@ def add_activity_points(user: User, points: int, activity_type: str = '') -> int
     bonus_points = int(points * multiplier)
     user.activity_points += bonus_points
 
-    print(f"🎯 활동 점수 획득: {activity_type} +{points} (배율 {multiplier}x = +{bonus_points})")
-    print(f"   총 활동 점수: {user.activity_points}")
+    logger.info("활동 점수 획득: %s +%d (배율 %sx = +%d), 총 %d",
+                activity_type, points, multiplier, bonus_points, user.activity_points)
 
     # VIP 등급 자동 업데이트
     new_tier, tier_changed = update_vip_tier(user)
     if tier_changed:
-        print(f"🎊 VIP 등급 상승! {user.vip_tier} → {new_tier}")
+        logger.info("VIP 등급 상승! %s → %s", user.vip_tier, new_tier)
 
     return user.activity_points
 
@@ -418,7 +421,7 @@ def reset_monthly_usage_if_needed(user: User) -> bool:
         user.monthly_ai_requests = 0
         user.monthly_reports_generated = 0
         user.last_usage_reset = now
-        print(f"🔄 월별 사용량 리셋: {user.email}")
+        logger.info("월별 사용량 리셋: %s", user.email)
         return True
 
     return False

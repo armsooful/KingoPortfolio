@@ -1,6 +1,7 @@
 """
 관리자용 시장 이메일 관리 API
 """
+import logging
 
 from datetime import date, datetime
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
@@ -19,6 +20,8 @@ from app.services.market_email_service import (
     send_daily_market_emails,
 )
 from app.utils.email import send_email
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/admin/market-email",
@@ -172,7 +175,7 @@ async def send_now(
         _db = SessionLocal()
         try:
             result = await send_daily_market_emails(_db, triggered_by="manual")
-            print(f"Manual market email result: {result}")
+            logger.info("Manual market email result: %s", result)
         finally:
             _db.close()
 

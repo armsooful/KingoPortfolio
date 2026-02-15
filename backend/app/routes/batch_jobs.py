@@ -46,7 +46,7 @@ def run_full_krx_batch_job(
     3. 재무지표 수집 (pykrx - PER, PBR, etc)
     """
     import traceback
-    print(f"[Batch Job] FUNCTION CALLED! job_id={job_id}, days={days}, limit={limit}")
+    logger.info("[Batch Job %s] FUNCTION CALLED! days=%d, limit=%d", job_id, days, limit)
 
     # Wrap everything to catch any errors
     try:
@@ -58,12 +58,11 @@ def run_full_krx_batch_job(
 
         # Create a new database session for this background task
         from app.database import SessionLocal
-        print(f"[Batch Job {job_id}] Creating database session...")
+        logger.debug("[Batch Job %s] Creating database session...", job_id)
         db = SessionLocal()
-        print(f"[Batch Job {job_id}] Database session created")
+        logger.debug("[Batch Job %s] Database session created", job_id)
     except Exception as e:
-        print(f"[Batch Job {job_id}] ERROR during initialization: {str(e)}")
-        print(f"[Batch Job {job_id}] Traceback: {traceback.format_exc()}")
+        logger.error("[Batch Job %s] ERROR during initialization: %s", job_id, e, exc_info=True)
         batch_job_status[job_id]["status"] = "failed"
         batch_job_status[job_id]["error"] = f"Initialization error: {str(e)}"
         batch_job_status[job_id]["completed_at"] = datetime.now().isoformat()
@@ -71,7 +70,7 @@ def run_full_krx_batch_job(
 
     try:
         # 작업 시작
-        print(f"[Batch Job {job_id}] Setting status to running...")
+        logger.info("[Batch Job %s] Setting status to running...", job_id)
         batch_job_status[job_id]["status"] = "running"
         batch_job_status[job_id]["started_at"] = datetime.now().isoformat()
         batch_job_status[job_id]["progress"] = {
@@ -82,7 +81,7 @@ def run_full_krx_batch_job(
         }
 
         # Step 1: 기본 정보 수집
-        print(f"[Batch Job {job_id}] Step 1: 기본 정보 수집 시작")
+        logger.info("[Batch Job %s] Step 1: 기본 정보 수집 시작", job_id)
 
         from datetime import date, timedelta
 
@@ -111,7 +110,7 @@ def run_full_krx_batch_job(
             # 거래일을 찾지 못한 경우 오늘 날짜 사용
             trading_date = today
             trading_date_str = today.strftime("%Y%m%d")
-            print(f"[Batch Job {job_id}] 경고: 최근 거래일을 찾지 못함. 오늘 날짜 사용: {trading_date_str}")
+            logger.warning("[Batch Job %s] 최근 거래일을 찾지 못함. 오늘 날짜 사용: %s", job_id, trading_date_str)
 
         today_str = trading_date_str  # 기존 코드와의 호환성을 위해 today_str 유지
 
@@ -122,7 +121,7 @@ def run_full_krx_batch_job(
         if existing_stocks:
             # 기존 종목 업데이트
             all_tickers = [stock.ticker for stock in existing_stocks][:limit]
-            print(f"[Batch Job {job_id}] Using {len(all_tickers)} existing stocks from database")
+            logger.info("[Batch Job %s] Using %d existing stocks from database", job_id, len(all_tickers))
         else:
             # 주요 한국 종목 리스트 (시가총액 기준 상위 종목)
             all_tickers = [
@@ -147,7 +146,7 @@ def run_full_krx_batch_job(
                 "009150",  # 삼성전기
                 "034020",  # 두산에너빌리티
             ][:limit]
-            print(f"[Batch Job {job_id}] Using {len(all_tickers)} major Korean stocks")
+            logger.info("[Batch Job %s] Using %d major Korean stocks", job_id, len(all_tickers))
 
         batch_job_status[job_id]["progress"]["total"] = len(all_tickers)
 
@@ -167,18 +166,18 @@ def run_full_krx_batch_job(
                 current_price = None
                 if not today_df.empty:
                     current_price = int(today_df.iloc[-1]['종가'])
-                    print(f"[Batch Job {job_id}] {ticker} 현재가: {current_price:,}원")
+                    logger.debug("[Batch Job %s] %s 현재가: %s원", job_id, ticker, f"{current_price:,}")
                 else:
-                    print(f"[Batch Job {job_id}] {ticker} OHLCV 데이터 없음")
+                    logger.debug("[Batch Job %s] %s OHLCV 데이터 없음", job_id, ticker)
 
                 # 시가총액 조회 (단위: 백만원)
                 market_cap_df = pykrx_stock.get_market_cap(today_str, today_str, ticker)
                 market_cap = None
                 if not market_cap_df.empty:
                     market_cap = int(market_cap_df.iloc[-1]['시가총액'] / 1_000_000)  # 억원 단위
-                    print(f"[Batch Job {job_id}] {ticker} 시가총액: {market_cap:,}억원")
+                    logger.debug("[Batch Job %s] %s 시가총액: %s억원", job_id, ticker, f"{market_cap:,}")
                 else:
-                    print(f"[Batch Job {job_id}] {ticker} 시가총액 데이터 없음")
+                    logger.debug("[Batch Job %s] %s 시가총액 데이터 없음", job_id, ticker)
 
                 # DB에 저장
                 stock = get_or_create_stock(
@@ -193,19 +192,19 @@ def run_full_krx_batch_job(
                     risk_level="medium"
                 )
 
-                print(f"[Batch Job {job_id}] {ticker} DB 저장 완료 (가격: {current_price})")
+                logger.debug("[Batch Job %s] %s DB 저장 완료 (가격: %s)", job_id, ticker, current_price)
 
                 basic_info_success += 1
 
             except Exception as e:
-                print(f"[Batch Job {job_id}] 기본 정보 수집 실패 ({ticker}): {str(e)}")
+                logger.warning("[Batch Job %s] 기본 정보 수집 실패 (%s): %s", job_id, ticker, e)
                 basic_info_failed += 1
                 continue
 
         db.commit()
 
         # Step 2: 시계열 데이터 수집
-        print(f"[Batch Job {job_id}] Step 2: 시계열 데이터 수집 시작")
+        logger.info("[Batch Job %s] Step 2: 시계열 데이터 수집 시작", job_id)
         batch_job_status[job_id]["progress"]["phase"] = "시계열 데이터 수집 중"
 
         timeseries_success = 0
@@ -214,24 +213,24 @@ def run_full_krx_batch_job(
         from_date = trading_date - timedelta(days=days)
         from_date_str = from_date.strftime("%Y%m%d")
 
-        print(f"[Batch Job {job_id}] 시계열 데이터 기간: {from_date_str} ~ {today_str}")
+        logger.info("[Batch Job %s] 시계열 데이터 기간: %s ~ %s", job_id, from_date_str, today_str)
 
         for idx, ticker in enumerate(all_tickers):
             try:
                 batch_job_status[job_id]["progress"]["current"] = idx + 1
                 batch_job_status[job_id]["progress"]["details"] = f"{ticker} 시계열 데이터"
 
-                print(f"[Batch Job {job_id}] {ticker} 시계열 수집 시작 ({from_date_str} ~ {today_str})")
+                logger.debug("[Batch Job %s] %s 시계열 수집 시작 (%s ~ %s)", job_id, ticker, from_date_str, today_str)
 
                 # OHLCV 데이터 조회
                 df = pykrx_stock.get_market_ohlcv(from_date_str, today_str, ticker)
 
                 if df.empty:
-                    print(f"[Batch Job {job_id}] {ticker} 시계열 데이터 없음")
+                    logger.debug("[Batch Job %s] %s 시계열 데이터 없음", job_id, ticker)
                     timeseries_failed += 1
                     continue
 
-                print(f"[Batch Job {job_id}] {ticker} 시계열 {len(df)}개 행 조회 완료")
+                logger.debug("[Batch Job %s] %s 시계열 %d개 행 조회 완료", job_id, ticker, len(df))
                 records_added = 0
 
                 for date_idx, row in df.iterrows():
@@ -265,23 +264,21 @@ def run_full_krx_batch_job(
 
                 if records_added > 0:
                     db.commit()
-                    print(f"[Batch Job {job_id}] {ticker} 시계열 {records_added}개 레코드 저장 완료")
+                    logger.debug("[Batch Job %s] %s 시계열 %d개 레코드 저장 완료", job_id, ticker, records_added)
                 else:
-                    print(f"[Batch Job {job_id}] {ticker} 시계열 신규 데이터 없음 (이미 존재)")
+                    logger.debug("[Batch Job %s] %s 시계열 신규 데이터 없음 (이미 존재)", job_id, ticker)
 
                 # 데이터를 조회했으면 성공으로 간주 (신규 추가 여부와 무관)
                 timeseries_success += 1
 
             except Exception as e:
-                print(f"[Batch Job {job_id}] 시계열 수집 실패 ({ticker}): {str(e)}")
-                import traceback
-                print(traceback.format_exc())
+                logger.warning("[Batch Job %s] 시계열 수집 실패 (%s): %s", job_id, ticker, e, exc_info=True)
                 timeseries_failed += 1
                 db.rollback()
                 continue
 
         # Step 3: 재무지표 수집 (yfinance 사용)
-        print(f"[Batch Job {job_id}] Step 3: 재무지표 수집 시작 (yfinance)")
+        logger.info("[Batch Job %s] Step 3: 재무지표 수집 시작 (yfinance)", job_id)
         batch_job_status[job_id]["progress"]["phase"] = "재무지표 수집 중"
 
         financial_success = 0
@@ -295,7 +292,7 @@ def run_full_krx_batch_job(
                 # yfinance 티커 형식: 종목코드.KS (KOSPI)
                 yf_ticker = f"{ticker}.KS"
 
-                print(f"[Batch Job {job_id}] {ticker} yfinance 조회 시작...")
+                logger.debug("[Batch Job %s] %s yfinance 조회 시작...", job_id, ticker)
                 import yfinance as yf
                 stock_yf = yf.Ticker(yf_ticker)
                 info = stock_yf.info
@@ -304,7 +301,7 @@ def run_full_krx_batch_job(
                 stock = db.query(Stock).filter(Stock.ticker == ticker).first()
 
                 if not stock:
-                    print(f"[Batch Job {job_id}] {ticker} DB에 없음 - 스킵")
+                    logger.debug("[Batch Job %s] %s DB에 없음 - 스킵", job_id, ticker)
                     financial_failed += 1
                     continue
 
@@ -352,14 +349,14 @@ def run_full_krx_batch_job(
                     updates['시가총액'] = stock.market_cap
 
                 if updates:
-                    print(f"[Batch Job {job_id}] {ticker} 재무지표 저장: {updates}")
+                    logger.debug("[Batch Job %s] %s 재무지표 저장: %s", job_id, ticker, updates)
                     financial_success += 1
                 else:
-                    print(f"[Batch Job {job_id}] {ticker} 재무지표 없음")
+                    logger.debug("[Batch Job %s] %s 재무지표 없음", job_id, ticker)
                     financial_failed += 1
 
             except Exception as e:
-                print(f"[Batch Job {job_id}] 재무지표 수집 실패 ({ticker}): {str(e)}")
+                logger.warning("[Batch Job %s] 재무지표 수집 실패 (%s): %s", job_id, ticker, e)
                 financial_failed += 1
                 continue
 
@@ -385,7 +382,7 @@ def run_full_krx_batch_job(
             }
         }
 
-        print(f"[Batch Job {job_id}] 전체 배치 작업 완료")
+        logger.info("[Batch Job %s] 전체 배치 작업 완료", job_id)
 
     except Exception as e:
         # 작업 실패
@@ -395,8 +392,7 @@ def run_full_krx_batch_job(
         batch_job_status[job_id]["result"] = {
             "error_detail": traceback.format_exc()
         }
-        print(f"[Batch Job {job_id}] 배치 작업 실패: {str(e)}")
-        print(traceback.format_exc())
+        logger.error("[Batch Job %s] 배치 작업 실패: %s", job_id, e, exc_info=True)
 
     finally:
         # Close database session

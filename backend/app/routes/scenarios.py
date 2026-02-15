@@ -6,6 +6,7 @@
 
 Phase 1: USE_SCENARIO_DB=1 설정 시 PostgreSQL DB에서 시나리오 조회
 """
+import logging
 
 from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel, Field
@@ -16,6 +17,8 @@ from datetime import date
 from app.config import settings
 from app.database import get_db
 
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/scenarios", tags=["Scenarios"])
 
@@ -302,7 +305,7 @@ async def get_scenarios(db: Session = Depends(get_db)):
                 return [ScenarioSummary(**s) for s in scenarios_list]
         except Exception as e:
             # DB 오류 시 폴백
-            print(f"⚠️  DB 조회 실패, 폴백 사용: {e}")
+            logger.warning("DB 조회 실패, 폴백 사용: %s", e)
 
     # 폴백: 하드코딩 데이터
     return [
@@ -356,7 +359,7 @@ async def get_scenario_detail(scenario_id: str, db: Session = Depends(get_db)):
                 )
         except Exception as e:
             # DB 오류 시 폴백
-            print(f"⚠️  DB 조회 실패, 폴백 사용: {e}")
+            logger.warning("DB 조회 실패, 폴백 사용: %s", e)
 
     # 폴백: 하드코딩 데이터
     if scenario_id_upper not in SCENARIOS_FALLBACK:

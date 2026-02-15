@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from datetime import timedelta
@@ -27,6 +28,8 @@ from app.utils.tier_permissions import (
     get_membership_status, reset_monthly_usage_if_needed
 )
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/auth",
@@ -138,7 +141,7 @@ async def signup(
 
         # 이메일 인증 자동 활성화 (교육용 플랫폼이므로 인증 절차 생략)
         user.is_email_verified = True
-        print(f"🔓 이메일 인증 자동 활성화 - {user.email}")
+        logger.info("이메일 인증 자동 활성화: %s", user.email)
 
         db.commit()
         db.refresh(user)
@@ -150,7 +153,7 @@ async def signup(
             expires_delta=access_token_expires
         )
 
-        print(f"\n✅ 회원가입 성공: {user.email}\n")
+        logger.info("회원가입 성공: %s", user.email)
 
         return {
             "access_token": access_token,
@@ -165,15 +168,13 @@ async def signup(
         }
     
     except ValueError as e:
-        print(f"\n❌ ValueError: {str(e)}\n")
+        logger.warning("회원가입 ValueError: %s", e)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
     except Exception as e:
-        print(f"\n❌ Exception: {type(e).__name__}: {str(e)}\n")
-        import traceback
-        traceback.print_exc()
+        logger.error("회원가입 실패: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
@@ -480,22 +481,15 @@ async def forgot_password(
 
     if not user:
         # 보안상 존재하지 않는 이메일도 성공 응답 (사용자 존재 여부 노출 방지)
-        print(f"⚠️  비밀번호 재설정 요청: 존재하지 않는 이메일 {forgot_request.email}")
+        logger.info("비밀번호 재설정 요청: 존재하지 않는 이메일 %s", forgot_request.email)
         return {"message": "비밀번호 재설정 링크가 이메일로 전송되었습니다"}
 
     # 재설정 토큰 생성
     reset_token = create_reset_token(user.id)
 
-    # 이메일 전송 (현재는 콘솔 출력)
+    # 이메일 전송 (현재는 로그 출력)
     reset_link = f"http://localhost:3000/reset-password?token={reset_token}"
-    print("\n" + "="*80)
-    print("📧 비밀번호 재설정 이메일 전송 (콘솔 출력)")
-    print("="*80)
-    print(f"수신자: {user.email}")
-    print(f"사용자 ID: {user.id}")
-    print(f"재설정 링크: {reset_link}")
-    print(f"유효 시간: 15분")
-    print("="*80 + "\n")
+    logger.info("비밀번호 재설정 이메일 — 수신자: %s, ID: %s, 유효: 15분", user.email, user.id)
 
     return {"message": "비밀번호 재설정 링크가 이메일로 전송되었습니다"}
 
@@ -637,7 +631,7 @@ async def reset_password(
     user.hashed_password = new_hashed_password
     db.commit()
 
-    print(f"✅ 비밀번호 재설정 완료: {user.email}")
+    logger.info("비밀번호 재설정 완료: %s", user.email)
 
     return {"message": "비밀번호가 성공적으로 변경되었습니다"}
 
@@ -881,7 +875,7 @@ async def change_password(
     current_user.hashed_password = new_hashed_password
     db.commit()
 
-    print(f"✅ 비밀번호 변경 완료: {current_user.email}")
+    logger.info("비밀번호 변경 완료: %s", current_user.email)
 
     return {"message": "비밀번호가 성공적으로 변경되었습니다"}
 
@@ -932,7 +926,7 @@ async def delete_account(
     db.delete(current_user)
     db.commit()
 
-    print(f"✅ 계정 삭제 완료: {user_email} (ID: {user_id})")
+    logger.info("계정 삭제 완료: %s (ID: %s)", user_email, user_id)
 
     return {"message": "계정이 성공적으로 삭제되었습니다"}
 
@@ -1052,7 +1046,7 @@ async def update_profile(
     db.commit()
     db.refresh(current_user)
 
-    print(f"✅ 프로필 업데이트 완료: {current_user.email}")
+    logger.info("프로필 업데이트 완료: %s", current_user.email)
 
     return ProfileResponse(
         id=current_user.id,
@@ -1178,7 +1172,7 @@ async def send_verification_email_endpoint(
             detail="이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요."
         )
 
-    print(f"✅ 인증 이메일 발송 완료: {current_user.email}")
+    logger.info("인증 이메일 발송 완료: %s", current_user.email)
 
     return MessageResponse(
         message="인증 이메일이 발송되었습니다. 이메일을 확인해주세요."
@@ -1249,7 +1243,7 @@ async def verify_email(
     user.email_verification_token = None  # 토큰 삭제
     db.commit()
 
-    print(f"✅ 이메일 인증 완료: {user.email}")
+    logger.info("이메일 인증 완료: %s", user.email)
 
     return MessageResponse(
         message="이메일 인증이 완료되었습니다."
@@ -1331,7 +1325,7 @@ async def resend_verification_email(
             detail="이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요."
         )
 
-    print(f"✅ 인증 이메일 재발송 완료: {user.email}")
+    logger.info("인증 이메일 재발송 완료: %s", user.email)
 
     return MessageResponse(
         message="인증 이메일이 발송되었습니다. 이메일을 확인해주세요."

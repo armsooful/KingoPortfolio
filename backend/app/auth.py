@@ -18,6 +18,9 @@ from app.exceptions import (
 )
 from app.services.admin_rbac_service import AdminRBACService
 
+import logging
+logger = logging.getLogger(__name__)
+
 # 비밀번호 암호화 컨텍스트
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -32,21 +35,18 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def hash_password(password: str) -> str:
     """비밀번호 해시 (bcrypt 72바이트 제한)"""
-    print(f"\n🔐 hash_password 호출됨")
-    print(f"   입력 비밀번호: {password}")
-    print(f"   글자 수: {len(password)}")
-    print(f"   바이트: {len(password.encode('utf-8'))}")
+    byte_len = len(password.encode('utf-8'))
+    logger.debug("hash_password 호출: 글자수=%d, 바이트=%d", len(password), byte_len)
 
-    if len(password.encode('utf-8')) > 72:
-        print(f"   ❌ 72바이트 초과!")
+    if byte_len > 72:
+        logger.warning("비밀번호 72바이트 초과: %d bytes", byte_len)
         raise KingoValidationError(
             detail="비밀번호는 72바이트를 초과할 수 없습니다",
-            extra={"max_bytes": 72, "current_bytes": len(password.encode('utf-8'))}
+            extra={"max_bytes": 72, "current_bytes": byte_len}
         )
 
-    print(f"   ✅ 검증 통과, 해싱 중...")
     result = pwd_context.hash(password)
-    print(f"   ✅ 해싱 완료\n")
+    logger.debug("비밀번호 해싱 완료")
     return result
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

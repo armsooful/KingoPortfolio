@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
@@ -17,6 +18,8 @@ from app.services.claude_service import get_claude_service
 from app.utils.export import generate_diagnosis_csv, generate_diagnosis_excel
 from app.rate_limiter import limiter, RateLimits
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/diagnosis",
@@ -108,7 +111,7 @@ async def submit_survey(
             response_data["ai_analysis"] = ai_analysis
         except Exception as ai_error:
             # AI 분석 실패 시 로그만 남기고 계속 진행
-            print(f"Claude AI 분석 실패 (무시됨): {str(ai_error)}")
+            logger.warning("Claude AI 분석 실패 (무시됨): %s", ai_error)
             response_data["ai_analysis"] = None
 
         return DiagnosisResponse(**response_data)
