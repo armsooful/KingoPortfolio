@@ -42,33 +42,23 @@
 
 > **참고**: Alpha Vantage (미국 주식/ETF/시계열) API는 구현되어 있으나, 미국 시장 데이터는 **추후 제공 예정**이므로 현재 운영 스케줄에서 제외한다. 엔드포인트: `POST /admin/alpha-vantage/*` (6개)
 
-## 1.2 현행 자동화 스케줄
+## 1.2 자동화 스케줄 현황
 
-현재 APScheduler로 자동화된 작업은 **이메일 발송 2건**뿐이다.
+APScheduler로 자동화된 작업 **4건** (데이터 수집 2건 + 이메일 발송 2건):
 
 | 시간 (KST) | Job ID | 작업 | 함수 | 비고 |
 |---|---|---|---|---|
-| 07:30 | `daily_market_email` | 일일 시장 요약 이메일 | `scheduled_daily_email` | yfinance 4개 지수 + pykrx 등락 + 뉴스 |
-| 08:00 | `watchlist_score_alerts` | 관심 종목 점수 변동 알림 | `scheduled_watchlist_alerts` | ±5점 변동 시 발송 |
+| 16:30 (월~금) | `daily_incremental_prices` | 일별 시세 증분 적재 | `scheduled_incremental_load` | pykrx → stock_price_daily ✅ Phase 1 |
+| 17:00 (월~금) | `daily_compass_score` | Compass Score 일괄 계산 | `scheduled_compass_batch_compute` | stocks compass_* 갱신 ✅ Phase 1 |
+| 07:30 (매일) | `daily_market_email` | 일일 시장 요약 이메일 | `scheduled_daily_email` | yfinance 4개 지수 + pykrx 등락 + 뉴스 |
+| 08:00 (매일) | `watchlist_score_alerts` | 관심 종목 점수 변동 알림 | `scheduled_watchlist_alerts` | ±5점 변동 시 발송 |
 
-**소스 위치**: `backend/app/main.py:86-108`
+**소스 위치**:
+- 스케줄 등록: `backend/app/main.py:86-130`
+- 수집 서비스: `backend/app/services/scheduled_data_collection.py`
 
-```python
-scheduler = AsyncIOScheduler()
-scheduler.add_job(
-    scheduled_daily_email,
-    CronTrigger(hour=7, minute=30, timezone="Asia/Seoul"),
-    id="daily_market_email",
-)
-scheduler.add_job(
-    scheduled_watchlist_alerts,
-    CronTrigger(hour=8, minute=0, timezone="Asia/Seoul"),
-    id="watchlist_score_alerts",
-)
-```
-
-> **핵심 문제**: 이메일이 참조하는 시세/Compass Score 데이터는 수동 적재에 의존하므로,
-> 이메일 발송 전 데이터가 갱신되지 않으면 **전일 데이터로 이메일이 발송**된다.
+> **Phase 1 완료 (2026-02-15)**: 16:30 시세 적재 + 17:00 Compass Score 계산이 자동화되어,
+> 07:30 이메일이 항상 최신 데이터를 참조하게 됨. 동시 실행 방지 Lock + OpsAlert 실패 알림 포함.
 
 ## 1.3 수동 수집 엔드포인트 전체 목록
 
@@ -265,11 +255,11 @@ Compass Score는 3가지 데이터에 의존하므로, 모든 데이터가 갱�
        ┃
  16:00 ┃ KRX 데이터 확정 (pykrx 조회 가능)
        ┃
- 16:30 ┃ ★ [필수] 증분 시계열 적재 시작 ─────────── 10~30분
+ 16:30 ┃ ⚡ [자동] 증분 시계열 적재 시작 ─────────── ~2분 (실측)
        ┃
- 17:00 ┃ ★ [필수] Compass Score 일괄 계산 시작 ──── 10~30분
+ 17:00 ┃ ⚡ [자동] Compass Score 일괄 계산 시작 ──── ~2분 (실측)
        ┃
- 17:30 ┃ (일일 수집 완료)
+ 17:05 ┃ (일일 수집 완료)
        ┃
        ┃  ... (야간 유휴 시간) ...
        ┃
@@ -305,39 +295,56 @@ Compass Score는 3가지 데이터에 의존하므로, 모든 데이터가 갱�
 
 ---
 
-# Part 3: 자동화 구현 제안
+# Part 3: 자동화 구현
 
-## 3.1 APScheduler 확장안
+## 3.1 Phase 1 — 일일 수집 자동화 ✅ 구현 완료 (2026-02-15)
 
-`main.py`에 데이터 수집 스케줄을 추가하는 방안이다.
+### 구현 파일
 
-### 추가할 작업 목록
+- **`backend/app/services/scheduled_data_collection.py`** (신규)
+- **`backend/app/main.py`** lifespan에 CronTrigger 2개 추가
+
+### 등록된 스케줄 (main.py)
 
 ```python
-# === 데이터 수집 스케줄 (main.py lifespan에 추가) ===
-
-# 1. 일별 시세 증분 적재 — 매 영업일 16:30 KST
+# Phase 1: 데이터 수집 자동화
 scheduler.add_job(
     scheduled_incremental_load,
     CronTrigger(hour=16, minute=30, day_of_week="mon-fri", timezone="Asia/Seoul"),
     id="daily_incremental_prices",
     replace_existing=True,
 )
-
-# 2. Compass Score 일괄 계산 — 매 영업일 17:00 KST
 scheduler.add_job(
     scheduled_compass_batch_compute,
     CronTrigger(hour=17, minute=0, day_of_week="mon-fri", timezone="Asia/Seoul"),
     id="daily_compass_score",
     replace_existing=True,
 )
+```
 
+### 실측 결과 (2026-02-15)
+
+| 함수 | 대상 | 결과 | 소요 시간 |
+|---|---|---|---|
+| `scheduled_incremental_load` | 2,886종목 | success=2,884, failed=2, inserted=8,641 | ~2분 20초 |
+| `scheduled_compass_batch_compute` | 2,886종목 | success=2,872, fail=14 (0.5%) | ~2분 18초 |
+
+### 주요 기능
+
+- **동시 실행 방지**: `_running_tasks` set + `threading.Lock` — 동일 작업 중복 실행 시 즉시 스킵 (검증 완료)
+- **OpsAlert 연동**: 실패 시 `BATCH_FAILED` 알림 자동 생성
+  - 증분 적재: failed > 0 → WARN, 전체 실패 → CRITICAL
+  - Compass Score: 실패율 > 30% → WARN, 전체 실패 → CRITICAL
+- **progress_tracker 미사용**: 스케줄 작업은 UI 모니터링 불필요
+
+### Phase 2에서 추가할 스케줄 (미구현)
+
+```python
 # 3. 종목 마스터 + 주식 정보 갱신 — 매주 토요일 10:00 KST
 scheduler.add_job(
     scheduled_weekly_stock_refresh,
     CronTrigger(hour=10, minute=0, day_of_week="sat", timezone="Asia/Seoul"),
     id="weekly_stock_refresh",
-    replace_existing=True,
 )
 
 # 4. DART 재무제표 — 매주 토요일 11:00 KST
@@ -345,7 +352,6 @@ scheduler.add_job(
     scheduled_dart_financials,
     CronTrigger(hour=11, minute=0, day_of_week="sat", timezone="Asia/Seoul"),
     id="weekly_dart_financials",
-    replace_existing=True,
 )
 
 # 5. 채권 + 금융상품 — 매월 1일 13:00 KST
@@ -353,69 +359,7 @@ scheduler.add_job(
     scheduled_monthly_financial_products,
     CronTrigger(day=1, hour=13, minute=0, timezone="Asia/Seoul"),
     id="monthly_financial_products",
-    replace_existing=True,
 )
-```
-
-### 스케줄 함수 구현 예시
-
-```python
-# backend/app/services/scheduled_data_collection.py
-
-from app.database import SessionLocal
-from app.services.pykrx_loader import PyKrxDataLoader
-from app.services.real_data_loader import RealDataLoader
-from app.services.scoring_engine import ScoringEngine
-from app.models.securities import Stock
-import logging
-
-logger = logging.getLogger(__name__)
-
-async def scheduled_incremental_load():
-    """일별 증분 시계열 적재"""
-    db = SessionLocal()
-    try:
-        loader = PyKrxDataLoader()
-        result = loader.load_all_stocks_incremental(
-            db=db,
-            default_days=1825,
-            num_workers=4,  # 8GB RAM 환경 최적화
-        )
-        logger.info(
-            f"[SCHEDULED] Incremental load: "
-            f"success={result['success']}, failed={result['failed']}, "
-            f"inserted={result['total_inserted']}"
-        )
-    except Exception as e:
-        logger.error(f"[SCHEDULED] Incremental load failed: {e}", exc_info=True)
-    finally:
-        db.close()
-
-async def scheduled_compass_batch_compute():
-    """Compass Score 일괄 계산"""
-    db = SessionLocal()
-    try:
-        stocks = db.query(Stock).filter(Stock.is_active == True).all()
-        success, fail = 0, 0
-        for s in stocks:
-            try:
-                result = ScoringEngine.calculate_compass_score(db, s.ticker)
-                if "error" not in result:
-                    s.compass_score = result["compass_score"]
-                    s.compass_grade = result["grade"]
-                    # ... (batch-compute 로직 동일)
-                    db.commit()
-                    success += 1
-                else:
-                    fail += 1
-            except Exception:
-                db.rollback()
-                fail += 1
-        logger.info(f"[SCHEDULED] Compass batch: success={success}, fail={fail}")
-    except Exception as e:
-        logger.error(f"[SCHEDULED] Compass batch failed: {e}", exc_info=True)
-    finally:
-        db.close()
 ```
 
 ## 3.2 수집 순서 오케스트레이션 (의존성 기반)
@@ -742,25 +686,24 @@ curl -X DELETE "http://localhost:8000/admin/progress/{task_id}" \
 
 # Part 5: 로드맵
 
-## Phase 1: 핵심 자동화 (예상 공수: 1~2일)
+## ~~Phase 1: 핵심 자동화~~ ✅ 완료 (2026-02-15)
 
-일일 운영에 가장 중요한 2개 작업을 자동화한다.
-
-| 항목 | 작업 내용 | 우선순위 |
+| 항목 | 작업 내용 | 상태 |
 |---|---|---|
-| 1-1 | `scheduled_data_collection.py` 서비스 파일 생성 | 높음 |
-| 1-2 | `scheduled_incremental_load()` 구현 — 일별 시세 증분 적재 | 높음 |
-| 1-3 | `scheduled_compass_batch_compute()` 구현 — Compass Score 계산 | 높음 |
-| 1-4 | `main.py` lifespan에 2개 CronTrigger 추가 (16:30, 17:00) | 높음 |
-| 1-5 | 동시 실행 방지 Lock 추가 | 중간 |
-| 1-6 | OpsAlert 연동 (실패 시 알림 생성) | 중간 |
+| 1-1 | `scheduled_data_collection.py` 서비스 파일 생성 | ✅ |
+| 1-2 | `scheduled_incremental_load()` 구현 — 일별 시세 증분 적재 | ✅ 2,884종목/~2분 |
+| 1-3 | `scheduled_compass_batch_compute()` 구현 — Compass Score 계산 | ✅ 2,872종목/~2분 |
+| 1-4 | `main.py` lifespan에 2개 CronTrigger 추가 (16:30, 17:00) | ✅ |
+| 1-5 | 동시 실행 방지 Lock 추가 | ✅ 스레드 테스트 통과 |
+| 1-6 | OpsAlert 연동 (실패 시 알림 생성) | ✅ WARN/CRITICAL |
 
-### Phase 1 완료 기준
+### Phase 1 완료 검증 결과
 
-- 일별 시세가 매 영업일 16:30에 자동 적재됨
-- Compass Score가 매 영업일 17:00에 자동 계산됨
-- 07:30 이메일이 최신 데이터를 참조함
-- 실패 시 `ops_alerts` 테이블에 기록됨
+- ✅ 서버 시작 시 APScheduler 4개 job 등록 로그 확인
+- ✅ `scheduled_incremental_load` 수동 실행 — success=2,884, inserted=8,641
+- ✅ `scheduled_compass_batch_compute` 수동 실행 — success=2,872, fail=14 (0.5%)
+- ✅ 동시 실행 방지 — 2개 스레드 동시 호출 시 두 번째 즉시 스킵
+- ✅ OpsAlert 테이블에 WARN 알림 4건 정상 기록
 
 ## Phase 2: 전체 자동화 (예상 공수: 2~3일)
 
@@ -806,7 +749,8 @@ curl -X DELETE "http://localhost:8000/admin/progress/{task_id}" \
 
 | 파일 | 설명 |
 |---|---|
-| `backend/app/main.py:86-108` | APScheduler 설정 (현재 이메일 2개) |
+| `backend/app/main.py:86-130` | APScheduler 설정 (수집 2개 + 이메일 2개) |
+| `backend/app/services/scheduled_data_collection.py` | 데이터 수집 스케줄 서비스 (Phase 1) |
 | `backend/app/routes/admin.py` | 전체 수집 엔드포인트 (27개+) |
 | `backend/app/services/pykrx_loader.py` | pykrx 병렬 + 배치 로더 |
 | `backend/app/services/real_data_loader.py` | 마스터 데이터 로더 |
