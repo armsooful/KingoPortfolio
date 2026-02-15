@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#667eea"/>
+      <stop offset="100%" stop-color="#764ba2"/>
+    </linearGradient>
+  </defs>
+  <!-- Background circle with safe area for maskable -->
+  <circle cx="256" cy="256" r="256" fill="url(#bg)"/>
+  <!-- Tree trunk -->
+  <rect x="240" y="300" width="32" height="80" rx="4" fill="#8B6914"/>
+  <!-- Tree layers (bottom to top) -->
+  <polygon points="256,120 340,240 172,240" fill="#2ECC71"/>
+  <polygon points="256,160 330,270 182,270" fill="#27AE60"/>
+  <polygon points="256,200 320,300 192,300" fill="#1E8449"/>
+  <!-- Compass needle accent -->
+  <circle cx="256" cy="210" r="8" fill="white" opacity="0.9"/>
+  <line x1="256" y1="195" x2="256" y2="170" stroke="white" stroke-width="3" stroke-linecap="round" opacity="0.9"/>
+  <line x1="256" y1="225" x2="256" y2="240" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+  <line x1="241" y1="210" x2="230" y2="210" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+  <line x1="271" y1="210" x2="282" y2="210" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+</svg>
