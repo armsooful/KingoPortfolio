@@ -1,0 +1,382 @@
+/* StockComparison.css — sc- prefix */
+
+.sc-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.sc-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text, #1f2937);
+  margin-bottom: 8px;
+}
+
+.sc-subtitle {
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.95rem;
+  margin-bottom: 32px;
+}
+
+/* Search Section */
+.sc-search-section {
+  background: var(--card, #ffffff);
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid var(--border, #e5e7eb);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
+}
+
+.sc-search-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text, #1f2937);
+  margin-bottom: 12px;
+  display: block;
+}
+
+.sc-search-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.sc-search-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+.sc-search-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  background: var(--card-inner, #fafbfc);
+  color: var(--text, #1f2937);
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.sc-search-input:focus {
+  border-color: var(--primary, #667eea);
+}
+
+.sc-search-input::placeholder {
+  color: var(--text-muted, #9ca3af);
+}
+
+.sc-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  box-shadow: var(--shadow-md, 0 4px 6px rgba(0,0,0,0.1));
+  z-index: 50;
+  max-height: 240px;
+  overflow-y: auto;
+  margin-top: 4px;
+}
+
+.sc-dropdown-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  color: var(--text, #1f2937);
+  font-size: 0.9rem;
+}
+
+.sc-dropdown-item:hover {
+  background: var(--card-hover, #f9fafb);
+}
+
+.sc-dropdown-name {
+  font-weight: 500;
+}
+
+.sc-dropdown-ticker {
+  color: var(--text-muted, #9ca3af);
+  font-size: 0.82rem;
+  margin-left: 8px;
+}
+
+.sc-dropdown-score {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.sc-dropdown-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-muted, #9ca3af);
+  font-size: 0.9rem;
+}
+
+/* Chips */
+.sc-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.sc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  border: 1px solid var(--border, #e5e7eb);
+  background: var(--card-inner, #fafbfc);
+  color: var(--text, #1f2937);
+}
+
+.sc-chip-remove {
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--text-muted, #9ca3af);
+  background: none;
+  border: none;
+  padding: 0;
+  transition: color 0.15s;
+}
+
+.sc-chip-remove:hover {
+  color: var(--stock-down, #dc2626);
+}
+
+/* Compare Button */
+.sc-compare-btn {
+  padding: 12px 32px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  transition: opacity 0.2s, transform 0.1s;
+  white-space: nowrap;
+}
+
+.sc-compare-btn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.sc-compare-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Result Section */
+.sc-result-section {
+  margin-top: 32px;
+}
+
+/* Score Cards */
+.sc-score-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.sc-score-card {
+  background: var(--card, #ffffff);
+  border-radius: 14px;
+  padding: 20px;
+  border: 1px solid var(--border, #e5e7eb);
+  text-align: center;
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
+}
+
+.sc-score-card-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text, #1f2937);
+  margin-bottom: 4px;
+}
+
+.sc-score-card-ticker {
+  font-size: 0.82rem;
+  color: var(--text-muted, #9ca3af);
+  margin-bottom: 12px;
+}
+
+.sc-score-value {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.sc-grade-badge {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.sc-score-summary {
+  margin-top: 10px;
+  font-size: 0.82rem;
+  color: var(--text-secondary, #6b7280);
+  line-height: 1.4;
+}
+
+/* Chart Box */
+.sc-chart-box {
+  background: var(--card, #ffffff);
+  border-radius: 14px;
+  padding: 24px;
+  border: 1px solid var(--border, #e5e7eb);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
+  margin-bottom: 32px;
+}
+
+.sc-chart-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text, #1f2937);
+  margin-bottom: 16px;
+}
+
+.sc-chart-wrap {
+  height: 320px;
+  position: relative;
+}
+
+/* Table */
+.sc-table-wrap {
+  background: var(--card, #ffffff);
+  border-radius: 14px;
+  padding: 24px;
+  border: 1px solid var(--border, #e5e7eb);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
+  overflow-x: auto;
+}
+
+.sc-table-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text, #1f2937);
+  margin-bottom: 16px;
+}
+
+.sc-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.sc-table th,
+.sc-table td {
+  padding: 12px 16px;
+  text-align: right;
+  border-bottom: 1px solid var(--border-light, #f3f4f6);
+  font-size: 0.9rem;
+}
+
+.sc-table th:first-child,
+.sc-table td:first-child {
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-secondary, #6b7280);
+}
+
+.sc-table th {
+  font-weight: 600;
+  color: var(--text, #1f2937);
+  background: var(--card-inner, #fafbfc);
+}
+
+.sc-table td {
+  color: var(--text, #1f2937);
+}
+
+.sc-table tbody tr:hover {
+  background: var(--card-hover, #f9fafb);
+}
+
+/* Loading */
+.sc-loading {
+  text-align: center;
+  padding: 48px 0;
+  color: var(--text-secondary, #6b7280);
+}
+
+.sc-loading .spinner {
+  margin: 0 auto 12px;
+}
+
+/* Error */
+.sc-error {
+  margin-top: 24px;
+  padding: 16px 20px;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  font-size: 0.9rem;
+}
+
+[data-theme="dark"] .sc-error {
+  background: rgba(153, 27, 27, 0.15);
+  color: #fca5a5;
+  border-color: #991b1b;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sc-container {
+    padding: 20px 16px;
+  }
+
+  .sc-title {
+    font-size: 1.4rem;
+  }
+
+  .sc-search-row {
+    flex-direction: column;
+  }
+
+  .sc-search-wrapper {
+    min-width: 100%;
+  }
+
+  .sc-compare-btn {
+    width: 100%;
+  }
+
+  .sc-score-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .sc-chart-wrap {
+    height: 260px;
+  }
+
+  .sc-table th,
+  .sc-table td {
+    padding: 10px 12px;
+    font-size: 0.82rem;
+  }
+}

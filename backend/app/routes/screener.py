@@ -2,7 +2,7 @@
 
 """종목 스크리너 API — Compass Score 기반 종목 탐색"""
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, asc
 from typing import Optional, List
@@ -133,6 +133,134 @@ async def screener_stocks(
                 compass_summary=s.compass_summary,
             )
             for s in stocks
+        ],
+        disclaimer=DISCLAIMER,
+    )
+
+
+# ==============================================================
+# 종목 검색 (자동완성용)
+# ==============================================================
+
+class SearchStockItem(BaseModel):
+    ticker: str
+    name: Optional[str] = None
+    market: Optional[str] = None
+    compass_score: Optional[float] = None
+    compass_grade: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+@router.get("/search", response_model=List[SearchStockItem])
+async def search_stocks(
+    q: str = Query(..., min_length=1, description="종목명/코드 검색어"),
+    limit: int = Query(10, ge=1, le=20),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """종목 검색 (자동완성용) — 종목명/코드로 검색"""
+    search_term = f"%{q}%"
+    stocks = (
+        db.query(Stock)
+        .filter(
+            Stock.is_active == True,
+            (Stock.name.ilike(search_term)) | (Stock.ticker.ilike(search_term)),
+        )
+        .order_by(desc(Stock.compass_score).nulls_last())
+        .limit(limit)
+        .all()
+    )
+    return [
+        SearchStockItem(
+            ticker=s.ticker,
+            name=s.name,
+            market=s.market,
+            compass_score=s.compass_score,
+            compass_grade=s.compass_grade,
+        )
+        for s in stocks
+    ]
+
+
+# ==============================================================
+# 종목 비교
+# ==============================================================
+
+class CompareStockItem(BaseModel):
+    ticker: str
+    name: Optional[str] = None
+    sector: Optional[str] = None
+    market: Optional[str] = None
+    current_price: Optional[float] = None
+    market_cap: Optional[float] = None
+    pe_ratio: Optional[float] = None
+    pb_ratio: Optional[float] = None
+    dividend_yield: Optional[float] = None
+    compass_score: Optional[float] = None
+    compass_grade: Optional[str] = None
+    compass_summary: Optional[str] = None
+    compass_financial_score: Optional[float] = None
+    compass_valuation_score: Optional[float] = None
+    compass_technical_score: Optional[float] = None
+    compass_risk_score: Optional[float] = None
+
+    class Config:
+        from_attributes = True
+
+
+class CompareResponse(BaseModel):
+    stocks: List[CompareStockItem]
+    disclaimer: str
+
+
+@router.get("/compare", response_model=CompareResponse)
+async def compare_stocks(
+    tickers: str = Query(..., description="콤마 구분 ticker (최대 3개)"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """종목 비교 — 최대 3개 종목의 Compass Score + 기본 지표 비교"""
+    ticker_list = [t.strip() for t in tickers.split(",") if t.strip()]
+
+    if len(ticker_list) < 1 or len(ticker_list) > 3:
+        raise HTTPException(status_code=400, detail="1~3개의 ticker를 입력해주세요")
+
+    stocks = (
+        db.query(Stock)
+        .filter(Stock.ticker.in_(ticker_list), Stock.is_active == True)
+        .all()
+    )
+
+    if not stocks:
+        raise HTTPException(status_code=404, detail="해당 종목을 찾을 수 없습니다")
+
+    # 요청 순서 유지
+    stock_map = {s.ticker: s for s in stocks}
+    ordered = [stock_map[t] for t in ticker_list if t in stock_map]
+
+    return CompareResponse(
+        stocks=[
+            CompareStockItem(
+                ticker=s.ticker,
+                name=s.name,
+                sector=s.sector,
+                market=s.market,
+                current_price=s.current_price,
+                market_cap=s.market_cap,
+                pe_ratio=s.pe_ratio,
+                pb_ratio=s.pb_ratio,
+                dividend_yield=s.dividend_yield,
+                compass_score=s.compass_score,
+                compass_grade=s.compass_grade,
+                compass_summary=s.compass_summary,
+                compass_financial_score=s.compass_financial_score,
+                compass_valuation_score=s.compass_valuation_score,
+                compass_technical_score=s.compass_technical_score,
+                compass_risk_score=s.compass_risk_score,
+            )
+            for s in ordered
         ],
         disclaimer=DISCLAIMER,
     )

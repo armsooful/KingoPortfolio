@@ -988,6 +988,14 @@ export const unsubscribeMarketEmail = () => {
 // Screener API
 // ============================================================
 
+export const searchStocks = (query, limit = 10) => {
+  return api.get(`/api/v1/screener/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+};
+
+export const compareStocks = (tickers) => {
+  return api.get(`/api/v1/screener/compare?tickers=${tickers.join(',')}`);
+};
+
 export const screenerStocks = (params = {}) => {
   const queryParams = new URLSearchParams();
   if (params.search) queryParams.append('search', params.search);

@@ -41,6 +41,7 @@ const FinancialAnalysisPage = lazy(() => import('./pages/FinancialAnalysisPage')
 const ValuationPage = lazy(() => import('./pages/ValuationPage'));
 const QuantAnalysisPage = lazy(() => import('./pages/QuantAnalysisPage'));
 const ReportPage = lazy(() => import('./pages/ReportPage'));
+const StockComparisonPage = lazy(() => import('./pages/StockComparisonPage'));
 
 // ============================================================
 // Auth Context
@@ -248,6 +249,14 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <WatchlistPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/stock-comparison"
+            element={
+              <ProtectedRoute>
+                <StockComparisonPage />
               </ProtectedRoute>
             }
           />
