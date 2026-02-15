@@ -532,18 +532,19 @@ class TestProfileEndpoints:
 
     def test_get_profile(self, client, db):
         """프로필 조회 테스트"""
-        # 사용자 회원가입 및 로그인
+        # 사용자 회원가입 (UserCreate 스키마에 name 필드 없음)
         signup_response = client.post(
             "/auth/signup",
-            json={"email": "profile@example.com", "password": "password123", "name": "홍길동"}
+            json={"email": "profile@example.com", "password": "password123"}
         )
         token = signup_response.json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # 프로필 이름 설정
+        client.put("/auth/profile", headers=headers, json={"name": "홍길동"})
 
         # 프로필 조회
-        response = client.get(
-            "/auth/profile",
-            headers={"Authorization": f"Bearer {token}"}
-        )
+        response = client.get("/auth/profile", headers=headers)
 
         assert response.status_code == 200
         data = response.json()

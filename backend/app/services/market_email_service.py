@@ -379,7 +379,7 @@ async def send_daily_market_emails(
         log.completed_at = datetime.utcnow()
         db.commit()
 
-        return {"success_count": success, "fail_count": fail, "total": len(emails)}
+        return {"success_count": success, "fail_count": fail, "total": len(subscribers)}
 
     except Exception as e:
         logger.exception("send_daily_market_emails failed")

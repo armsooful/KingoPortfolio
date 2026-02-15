@@ -295,6 +295,22 @@ def background_fn():
 - `complete_task(status='completed')` takes status as param, not dict
 - Set total to 0 initially, update dynamically after API response
 
+### Timestamp Convention
+- `app/utils/kst_now.py` provides `kst_now()` — returns KST (UTC+9) aware datetime
+- All `OpsAuditLog`, `BatchJobDefinition`, `OpsAlert` models use `kst_now` for `created_at`
+- When querying these tables by date range, use `kst_now()` not `datetime.utcnow()`
+
+### Signup Schema
+- `UserCreate` only has `email` + `password` (no `name` field)
+- Name is set after signup via `PUT /auth/profile`
+- Signup auto-enables `is_email_verified=True` (educational platform, no email verification flow)
+
+### Error Handler Message Sanitization
+- `error_handlers.py::_safe_detail()` replaces SYSTEM error messages with generic user-friendly text
+- 500 errors → `"일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요."`
+- External API errors → `"외부 서비스 응답이 지연되고 있습니다..."`
+- Only USER-type errors (4xx) pass through the original detail message
+
 ### Model Registration
 - All new SQLAlchemy models must be imported in `main.py` with `# noqa` for `Base.metadata` registration
 - PostgreSQL: `create_all` is skipped; schema changes require manual SQL migration
@@ -358,15 +374,18 @@ Phased development (Phase 0–11). Phase docs archived in `docs/archive/phase*/`
 - Compass Score system (scoring engine, screener, watchlist, alerts, AI commentary)
 - Market email service with Compass Score integration
 - Profile completion flow (signup simplification + modal-based onboarding)
-- Global theme system: dark/light mode with CSS variables across all 33+ CSS files
+- Global theme system: dark/light mode with CSS variables across all 36+ CSS files
 - Dashboard UI redesign: KPI sparklines, AI summary, watchlist cards, news timeline
+- Stock comparison page (max 5 stocks, Compass Score comparison)
+- PWA support: home screen install, offline app shell, Service Worker caching
+- React.lazy code splitting + ErrorBoundary for chunk loading failures
 
 ## Tech Stack
 
 - **Backend**: FastAPI, Python 3.11, SQLAlchemy 2.0, PostgreSQL
 - **Frontend**: React 18, Vite 5, React Router 6, Chart.js
 - **Styling**: CSS custom properties (theme.css) — no CSS-in-JS, no Tailwind utility classes in components
-- **Testing**: pytest with pytest-asyncio, pytest-cov (81 tests, 32% coverage)
+- **Testing**: pytest with pytest-asyncio, pytest-cov (~690 tests, 31% coverage)
 - **Financial Data**: yfinance, pykrx, DART API, FSC API, Alpha Vantage
 - **Scheduling**: APScheduler (07:30 market email, 08:00 watchlist alerts)
 - **Email**: aiosmtplib via Resend SMTP, Jinja2 templates (inline CSS)

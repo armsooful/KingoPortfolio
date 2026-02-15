@@ -9,6 +9,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.models.ops import OpsAuditLog
+from app.utils.kst_now import kst_now
 from app.services.audit_log_service import (
     AuditLogService,
     AuditType,
@@ -327,8 +328,8 @@ class TestDateFilter:
             operator_reason="Date test",
         )
 
-        # 오늘 포함 범위로 조회
-        now = datetime.utcnow()
+        # 오늘 포함 범위로 조회 (created_at이 kst_now 사용)
+        now = kst_now()
         start = now - timedelta(hours=1)
         end = now + timedelta(hours=1)
 

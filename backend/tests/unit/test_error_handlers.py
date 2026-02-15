@@ -156,7 +156,8 @@ class TestKingoExceptionHandlers:
         data = response.json()
 
         assert data["error"]["code"] == "INTERNAL_SERVER_ERROR"
-        assert "서버" in data["error"]["message"]
+        # _safe_detail이 SYSTEM 에러를 사용자 친화적 메시지로 교체
+        assert "오류" in data["error"]["message"]
 
 
 @pytest.mark.unit
