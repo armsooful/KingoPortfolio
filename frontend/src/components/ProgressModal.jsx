@@ -119,10 +119,10 @@ function ProgressModal({ taskId, onComplete, onClose }) {
                 <div className="spinner-animation"></div>
               </div>
               <h3 style={{ marginTop: '20px', textAlign: 'center' }}>⏳ Phase 1: 데이터 수집 중</h3>
-              <p style={{ marginTop: '10px', textAlign: 'center', color: '#666', fontSize: '0.9rem' }}>
+              <p style={{ marginTop: '10px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
                 FSC API를 통해 주식 정보를 병렬로 수집 중입니다...
               </p>
-              <p style={{ marginTop: '5px', textAlign: 'center', color: '#999', fontSize: '0.85rem' }}>
+              <p style={{ marginTop: '5px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                 (약 2-3분 소요)
               </p>
             </div>
@@ -162,19 +162,19 @@ function ProgressModal({ taskId, onComplete, onClose }) {
                 <span style={{ backgroundColor: '#4CAF50', color: 'white', padding: '5px 15px', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 'bold' }}>
                   Phase 1
                 </span>
-                <span style={{ color: '#999', fontSize: '0.9rem' }}>데이터 수집</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>데이터 수집</span>
               </div>
               <div className="loading-spinner">
                 <div className="spinner-animation"></div>
               </div>
               <h3 style={{ marginTop: '20px', textAlign: 'center' }}>⏳ 진행 중...</h3>
-              <p style={{ marginTop: '15px', textAlign: 'center', color: '#666', fontSize: '0.95rem' }}>
+              <p style={{ marginTop: '15px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
                 {progress.current_item || 'FSC API를 통해 주식 정보를 병렬로 수집 중...'}
               </p>
-              <p style={{ marginTop: '10px', textAlign: 'center', color: '#999', fontSize: '0.85rem' }}>
+              <p style={{ marginTop: '10px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                 이 단계는 약 2-3분이 소요됩니다
               </p>
-              <p style={{ marginTop: '5px', textAlign: 'center', color: '#bbb', fontSize: '0.8rem' }}>
+              <p style={{ marginTop: '5px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
                 완료 후 Phase 2에서 데이터베이스에 저장됩니다
               </p>
             </div>
@@ -211,8 +211,8 @@ function ProgressModal({ taskId, onComplete, onClose }) {
             {!isBondTask && (
               <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '15px', marginBottom: '10px' }}>
                 <span style={{
-                  backgroundColor: currentPhase === 'Phase 1' ? '#4CAF50' : '#e0e0e0',
-                  color: currentPhase === 'Phase 1' ? 'white' : '#666',
+                  backgroundColor: currentPhase === 'Phase 1' ? '#4CAF50' : 'var(--border)',
+                  color: currentPhase === 'Phase 1' ? 'white' : 'var(--text-secondary)',
                   padding: '5px 15px',
                   borderRadius: '20px',
                   fontSize: '0.9rem',
@@ -221,8 +221,8 @@ function ProgressModal({ taskId, onComplete, onClose }) {
                   Phase 1: 수집
                 </span>
                 <span style={{
-                  backgroundColor: currentPhase === 'Phase 2' ? '#2196F3' : '#e0e0e0',
-                  color: currentPhase === 'Phase 2' ? 'white' : '#666',
+                  backgroundColor: currentPhase === 'Phase 2' ? '#2196F3' : 'var(--border)',
+                  color: currentPhase === 'Phase 2' ? 'white' : 'var(--text-secondary)',
                   padding: '5px 15px',
                   borderRadius: '20px',
                   fontSize: '0.9rem',

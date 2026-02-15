@@ -229,7 +229,7 @@ const QuantAnalysis = () => {
           {risk.max_drawdown && !risk.max_drawdown.error && (
             <div className="risk-card">
               <h5>최대 낙폭 (MDD)</h5>
-              <div className="risk-value" style={{ color: '#f44336' }}>
+              <div className="risk-value" style={{ color: 'var(--stock-down)' }}>
                 {risk.max_drawdown.max_drawdown}%
               </div>
               <div className="risk-desc">

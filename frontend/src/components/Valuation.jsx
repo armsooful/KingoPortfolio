@@ -191,8 +191,8 @@ const Valuation = () => {
             </>
           )}
           {multiple_comparison && multiple_comparison.error && (
-            <div className="info-message" style={{ padding: '20px', background: '#fff3cd', borderRadius: '8px', marginTop: '10px' }}>
-              <p style={{ margin: 0, color: '#856404' }}>
+            <div className="val-warning-box">
+              <p style={{ margin: 0 }}>
                 <strong>ℹ️ {multiple_comparison.error}</strong>
               </p>
             </div>
@@ -202,11 +202,11 @@ const Valuation = () => {
         <div className="section-card" ref={dcfRef}>
           <h4>💵 DCF 밸류에이션</h4>
           {dcf_valuation && dcf_valuation.error ? (
-              <div className="info-message" style={{ padding: '20px', background: '#fff3cd', borderRadius: '8px', marginTop: '10px' }}>
-                <p style={{ margin: 0, color: '#856404' }}>
+              <div className="val-warning-box">
+                <p style={{ margin: 0 }}>
                   <strong>ℹ️ {dcf_valuation.error}</strong>
                 </p>
-                <p style={{ margin: '10px 0 0 0', color: '#856404', fontSize: '0.9em' }}>
+                <p style={{ margin: '10px 0 0 0', fontSize: '0.9em' }}>
                   {dcf_valuation.message}
                 </p>
               </div>
@@ -242,11 +242,11 @@ const Valuation = () => {
         <div className="section-card" ref={ddmRef}>
           <h4>💰 배당할인모형 (DDM)</h4>
           {ddm_valuation && ddm_valuation.error ? (
-              <div className="info-message" style={{ padding: '20px', background: '#fff3cd', borderRadius: '8px', marginTop: '10px' }}>
-                <p style={{ margin: 0, color: '#856404' }}>
+              <div className="val-warning-box">
+                <p style={{ margin: 0 }}>
                   <strong>ℹ️ {ddm_valuation.error}</strong>
                 </p>
-                <p style={{ margin: '10px 0 0 0', color: '#856404', fontSize: '0.9em' }}>
+                <p style={{ margin: '10px 0 0 0', fontSize: '0.9em' }}>
                   {ddm_valuation.message}
                 </p>
               </div>

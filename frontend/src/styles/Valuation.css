@@ -289,6 +289,20 @@
   color: #fca5a5;
 }
 
+/* ── Warning box ── */
+.val-warning-box {
+  padding: 20px;
+  background: #fff3cd;
+  color: #856404;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+[data-theme="dark"] .val-warning-box {
+  background: rgba(255, 193, 7, 0.12);
+  color: #fde68a;
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .valuation {

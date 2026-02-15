@@ -242,7 +242,7 @@ const InvestmentReport = () => {
                   </div>
                   <div className="risk-metric">
                     <span>최대 낙폭 (MDD)</span>
-                    <strong style={{ color: '#f44336' }}>
+                    <strong style={{ color: 'var(--stock-down)' }}>
                       {report.risk_analysis.max_drawdown}%
                     </strong>
                   </div>

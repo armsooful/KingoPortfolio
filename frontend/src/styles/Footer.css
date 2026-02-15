@@ -14,7 +14,7 @@
 
 .footer-legal {
   font-size: 0.75rem;
-  color: var(--text-secondary, #666);
+  color: var(--text-secondary, #6b7280);
   line-height: 1.6;
   margin-bottom: 16px;
   text-align: left;
@@ -23,7 +23,7 @@
 .footer-legal-title {
   margin-bottom: 8px;
   font-weight: 600;
-  color: var(--text, #333);
+  color: var(--text, #1f2937);
 }
 
 .footer-legal-item {
@@ -38,7 +38,7 @@
   padding-top: 16px;
   border-top: 1px solid var(--border, #e0e0e0);
   font-size: 0.875rem;
-  color: var(--text-muted, #999);
+  color: var(--text-muted, #9ca3af);
 }
 
 .footer-copyright p {

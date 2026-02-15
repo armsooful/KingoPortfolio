@@ -149,7 +149,7 @@ const FinancialAnalysis = () => {
             <div className="score-details">
               <h4>세부 점수 (V2)</h4>
               {scoreV2.korean_stock && (
-                <div style={{ padding: '10px', background: '#fff3cd', borderRadius: '5px', marginBottom: '10px', fontSize: '0.9em' }}>
+                <div className="fa-warning-box">
                   ℹ️ 한국 주식은 성장성 제외, 수익성(40점), 안정성(35점), 배당(25점)으로 평가됩니다.
                 </div>
               )}

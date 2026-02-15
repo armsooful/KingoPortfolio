@@ -109,7 +109,7 @@ export default function PortfolioManagementPage() {
             <div className="result-icon" style={{ fontSize: '3rem' }}>
               ⚙️
             </div>
-            <h1 className="result-type" style={{ color: '#667eea' }}>
+            <h1 className="result-type" style={{ color: 'var(--primary)' }}>
               포트폴리오 전략 관리
             </h1>
             <p className="result-subtitle">
@@ -163,7 +163,7 @@ export default function PortfolioManagementPage() {
                         <div className="pm-stat-label">
                           {assetClass === 'stocks' ? '주식' : assetClass === 'etfs' ? 'ETF' : assetClass === 'bonds' ? '채권' : '예금'}
                         </div>
-                        <div className="pm-stat-value" style={{ color: '#667eea' }}>
+                        <div className="pm-stat-value" style={{ color: 'var(--primary)' }}>
                           {weights.target}%
                         </div>
                         <div className="pm-stat-range">
@@ -178,7 +178,7 @@ export default function PortfolioManagementPage() {
                     <div className="pm-grid-3">
                       <div className="pm-stat-box-compact">
                         <div className="pm-stat-label-sm">과거 연평균 수익률</div>
-                        <div className="pm-stat-value-lg" style={{ color: '#4CAF50' }}>
+                        <div className="pm-stat-value-lg" style={{ color: 'var(--stock-up)' }}>
                           {formatPercent(strategy.sample_portfolio.statistics.expected_annual_return)}
                         </div>
                       </div>
@@ -190,7 +190,7 @@ export default function PortfolioManagementPage() {
                       </div>
                       <div className="pm-stat-box-compact">
                         <div className="pm-stat-label-sm">총 종목 수</div>
-                        <div className="pm-stat-value-lg" style={{ color: '#2196F3' }}>
+                        <div className="pm-stat-value-lg" style={{ color: 'var(--primary)' }}>
                           {strategy.sample_portfolio.statistics.total_items}개
                         </div>
                       </div>
@@ -227,13 +227,13 @@ export default function PortfolioManagementPage() {
                     <div className="pm-grid-4">
                       <div className="pm-stat-box">
                         <div className="pm-stat-label">실투자액</div>
-                        <div className="pm-stat-value-lg" style={{ color: '#333' }}>
+                        <div className="pm-stat-value-lg" style={{ color: 'var(--text)' }}>
                           {formatCurrency(detailPortfolio.statistics.actual_invested)}원
                         </div>
                       </div>
                       <div className="pm-stat-box">
                         <div className="pm-stat-label">과거 연평균 수익률</div>
-                        <div className="pm-stat-value-lg" style={{ color: '#4CAF50' }}>
+                        <div className="pm-stat-value-lg" style={{ color: 'var(--stock-up)' }}>
                           {formatPercent(detailPortfolio.statistics.expected_annual_return)}
                         </div>
                       </div>
@@ -245,7 +245,7 @@ export default function PortfolioManagementPage() {
                       </div>
                       <div className="pm-stat-box">
                         <div className="pm-stat-label">다각화 점수</div>
-                        <div className="pm-stat-value-lg" style={{ color: '#2196F3' }}>
+                        <div className="pm-stat-value-lg" style={{ color: 'var(--primary)' }}>
                           {detailPortfolio.statistics.diversification_score}/100
                         </div>
                       </div>

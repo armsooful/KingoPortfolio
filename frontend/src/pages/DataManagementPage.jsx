@@ -175,9 +175,9 @@ export default function DataManagementPage() {
                     <div key={key} className="dm-success-row">
                       <span className="dm-success-row-key">{key}</span>
                       <div className="dm-success-row-vals">
-                        <span style={{ color: '#4CAF50' }}>+ {val.success}</span>
+                        <span style={{ color: 'var(--stock-up)' }}>+ {val.success}</span>
                         <span style={{ color: '#2196F3' }}>~ {val.updated}</span>
-                        <span style={{ color: '#f44336' }}>x {val.failed || 0}</span>
+                        <span style={{ color: 'var(--stock-down)' }}>x {val.failed || 0}</span>
                       </div>
                     </div>
                   ))}

@@ -195,7 +195,7 @@ export default function PortfolioComparisonPage() {
             <div className="result-icon">
               ⚙️
             </div>
-            <h1 className="result-type" style={{ color: '#667eea' }}>
+            <h1 className="result-type" style={{ color: 'var(--primary)' }}>
               포트폴리오 성과 비교
             </h1>
             <p className="result-subtitle">
